@@ -43,6 +43,7 @@ The server is published with MIT-license. See [license](../blob/master/LICENCE)
 
 ## How to test
 Following steps are required to perform a quick experiment installation:
+
 1. Get RHEL7 or CentOS7 server
 2. Clone, compile and install following packages, note that libraries has to be installed before compaling other packages
   * smartmet-library-spine smartmet-library-newbase smartmet-library-macgyver / smartmet-library-gis /smartmet-library-giza /smartmet-library-locus smartmet-library-regression /smartmet-library-imagine
@@ -53,6 +54,7 @@ Following steps are required to perform a quick experiment installation:
   * https://github.com/fmidev/smartmet-engine-gis
   * https://github.com/fmidev/smartmet-plugin-admin
   * https://github.com/fmidev/smartmet-plugin-wms
+
 3. Get some data i.e. from `http://data.fmi.fi/fmi-apikey/__your-api-key__/download?producer=hirlam&param=Pressure,Temperature,DewPoint,Humidity,WindUMS,WindVMS,Precipitation1h&bbox=19.1000000138525,59.6999999968758,31.7000000148709,70.0999999955105&levels=0&format=querydata&projection=EPSG:4326`
 4. Configure your server (`/etc/smartmet-server.conf`) to contain compiled engines and plugins
 5. Configure you data direcotry to querydata engine (`/etc/smarmet-server/engine/querydata.conf`)
