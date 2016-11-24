@@ -27,6 +27,7 @@ The server is especially good for extracting weather data and generating product
 
 ## Server Structure
 SmartMet Server consists of following components:
+
 | Component       |Description                                       |
 |-----------------|--------------------------------------------------|
 | qdtools         |Helper programs to handle underling data          | 
