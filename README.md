@@ -79,13 +79,13 @@ Small changes and bug fixes can be submitted via pull request. In larger contrib
 CLA is required in order to contribute. Please contact us for more information!
 
 ## Documentation
-Each module is documented in [module wiki](/wiki). 
+Each module is documented in module [module wiki](../../wiki). 
 
 ## Communication and Resources
 You may contact us from following channels:
 * Email: beta@fmi.fi
 * Facebook: https://www.facebook.com/fmibeta/
-* GitHub: [issues](/issues)
+* GitHub: [issues](../../issues)
 
 Other resources which may be useful:
 * Presentation about the server: http://www.slideshare.net/tervo/smartmet-server-providing-metocean-data
