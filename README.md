@@ -16,7 +16,7 @@ and several output formats:
 * ASCII
 * HTML
 * SERIAL
-* GRIB1
+* GRIB1
 * GRIB2 
 * NetCDF
 * Raster images
@@ -27,6 +27,7 @@ The server is especially good for extracting weather data and generating product
 
 ## Server Structure
 SmartMet Server consists of following components:
+| Component       |Description                                       |
 |-----------------|--------------------------------------------------|
 | qdtools         |Helper programs to handle underling data          | 
 | libraries       |Libraries required to run programs and the server |
@@ -38,19 +39,19 @@ SmartMet Server consists of following components:
 
 ## Licence
 The server is published with MIT-license. See [license](../blob/master/LICENCE)
-
+
 ## How to test
 Following steps are required to perform a quick experiment installation:
 1. Get RHEL7 or CentOS7 server
 2. Clone, compile and install following packages, note that libraries has to be installed before compaling other packages
-..* smartmet-library-spine smartmet-library-newbase smartmet-library-macgyver / smartmet-library-gis /smartmet-library-giza /smartmet-library-locus smartmet-library-regression /smartmet-library-imagine
-..* https://github.com/fmidev/smartmet-server
-..* https://github.com/fmidev/smartmet-engine-querydata
-..* https://github.com/fmidev/smartmet-engine-geo
-..* https://github.com/fmidev/smartmet-engine-contour
-..* https://github.com/fmidev/smartmet-engine-gis
-..* https://github.com/fmidev/smartmet-plugin-admin
-..* https://github.com/fmidev/smartmet-plugin-wms
+  * smartmet-library-spine smartmet-library-newbase smartmet-library-macgyver / smartmet-library-gis /smartmet-library-giza /smartmet-library-locus smartmet-library-regression /smartmet-library-imagine
+  * https://github.com/fmidev/smartmet-server
+  * https://github.com/fmidev/smartmet-engine-querydata
+  * https://github.com/fmidev/smartmet-engine-geo
+  * https://github.com/fmidev/smartmet-engine-contour
+  * https://github.com/fmidev/smartmet-engine-gis
+  * https://github.com/fmidev/smartmet-plugin-admin
+  * https://github.com/fmidev/smartmet-plugin-wms
 3. Get some data i.e. from `http://data.fmi.fi/fmi-apikey/__your-api-key__/download?producer=hirlam&param=Pressure,Temperature,DewPoint,Humidity,WindUMS,WindVMS,Precipitation1h&bbox=19.1000000138525,59.6999999968758,31.7000000148709,70.0999999955105&levels=0&format=querydata&projection=EPSG:4326`
 4. Configure your server (`/etc/smartmet-server.conf`) to contain compiled engines and plugins
 5. Configure you data direcotry to querydata engine (`/etc/smarmet-server/engine/querydata.conf`)
