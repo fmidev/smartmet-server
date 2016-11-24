@@ -36,7 +36,7 @@ SmartMet Server consists of following components:
 | engines         |Common modules with a state                       |
 | plugins         |Plugins providing interfaces to clients           |
 
-![](structure.png "Server structure)
+![](../../blob/SmartMet_Structure.svg "Server structure)
 
 ## Licence
 The server is published with MIT-license. See [license](../blob/master/LICENCE)
