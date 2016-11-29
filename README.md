@@ -26,17 +26,50 @@ The server is INSPIRE compliant. It is used for FMI data services and product ge
 The server is especially good for extracting weather data and generating products based on gridded data (GRIB and NetCDF). The data is extracted and products generating always on-demand. 
 
 ## Server Structure
-SmartMet Server consists of following components:
-
-| Component       |Description                                       |Source Code           |
-|-----------------|--------------------------------------------------|----------------------|
-| qdtools         |Helper programs to handle underling data          | https://github.com/fmidev/smartmet-qdtools |
-| libraries       |Libraries required to run programs and the server | https://github.com/fmidev/smartmet-library-spine<br>https://github.com/fmidev/smartmet-library-newbase<br>https://github.com/fmidev/smartmet-library-macgyver<br>https://github.com/fmidev/smartmet-library-gis<br>https://github.com/fmidev/smartmet-library-giza<br>https://github.com/fmidev/smartmet-library-locus<br>https://github.com/fmidev/smartmet-library-regression<br>https://github.com/fmidev/smartmet-library-imagine                     |
-| server          |The server daemon itself                          | https://github.com/fmidev/smartmet-server  |
-| engines         |Common modules with a state                       | https://github.com/fmidev/smartmet-engine-geonames<br>https://github.com/fmidev/smartmet-engine-sputnik<br>https://github.com/fmidev/smartmet-engine-querydata<br>https://github.com/fmidev/smartmet-engine-observation<br>https://github.com/fmidev/smartmet-engine-contour<br>https://github.com/fmidev/smartmet-engine-gis         |
-| plugins         |Plugins providing interfaces to clients           | https://github.com/fmidev/smartmet-plugin-timeseries<br>https://github.com/fmidev/smartmet-plugin-meta<br>https://github.com/fmidev/smartmet-plugin-frontend<br>https://github.com/fmidev/smartmet-plugin-wfs<br>https://github.com/fmidev/smartmet-plugin-wms<br>https://github.com/fmidev/smartmet-plugin-autocomplete<br>https://github.com/fmidev/smartmet-plugin-backend<br>https://github.com/fmidev/smartmet-plugin-download<br>https://github.com/fmidev/smartmet-plugin-admin                     |
 
 ![](https://github.com/fmidev/smartmet-server/blob/master/SmartMet_Structure.png "Server structure")
+
+SmartMet Server consists of following components:
+
+<table>
+<tr>
+<th>Component</th><th>Description</th><th>Source Code</th>
+</tr>
+<tr valign="top">
+<td>qdtools         </td><td>Helper programs to handle underling data          </td><td> https://github.com/fmidev/smartmet-qdtools </td></tr>
+<tr valign="top">
+<td> Libraries       </td><td>Libraries required to run programs and the server </td><td> https://github.com/fmidev/smartmet-library-spine<br>
+     		     				    		     	 		  https://github.com/fmidev/smartmet-library-newbase<br>
+											  https://github.com/fmidev/smartmet-library-macgyver<br>
+											  https://github.com/fmidev/smartmet-library-gis<br>
+											  https://github.com/fmidev/smartmet-library-giza<br>
+											  https://github.com/fmidev/smartmet-library-locus<br>
+											  https://github.com/fmidev/smartmet-library-regression<br>
+											  https://github.com/fmidev/smartmet-library-imagine</td>
+</tr
+<tr valign="top"
+<td>Server          </td><td>The server daemon itself                          </td><td> https://github.com/fmidev/smartmet-server  </td>
+</tr>
+<tr valign="top"
+<td>Engines         </td><td>Common modules with a state                       </td><td> https://github.com/fmidev/smartmet-engine-geonames<br>
+											 https://github.com/fmidev/smartmet-engine-sputnik<br>
+											 https://github.com/fmidev/smartmet-engine-querydata<br>
+											 https://github.com/fmidev/smartmet-engine-observation<br>
+											 https://github.com/fmidev/smartmet-engine-contour<br>
+											 https://github.com/fmidev/smartmet-engine-gis </td>
+</tr>
+<tr valign="top"
+<td>Plugins         </td><td>Plugins providing interfaces to clients           </td><td> https://github.com/fmidev/smartmet-plugin-timeseries<br>
+											  https://github.com/fmidev/smartmet-plugin-meta<br>
+											  https://github.com/fmidev/smartmet-plugin-frontend<br>
+											  https://github.com/fmidev/smartmet-plugin-wfs<br>
+											  https://github.com/fmidev/smartmet-plugin-wms<br>
+											  https://github.com/fmidev/smartmet-plugin-autocomplete<br>
+											  https://github.com/fmidev/smartmet-plugin-backend<br>
+											  https://github.com/fmidev/smartmet-plugin-download<br>
+											  https://github.com/fmidev/smartmet-plugin-admin </td>
+</tr>
+</table>
 
 ## Licence
 The server is published with MIT-license. See [license](../blob/master/LICENCE)
