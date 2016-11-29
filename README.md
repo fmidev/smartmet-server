@@ -72,7 +72,7 @@ SmartMet Server consists of following components:
 </table>
 
 ## Licence
-The server is published with MIT-license. See [license](../../LICENCE)
+The server is published with MIT-license.
 
 ## How to contribute
 Found a bug? Want to implement a new feature? Your contribution is very welcome!
