@@ -47,7 +47,7 @@ SmartMet Server consists of following components:
 											  https://github.com/fmidev/smartmet-library-regression<br>
 											  https://github.com/fmidev/smartmet-library-imagine</td>
 </tr
-<tr valign="top"
+<tr valign="top">
 <td>Server          </td><td>The server daemon itself                          </td><td> https://github.com/fmidev/smartmet-server  </td>
 </tr>
 <tr valign="top"
@@ -58,7 +58,7 @@ SmartMet Server consists of following components:
 											 https://github.com/fmidev/smartmet-engine-contour<br>
 											 https://github.com/fmidev/smartmet-engine-gis </td>
 </tr>
-<tr valign="top"
+<tr valign="top">
 <td>Plugins         </td><td>Plugins providing interfaces to clients           </td><td> https://github.com/fmidev/smartmet-plugin-timeseries<br>
 											  https://github.com/fmidev/smartmet-plugin-meta<br>
 											  https://github.com/fmidev/smartmet-plugin-frontend<br>
