@@ -41,36 +41,6 @@ SmartMet Server consists of following components:
 ## Licence
 The server is published with MIT-license. See [license](../blob/master/LICENCE)
 
-## How to test
-Following steps are required to perform a quick experiment installation:
-
-1. Get RHEL7 or CentOS7 server
-2. Clone, compile and install following packages, note that libraries has to be installed before compaling other packages
-  * smartmet-library-spine 
-  * smartmet-library-newbase 
-  * smartmet-library-macgyver
-  * smartmet-library-gis
-  * smartmet-library-giza
-  * smartmet-library-locus
-  * smartmet-library-regression
-  * smartmet-library-imagine
-  * https://github.com/fmidev/smartmet-server
-  * https://github.com/fmidev/smartmet-engine-querydata
-  * https://github.com/fmidev/smartmet-engine-geo
-  * https://github.com/fmidev/smartmet-engine-contour
-  * https://github.com/fmidev/smartmet-engine-gis
-  * https://github.com/fmidev/smartmet-plugin-admin
-  * https://github.com/fmidev/smartmet-plugin-wms
-
-3. Get some data i.e. from `http://data.fmi.fi/fmi-apikey/__your-api-key__/download?producer=hirlam&param=Pressure,Temperature,DewPoint,Humidity,WindUMS,WindVMS,Precipitation1h&bbox=19.1000000138525,59.6999999968758,31.7000000148709,70.0999999955105&levels=0&format=querydata&projection=EPSG:4326`
-4. Configure your server (`/etc/smartmet-server.conf`) to contain compiled engines and plugins
-5. Configure you data direcotry to querydata engine (`/etc/smarmet-server/engine/querydata.conf`)
-6. Configure WMS layer to match your parameters (i.e. temperature) and data in querydata engine configuration (`/etc/smartmet-server/plugins/wms`). See https://github.com/fmidev/smartmet-plugin-wms/wiki/WMS-Tutorial for more details.
-7. Start the Server (`systemctl start smartmet-server`)
-8. Access your WMS layer i.e in `http://localhost/wms?request=GetMap&service=WMS&layers=fmi:pal:temperature&height=400&width=400&bbox=60,19,65,25&styles=&version=1.3.0&crs=EPSG:4326&format=image/png`
-
-If you are interested in using the server operatively, don't hesitate to contact us! 
-
 ## How to contribute
 Found a bug? Want to implement a new feature? Your contribution is very welcome!
 
