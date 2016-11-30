@@ -1,0 +1,9 @@
+/var/log/smartmet/*access-log {
+   daily
+   compress
+   delaycompress
+   rotate 7
+   missingok
+   copytruncate
+   dateext
+}

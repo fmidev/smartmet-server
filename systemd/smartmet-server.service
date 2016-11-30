@@ -1,0 +1,17 @@
+[Unit]
+Description=Smartmet Weather Server
+After=multi-user.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/smartmet/smartmetd.env
+ExecStart=/usr/sbin/smartmetd --configfile $CONFIGFILE
+LimitCORE=infinity
+
+Restart=always
+RestartSec=5s
+
+LimitNOFILE=999999999
+
+[Install]
+WantedBy=multi-user.target

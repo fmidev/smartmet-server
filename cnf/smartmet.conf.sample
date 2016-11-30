@@ -1,0 +1,145 @@
+// Options
+
+accesslogdir = "/var/log/smartmet/";
+
+port 		= 8080;
+
+slowpool:
+{
+  maxthreads = 15;
+  maxrequeuesize = 1000;
+};
+
+fastpool:
+{
+  maxthreads = 15;
+  maxrequeuesize = 1000;
+};
+
+
+lazylinking = false;
+
+defaultlogging = true;
+
+debug	       	= false;
+verbose		= true;
+
+engines:
+{
+	sputnik:
+	{
+	        configfile      = "/etc/smartmet/engines/sputnik.conf";
+	};
+	authentication:
+	{
+	        configfile      = "/etc/smartmet/engines/authentication.conf";
+	};
+	avi:
+	{
+	        configfile      = "/etc/smartmet/engines/avi.conf";
+	};
+	contour:
+	{
+	        configfile      = "/etc/smartmet/engines/contour.conf";
+	};
+	flash:
+	{
+	        configfile      = "/etc/smartmet/engines/flash.conf";
+	};
+	geonames:
+	{
+	        configfile      = "/etc/smartmet/engines/geonames.conf";
+	};
+	geoip:
+	{
+	        configfile      = "/etc/smartmet/engines/geoip.conf";
+	};
+	gis:
+	{
+	        configfile      = "/etc/smartmet/engines/gis.conf";
+	};
+	observation:
+	{
+	        configfile      = "/etc/smartmet/engines/observation.conf";
+	};
+	querydata:
+	{
+	        configfile      = "/etc/smartmet/engines/querydata.conf";
+	};
+	salami:
+	{
+	        configfile      = "/etc/smartmet/engines/salami.conf";
+	};
+};
+
+plugins:
+{
+	backend:
+	{
+		disabled	= true;
+		configfile	= "";
+	};
+	frontend:
+	{
+		disabled	= true;
+		configfile	= "/etc/smartmet/plugins/frontend.conf";
+	};
+	admin:
+	{
+	        configfile      = "/etc/smartmet/plugins/admin.conf";
+	};
+	autocomplete:
+	{
+	        configfile      = "/etc/smartmet/plugins/autocomplete.conf";
+	};
+	avi:
+	{
+	        configfile      = "/etc/smartmet/plugins/avi.conf";
+	};
+	cross_section:
+	{
+	        configfile      = "/etc/smartmet/plugins/cross_section.conf";
+	};
+	download:
+	{
+	        configfile      = "/etc/smartmet/plugins/download.conf";
+	};
+	flash:
+	{
+	        configfile      = "/etc/smartmet/plugins/flash.conf";
+	};
+	meta:
+	{
+	        configfile      = "/etc/smartmet/plugins/meta.conf";
+	};
+	observation:
+	{
+	        configfile      = "/etc/smartmet/plugins/observation.conf";
+	};
+	salami:
+	{
+	        configfile      = "/etc/smartmet/plugins/salami.conf";
+	};
+	textgen:
+	{
+	        configfile      = "/etc/smartmet/plugins/textgen.conf";
+	};
+	timeseries:
+	{
+	        configfile      = "/etc/smartmet/plugins/timeseries.conf";
+	};
+	trajectory:
+	{
+	        configfile      = "/etc/smartmet/plugins/trajectory.conf";
+	};
+	wfs:
+	{
+	        configfile      = "/etc/smartmet/plugins/wfs.conf";
+	};
+	wms:
+	{
+	        configfile      = "/etc/smartmet/plugins/wms.conf";
+	};
+};
+
+
