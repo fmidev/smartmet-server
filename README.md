@@ -1,5 +1,5 @@
 # SmartMet Server
-SmartMet Server is a data and procut server for MetOcean data. It provides high capacity and high availability data and product server for MetOcean data. The server is written in C++. 
+SmartMet Server is a data and product server for MetOcean data. It provides a high capacity and high availability data and product server for MetOcean data. The server is written in C++, since 2008 it has been in operational use by the Finnish Meteorological Institute FMI. 
 
 The server can read input data from various sources:
 * GRIB (1 and 2) 
@@ -36,7 +36,7 @@ SmartMet Server consists of following components:
 <th>Component</th><th>Description</th><th>Source Code</th>
 </tr>
 <tr valign="top">
-<td>qdtools         </td><td>Helper programs to handle underling data          </td><td> https://github.com/fmidev/smartmet-qdtools </td></tr>
+<td>qdtools         </td><td>Helper programs to handle underlying data          </td><td> https://github.com/fmidev/smartmet-qdtools </td></tr>
 <tr valign="top">
 <td> Libraries       </td><td>Libraries required to run programs and the server </td><td> https://github.com/fmidev/smartmet-library-spine<br>
      		     				    		     	 		  https://github.com/fmidev/smartmet-library-newbase<br>
