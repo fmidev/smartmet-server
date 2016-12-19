@@ -2,14 +2,14 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 16.11.30
+Version: 16.12.19
 Release: 1%{?dist}.fmi
 License: FMI
 Group: SmartMet/Daemons
 URL: http://www.weatherproof.fi
 Source0: smartmet-server.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires: smartmet-library-spine-devel >= 16.11.29
+BuildRequires: smartmet-library-spine-devel >= 16.11.30
 BuildRequires: boost-devel
 %if 0%{rhel} >= 7
 Requires: boost-filesystem
@@ -24,7 +24,7 @@ BuildRequires: libconfig-devel
 BuildRequires: libconfig
 BuildRequires: libsmartmet-macgyver-devel >= 16.9.30
 BuildRequires: jemalloc-devel
-Requires: smartmet-library-spine >= 16.11.29
+Requires: smartmet-library-spine >= 16.11.30
 Requires: libsmartmet-macgyver >= 16.9.30
 Requires: glibc
 Requires: libconfig
@@ -63,7 +63,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(0755,root,root,0755)
 %{_sbindir}/smartmetd
 %defattr(0644,root,root,0755)
-%congig{noreplace} /usr/lib/systemd/system/smartmet-server.service
+%config(noreplace) /usr/lib/systemd/system/smartmet-server.service
 %config(noreplace) %{_sysconfdir}/logrotate.d/smartmet-server
 
 
@@ -84,6 +84,9 @@ fi
 
 
 %changelog
+* Mon Dec 19 2016 Mika Heiskanen <mika.heiskanen@fmi.fi> - 16.12.19-1.fmi
+- Removed cache expiration headers added for load testing purposes
+
 * Wed Nov 30 2016 Mika Heiskanen <mika.heiskanen@fmi.fi> - 16.11.30-1.fmi
 - Removed installation of smartmet.conf
 

@@ -60,10 +60,7 @@ AsyncConnection::~AsyncConnection()
   }
 }
 
-boost::asio::ip::tcp::socket& AsyncConnection::socket()
-{
-  return itsSocket;
-}
+boost::asio::ip::tcp::socket& AsyncConnection::socket() { return itsSocket; }
 void AsyncConnection::handleTimer(const boost::system::error_code& err)
 {
   try
@@ -838,11 +835,6 @@ void AsyncConnection::setServerHeaders()
     itsResponse->setHeader("Vary", "Accept-Encoding");
 
     itsResponse->setHeader("Date", makeDateString());
-
-    // Removal of cache headers for testing purposes!
-    itsResponse->setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-
-    itsResponse->setHeader("Expires", "Thu, 01 Jan 1970 00:00:00 GMT");
 
     if (itsResponse->getVersion() == "1.1")
     {
