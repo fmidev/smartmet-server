@@ -4,7 +4,7 @@ Summary: SmartMet HTTP server
 Name: %{SPECNAME}
 Version: 17.1.4
 Release: 1%{?dist}.fmi
-License: FMI
+License: MIT
 Group: SmartMet/Daemons
 URL: http://www.weatherproof.fi
 Source0: smartmet-server.tar.gz
