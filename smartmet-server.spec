@@ -2,14 +2,14 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 16.12.19
+Version: 17.1.4
 Release: 1%{?dist}.fmi
 License: FMI
 Group: SmartMet/Daemons
 URL: http://www.weatherproof.fi
 Source0: smartmet-server.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires: smartmet-library-spine-devel >= 16.11.30
+BuildRequires: smartmet-library-spine-devel >= 17.1.4
 BuildRequires: boost-devel
 %if 0%{rhel} >= 7
 Requires: boost-filesystem
@@ -22,10 +22,10 @@ Requires: boost-system
 %endif
 BuildRequires: libconfig-devel
 BuildRequires: libconfig
-BuildRequires: libsmartmet-macgyver-devel >= 16.9.30
+BuildRequires: smartmet-library-macgyver-devel >= 16.12.20
 BuildRequires: jemalloc-devel
-Requires: smartmet-library-spine >= 16.11.30
-Requires: libsmartmet-macgyver >= 16.9.30
+Requires: smartmet-library-spine >= 17.1.4
+Requires: smartmet-library-macgyver >= 16.12.20
 Requires: glibc
 Requires: libconfig
 Requires: jemalloc-devel
@@ -84,6 +84,9 @@ fi
 
 
 %changelog
+* Wed Jan  4 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.1.4-1.fmi
+- Updated to using renamed newbase and macgyver libraries
+
 * Mon Dec 19 2016 Mika Heiskanen <mika.heiskanen@fmi.fi> - 16.12.19-1.fmi
 - Removed cache expiration headers added for load testing purposes
 

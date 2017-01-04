@@ -88,7 +88,7 @@ override LDFLAGS += -rdynamic
 
 LIBS = -L$(libdir) \
 	-lsmartmet-spine \
-	-lsmartmet_macgyver \
+	-lsmartmet-macgyver \
 	`pkg-config --libs libconfig++` \
 	-ldl \
 	-lboost_filesystem \
