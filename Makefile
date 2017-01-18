@@ -98,7 +98,7 @@ LIBS = -L$(libdir) \
 	-lboost_regex \
 	-lboost_thread \
 	-lboost_system \
-	-lcppformat \
+	-lfmt \
 	-lz -lpthread \
 	-ldw
 

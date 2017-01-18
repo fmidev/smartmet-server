@@ -2,15 +2,16 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 17.1.4
+Version: 17.1.18
 Release: 1%{?dist}.fmi
 License: MIT
 Group: SmartMet/Daemons
 URL: https://github.com/fmidev/smartmet-server
 Source0: smartmet-server.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires: smartmet-library-spine-devel >= 17.1.4
+BuildRequires: smartmet-library-spine-devel >= 17.1.12
 BuildRequires: boost-devel
+BuildRequires: fmt-devel
 %if 0%{rhel} >= 7
 Requires: boost-filesystem
 Requires: boost-date-time
@@ -22,10 +23,11 @@ Requires: boost-system
 %endif
 BuildRequires: libconfig-devel
 BuildRequires: libconfig
-BuildRequires: smartmet-library-macgyver-devel >= 16.12.20
+BuildRequires: smartmet-library-macgyver-devel >= 17.1.18
 BuildRequires: jemalloc-devel
-Requires: smartmet-library-spine >= 17.1.4
-Requires: smartmet-library-macgyver >= 16.12.20
+Requires: smartmet-library-spine >= 17.1.12
+Requires: smartmet-library-macgyver >= 17.1.18
+Requires: fmt
 Requires: glibc
 Requires: libconfig
 Requires: jemalloc-devel
@@ -84,6 +86,9 @@ fi
 
 
 %changelog
+* Wed Jan 18 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.1.18-1.fmi
+- Upgrade from cppformat-library to fmt
+
 * Wed Jan  4 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.1.4-1.fmi
 - Updated to using renamed newbase and macgyver libraries
 

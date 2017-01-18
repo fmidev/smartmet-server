@@ -10,7 +10,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <macgyver/String.h>
-#include <cppformat/format.h>
+#include <fmt/format.h>
 
 #include <sstream>
 #include <iomanip>
@@ -26,8 +26,8 @@ std::string makeDateString()
   {
     static const char* weekdays[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
 
-    static const char* months[] = {"",    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                                   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+    static const char* months[] = {
+        "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
     auto u_time = boost::posix_time::second_clock::universal_time();
     auto date = u_time.date();
