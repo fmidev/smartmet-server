@@ -1,17 +1,33 @@
 [Unit]
-Description=Smartmet Weather Server
-After=multi-user.target
 
+Description=Smartmet Weather Server
+
+# Not required, but must be started after if docker is in use
+After=docker.service
+# Requires=docker.service
+ 
 [Service]
+
+# Not a real daemon
 Type=simple
+
 EnvironmentFile=/etc/smartmet/smartmetd.env
 ExecStart=/usr/sbin/smartmetd --configfile $CONFIGFILE
+
 LimitCORE=infinity
 
+# Do not retry too fast if there are some I/O or similar issues
 Restart=always
 RestartSec=5s
 
-LimitNOFILE=999999999
+# We do not signal completion to systemd
+TimeoutStartSec=0
 
+# Wait for 30s for the server to stop before sending SIGTERM and another 30s before SIGKILL
+TimeoutStopSec=30s
+
+LimitNOFILE=999999999
+ 
 [Install]
+
 WantedBy=multi-user.target

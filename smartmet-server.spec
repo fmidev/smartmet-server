@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 17.1.18
+Version: 17.1.25
 Release: 1%{?dist}.fmi
 License: MIT
 Group: SmartMet/Daemons
@@ -86,6 +86,9 @@ fi
 
 
 %changelog
+* Wed Jan 25 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.1.25-1.fmi
+- Fixed docker vs smartmet-server startup sequence
+
 * Wed Jan 18 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.1.18-1.fmi
 - Upgrade from cppformat-library to fmt
 
