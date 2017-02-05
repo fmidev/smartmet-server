@@ -50,10 +50,6 @@ engines:
 	{
 	        configfile      = "/etc/smartmet/engines/geonames.conf";
 	};
-	geoip:
-	{
-	        configfile      = "/etc/smartmet/engines/geoip.conf";
-	};
 	gis:
 	{
 	        configfile      = "/etc/smartmet/engines/gis.conf";
