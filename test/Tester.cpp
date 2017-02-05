@@ -227,9 +227,9 @@ class Tester
 
   long itsCurrentResultInd;
 
-  boost::scoped_ptr<boost::thread> itsThread;
+  std::unique_ptr<boost::thread> itsThread;
 
-  boost::scoped_ptr<boost::asio::deadline_timer> itsTimer;
+  std::unique_ptr<boost::asio::deadline_timer> itsTimer;
 
   vector<Request> itsRequests;
 
