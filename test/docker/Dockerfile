@@ -23,6 +23,9 @@ RUN sed -i '/\[base\]/,/gpgkey=/{/gpgkey=/s/$/\'$'\n''exclude = postgres*/;}' /e
 # Note: EPEL is required by postgis and also supplies pv.
 
 RUN echo "ip_resolve=IPv4" >> /etc/yum.conf
+RUN curl -4 "https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm" -o /tmp/epel-release-latest-7.noarch.rpm
+RUN yum --nogpgcheck -y install /tmp/epel-release-latest-7.noarch.rpm
+
 RUN yum -y update 
 RUN yum -y localinstall https://download.postgresql.org/pub/repos/yum/9.5/redhat/rhel-7-x86_64/pgdg-centos95-9.5-2.noarch.rpm
 RUN yum -y install postgresql95 postgresql95-server postgresql95-contrib postgresql95-libs postgis2_95 pv && \
