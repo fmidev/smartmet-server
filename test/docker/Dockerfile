@@ -44,6 +44,7 @@ COPY avi-test.sql.gz /tmp
 COPY auth-test.sql.gz /tmp
 COPY icemap-test.sql.gz /tmp
 COPY icemap-copy.tar.gz /tmp
+COPY mosaic-radar-test.dmp.gz /tmp
 
 RUN tar xvf /tmp/icemap-copy.tar.gz -C /tmp
 
@@ -80,6 +81,8 @@ RUN /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} -o "-p 5432" start && \
     /usr/pgsql-9.5/bin/psql -c "CREATE USER iceservice WITH PASSWORD 'iceservice_pw';" && \
     /usr/pgsql-9.5/bin/psql avi admin -c "CREATE SCHEMA avidb_bs_ro;" && \
     /usr/pgsql-9.5/bin/psql avi admin -c "CREATE EXTENSION postgis SCHEMA avidb_bs_ro;" && \
+    /usr/pgsql-9.5/bin/psql gis admin -c "CREATE SCHEMA mosaic;" && \
+    /usr/pgsql-9.5/bin/psql gis admin -c "CREATE EXTENSION postgis SCHEMA mosaic;" && \
     /usr/pgsql-9.5/bin/psql icemap2storage_ro admin -c "CREATE SCHEMA icemap;" && \
     /usr/pgsql-9.5/bin/psql icemap2storage_ro admin -c "CREATE SCHEMA icemap_static;" && \
     /usr/pgsql-9.5/bin/psql icemap2storage_ro admin -c "CREATE EXTENSION postgis SCHEMA public;" && \
@@ -138,6 +141,13 @@ RUN cd /tmp/ && pv -f fminames-test.sql.gz | gunzip > fminames.sql && \
     rm /tmp/icemap.sql && \
     /usr/pgsql-9.5/bin/psql icemap2storage_ro -c "GRANT USAGE ON SCHEMA icemap,icemap_static TO iceservice;" && \
     /usr/pgsql-9.5/bin/psql icemap2storage_ro -c "GRANT SELECT ON ALL TABLES IN SCHEMA icemap,icemap_static TO iceservice;" && \
+
+    # Radar mosaic
+    pv -f /tmp/mosaic-radar-test.dmp.gz | gunzip | /usr/pgsql-9.5/bin/psql gis && \
+    rm /tmp/mosaic-radar-test.dmp.gz && \
+    /usr/pgsql-9.5/bin/psql gis admin -c "GRANT USAGE ON SCHEMA mosaic TO gis_user;" && \
+    /usr/pgsql-9.5/bin/psql gis admin -c "GRANT SELECT ON ALL TABLES IN SCHEMA mosaic TO gis_user;" && \
+
     /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} -o "-p 5432" stop
 
 RUN chmod 0700 ${PGDATA}
