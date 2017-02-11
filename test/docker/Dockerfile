@@ -22,6 +22,10 @@ RUN sed -i '/\[base\]/,/gpgkey=/{/gpgkey=/s/$/\'$'\n''exclude = postgres*/;}' /e
 # http://yum.postgresql.org/repopackages.php
 # Note: EPEL is required by postgis and also supplies pv.
 
+RUN echo "ip_resolve=IPv4" >> /etc/yum.conf
+RUN curl -4 "https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm" -o /tmp/epel-release-latest-7.noarch.rpm
+RUN yum --nogpgcheck -y install /tmp/epel-release-latest-7.noarch.rpm
+
 RUN yum -y update 
 RUN yum -y localinstall https://download.postgresql.org/pub/repos/yum/9.5/redhat/rhel-7-x86_64/pgdg-centos95-9.5-2.noarch.rpm
 RUN yum -y install postgresql95 postgresql95-server postgresql95-contrib postgresql95-libs postgis2_95 pv && \
@@ -40,6 +44,7 @@ COPY avi-test.sql.gz /tmp
 COPY auth-test.sql.gz /tmp
 COPY icemap-test.sql.gz /tmp
 COPY icemap-copy.tar.gz /tmp
+COPY mosaic-radar-test.dmp.gz /tmp
 
 RUN tar xvf /tmp/icemap-copy.tar.gz -C /tmp
 
@@ -48,8 +53,6 @@ RUN mkdir -p ${PGDATA}
 RUN mkdir -p /etc/provision /var/run/postgresql && \
     chown -R postgres ${PGDATA} /var/run/postgresql /tmp /etc/provision
 
-COPY etc/* /etc/provision/
-
 USER postgres
 
 # The first command (only needed once) is to initialize the database in PGDATA.
@@ -57,12 +60,13 @@ USER postgres
 RUN /usr/pgsql-9.5/bin/initdb -E 'UTF-8' -D ${PGDATA}
 
 COPY etc/postgresql.conf ${PGDATA}
+COPY etc/pg_hba.conf ${PGDATA}
 
 # Start the server and create database users.
 # -w is needed because otherwise createuser would run before the database is up.
 # The server is stopped gracefully in the last step to avoid an error in the next
 # layer, where the server is required to be running again.
-RUN /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} start && \
+RUN /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} -o "-p 5432" start && \
     createdb -E 'UTF-8' fminames && \
     createdb -e -E UTF8 gis && \
     createdb -e -E UTF8 avi && \
@@ -77,17 +81,19 @@ RUN /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} start && \
     /usr/pgsql-9.5/bin/psql -c "CREATE USER iceservice WITH PASSWORD 'iceservice_pw';" && \
     /usr/pgsql-9.5/bin/psql avi admin -c "CREATE SCHEMA avidb_bs_ro;" && \
     /usr/pgsql-9.5/bin/psql avi admin -c "CREATE EXTENSION postgis SCHEMA avidb_bs_ro;" && \
+    /usr/pgsql-9.5/bin/psql gis admin -c "CREATE SCHEMA mosaic;" && \
+    /usr/pgsql-9.5/bin/psql gis admin -c "CREATE EXTENSION postgis SCHEMA mosaic;" && \
     /usr/pgsql-9.5/bin/psql icemap2storage_ro admin -c "CREATE SCHEMA icemap;" && \
     /usr/pgsql-9.5/bin/psql icemap2storage_ro admin -c "CREATE SCHEMA icemap_static;" && \
     /usr/pgsql-9.5/bin/psql icemap2storage_ro admin -c "CREATE EXTENSION postgis SCHEMA public;" && \
 #   /usr/pgsql-9.5/bin/psql -c "ALTER USER admin NOLOGIN;" && \
-    /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} stop
+    /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} -o "-p 5432" stop
 
 # Populate database server from dumps. You might want to add
 # --set ON_ERROR_STOP=on as an argument to psql, but the current fminames SQL
 # dump will not load in that case.
 RUN cd /tmp/ && pv -f fminames-test.sql.gz | gunzip > fminames.sql && \
-    /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} start && \
+    /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} -o "-p 5432" start && \
     pv -f /tmp/fminames.sql | /usr/pgsql-9.5/bin/psql fminames && \
     /usr/pgsql-9.5/bin/psql fminames -c "GRANT INSERT ON public.geonames TO fminames_user;" && \
     rm /tmp/fminames.sql && \
@@ -135,12 +141,19 @@ RUN cd /tmp/ && pv -f fminames-test.sql.gz | gunzip > fminames.sql && \
     rm /tmp/icemap.sql && \
     /usr/pgsql-9.5/bin/psql icemap2storage_ro -c "GRANT USAGE ON SCHEMA icemap,icemap_static TO iceservice;" && \
     /usr/pgsql-9.5/bin/psql icemap2storage_ro -c "GRANT SELECT ON ALL TABLES IN SCHEMA icemap,icemap_static TO iceservice;" && \
-    /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} stop
+
+    # Radar mosaic
+    pv -f /tmp/mosaic-radar-test.dmp.gz | gunzip | /usr/pgsql-9.5/bin/psql gis && \
+    rm /tmp/mosaic-radar-test.dmp.gz && \
+    /usr/pgsql-9.5/bin/psql gis admin -c "GRANT USAGE ON SCHEMA mosaic TO gis_user;" && \
+    /usr/pgsql-9.5/bin/psql gis admin -c "GRANT SELECT ON ALL TABLES IN SCHEMA mosaic TO gis_user;" && \
+
+    /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} -o "-p 5432" stop
 
 RUN chmod 0700 ${PGDATA}
 
-# By default PostgreSQL listens on TCP port 5432.
-EXPOSE 5432
+# PostgreSQL is set to listen on TCP port 5444.
+EXPOSE 5444
 
 #Launch the daemon
-ENTRYPOINT ["/usr/pgsql-9.5/bin/postgres", "-D", "/var/lib/pgsql/data/9.5"]
+ENTRYPOINT exec /usr/pgsql-9.5/bin/postgres -o "-p 5444" -D /var/lib/pgsql/data/9.5
