@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 17.1.25
+Version: 17.2.16
 Release: 1%{?dist}.fmi
 License: MIT
 Group: SmartMet/Daemons
@@ -51,6 +51,7 @@ make %{_smp_mflags}
 
 %install
 %makeinstall
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/smartmet
 
 mkdir -p $RPM_BUILD_ROOT/etc/logrotate.d
 install -m 644 etc/smartmet-server-access-log-rotate $RPM_BUILD_ROOT/etc/logrotate.d/smartmet-server
@@ -67,7 +68,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(0644,root,root,0755)
 %config(noreplace) /usr/lib/systemd/system/smartmet-server.service
 %config(noreplace) %{_sysconfdir}/logrotate.d/smartmet-server
-
+%{_sysconfdir}/smartmet
 
 %post
 mkdir -p /var/log/smartmet
