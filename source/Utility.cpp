@@ -9,7 +9,7 @@
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-#include <macgyver/String.h>
+#include <macgyver/StringConversion.h>
 #include <fmt/format.h>
 
 #include <sstream>

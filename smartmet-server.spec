@@ -2,14 +2,14 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 17.2.16
+Version: 17.3.14
 Release: 1%{?dist}.fmi
 License: MIT
 Group: SmartMet/Daemons
 URL: https://github.com/fmidev/smartmet-server
 Source0: smartmet-server.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires: smartmet-library-spine-devel >= 17.1.12
+BuildRequires: smartmet-library-spine-devel >= 17.3.13
 BuildRequires: boost-devel
 BuildRequires: fmt-devel
 %if 0%{rhel} >= 7
@@ -23,10 +23,10 @@ Requires: boost-system
 %endif
 BuildRequires: libconfig-devel
 BuildRequires: libconfig
-BuildRequires: smartmet-library-macgyver-devel >= 17.1.18
+BuildRequires: smartmet-library-macgyver-devel >= 17.3.14
 BuildRequires: jemalloc-devel
-Requires: smartmet-library-spine >= 17.1.12
-Requires: smartmet-library-macgyver >= 17.1.18
+Requires: smartmet-library-spine >= 17.3.13
+Requires: smartmet-library-macgyver >= 17.3.14
 Requires: fmt
 Requires: glibc
 Requires: libconfig
@@ -87,6 +87,9 @@ fi
 
 
 %changelog
+* Tue Mar 14 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.3.14-1.fmi
+- Changed to use macgyver StringConversion.h
+
 * Wed Jan 25 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.1.25-1.fmi
 - Fixed docker vs smartmet-server startup sequence
 
