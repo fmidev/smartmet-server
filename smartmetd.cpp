@@ -103,7 +103,10 @@ void block_signals()
   catch (...)
   {
     SmartMet::Spine::Exception exception(BCP, "Operation failed!", NULL);
-    std::cerr << exception.getStackTrace();
+    if (exception.stackTraceDisabled())
+      std::cerr << exception.getStackTrace();
+    else if (!exception.loggingDisabled())
+      std::cerr << "Error: " << exception.what() << std::endl;
     kill(getpid(), SIGKILL);  // If we use exit() we might get a core dump.
                               // exit(-1);
   }
@@ -163,7 +166,12 @@ int main(int argc, char* argv[])
   catch (...)
   {
     SmartMet::Spine::Exception exception(BCP, "Operation failed!", NULL);
-    std::cerr << exception.getStackTrace();
+
+    if (exception.stackTraceDisabled())
+      std::cerr << exception.getStackTrace();
+    else if (!exception.loggingDisabled())
+      std::cerr << "Error: " << exception.what() << std::endl;
+
     return -1;
   }
 }

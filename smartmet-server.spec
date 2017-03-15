@@ -2,14 +2,14 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 17.3.14
+Version: 17.3.15
 Release: 1%{?dist}.fmi
 License: MIT
 Group: SmartMet/Daemons
 URL: https://github.com/fmidev/smartmet-server
 Source0: smartmet-server.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires: smartmet-library-spine-devel >= 17.3.13
+BuildRequires: smartmet-library-spine-devel >= 17.3.15
 BuildRequires: boost-devel
 BuildRequires: fmt-devel
 %if 0%{rhel} >= 7
@@ -25,7 +25,7 @@ BuildRequires: libconfig-devel
 BuildRequires: libconfig
 BuildRequires: smartmet-library-macgyver-devel >= 17.3.14
 BuildRequires: jemalloc-devel
-Requires: smartmet-library-spine >= 17.3.13
+Requires: smartmet-library-spine >= 17.3.15
 Requires: smartmet-library-macgyver >= 17.3.14
 Requires: fmt
 Requires: glibc
@@ -87,6 +87,9 @@ fi
 
 
 %changelog
+* Wed Mar 15 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.3.15-1.fmi
+- Recompiled since Spine::Exception changed
+
 * Tue Mar 14 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.3.14-1.fmi
 - Changed to use macgyver StringConversion.h
 
