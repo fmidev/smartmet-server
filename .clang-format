@@ -7,3 +7,13 @@ AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: false
 # 80 is too little
 ColumnLimit: 100
+
+IncludeCategories: 
+  - Regex:           '^"'
+    Priority:        1
+  - Regex:           '^<.*/.*\..*>'
+    Priority:        2
+  - Regex:           '^<.*'
+    Priority:        3
+  - Regex:           '.*'
+    Priority:        4
