@@ -9,30 +9,29 @@ Group: SmartMet/Daemons
 URL: https://github.com/fmidev/smartmet-server
 Source0: smartmet-server.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires: smartmet-library-spine-devel >= 17.3.15
 BuildRequires: boost-devel
+BuildRequires: elfutils-devel
 BuildRequires: fmt-devel
-%if 0%{rhel} >= 7
-Requires: boost-filesystem
+BuildRequires: jemalloc-devel
+BuildRequires: libconfig
+BuildRequires: libconfig-devel
+BuildRequires: smartmet-library-macgyver-devel >= 17.3.14
+BuildRequires: smartmet-library-spine-devel >= 17.3.15
 Requires: boost-date-time
+Requires: boost-filesystem
 Requires: boost-iostreams
 Requires: boost-program-options
 Requires: boost-regex
-Requires: boost-thread
 Requires: boost-system
-%endif
-BuildRequires: libconfig-devel
-BuildRequires: libconfig
-BuildRequires: smartmet-library-macgyver-devel >= 17.3.14
-BuildRequires: jemalloc-devel
-Requires: smartmet-library-spine >= 17.3.15
-Requires: smartmet-library-macgyver >= 17.3.14
+Requires: boost-thread
+Requires: elfutils-devel
 Requires: fmt
 Requires: glibc
-Requires: libconfig
-Requires: jemalloc-devel
 Requires: jemalloc
-Requires: elfutils-devel
+Requires: jemalloc-devel
+Requires: libconfig
+Requires: smartmet-library-macgyver >= 17.3.14
+Requires: smartmet-library-spine >= 17.3.15
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
