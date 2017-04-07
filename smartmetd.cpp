@@ -4,19 +4,19 @@
 #define BACKWARD_HAS_DW 1
 #include "backward.h"
 
-#include <spine/HTTP.h>
-#include <spine/SmartMet.h>
 #include <spine/Exception.h>
-#include <spine/Reactor.h>
+#include <spine/HTTP.h>
 #include <spine/Options.h>
+#include <spine/Reactor.h>
+#include <spine/SmartMet.h>
 
 #include <macgyver/AnsiEscapeCodes.h>
 
 #include <jemalloc/jemalloc.h>
 
+#include <sys/types.h>
 #include <iostream>
 #include <signal.h>
-#include <sys/types.h>
 
 SmartMet::Server::Server* theServer = NULL;
 SmartMet::Spine::Reactor* theReactor = NULL;
@@ -74,6 +74,10 @@ void block_signals()
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGWINCH, &action, NULL);
 
+    // We also want to record other common non-core dumping signals
+    sigaction(SIGHUP, &action, NULL);
+    sigaction(SIGINT, &action, NULL);
+
     backward::SignalHandling sh(core_signals);
 
     // Save heap profile if it has been enabled
@@ -124,12 +128,16 @@ int main(int argc, char* argv[])
     while (true)
     {
       pause();
-      std::cout << "\n" << ANSI_BG_RED << ANSI_BOLD_ON << ANSI_FG_WHITE << "Signal '"
+
+      std::cout << "\n"
+                << ANSI_BG_RED << ANSI_BOLD_ON << ANSI_FG_WHITE << "Signal '"
                 << strsignal(last_signal) << "' (" << last_signal << ") received ";
+
       if (last_signal == SIGBUS || last_signal == SIGWINCH)
       {
         std::cout << " - ignoring it!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
                   << std::endl;
+        last_signal = 0;
       }
       else if (last_signal == SIGTERM)
       {

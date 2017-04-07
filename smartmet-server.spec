@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 17.3.15
+Version: 17.4.7
 Release: 1%{?dist}.fmi
 License: MIT
 Group: SmartMet/Daemons
@@ -86,6 +86,9 @@ fi
 
 
 %changelog
+* Fri Apr  7 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.4.7-1.fmi
+- Improved signal handling
+
 * Wed Mar 15 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.3.15-1.fmi
 - Recompiled since Spine::Exception changed
 
