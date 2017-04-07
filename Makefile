@@ -17,6 +17,12 @@ else
   libdir = $(PREFIX)/lib
 endif
 
+ifeq ($(origin SYSCONFDIR), undefined)
+  sysconfdir = /etc
+else
+  sysconfdir = $(SYSCONFDIR)
+endif
+
 sharedir = $(PREFIX)/share
 
 objdir = obj
@@ -170,12 +176,17 @@ format:
 	clang-format -i -style=file include/*.h source/*.cpp test/*.cpp
 
 install:
-	mkdir -p $(sbindir)
+	@mkdir -p $(sbindir)
 	@list='$(PROG)'; \
 	for prog in $$list; do \
 	  echo $(INSTALL_PROG) $$prog $(sbindir)/$$prog; \
 	  $(INSTALL_PROG) $$prog $(sbindir)/$$prog; \
 	done
+	@mkdir -p $(sysconfdir)/smartmet
+	@mkdir -p $(sysconfdir)/logrotate.d
+	$(INSTALL_DATA) etc/smartmet-server-access-log-rotate $(sysconfdir)/logrotate.d/smartmet-server
+	@mkdir -p $(libdir)/../lib/systemd/system
+	$(INSTALL_DATA) systemd/smartmet-server.service $(libdir)/../lib/systemd/system/
 
 test:
 	cd test && make test

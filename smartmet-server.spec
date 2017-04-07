@@ -50,13 +50,6 @@ make %{_smp_mflags}
 
 %install
 %makeinstall
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/smartmet
-
-mkdir -p $RPM_BUILD_ROOT/etc/logrotate.d
-install -m 644 etc/smartmet-server-access-log-rotate $RPM_BUILD_ROOT/etc/logrotate.d/smartmet-server
-
-mkdir -p $RPM_BUILD_ROOT/usr/lib/systemd/system
-install -m 644 systemd/smartmet-server.service $RPM_BUILD_ROOT/usr/lib/systemd/system/smartmet-server.service
 
 %clean
 rm -rf $RPM_BUILD_ROOT
