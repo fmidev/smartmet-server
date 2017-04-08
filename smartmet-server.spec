@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 17.4.7
+Version: 17.4.8
 Release: 1%{?dist}.fmi
 License: MIT
 Group: SmartMet/Daemons
@@ -15,8 +15,8 @@ BuildRequires: fmt-devel
 BuildRequires: jemalloc-devel
 BuildRequires: libconfig
 BuildRequires: libconfig-devel
-BuildRequires: smartmet-library-macgyver-devel >= 17.3.14
-BuildRequires: smartmet-library-spine-devel >= 17.3.15
+BuildRequires: smartmet-library-macgyver-devel >= 17.3.16
+BuildRequires: smartmet-library-spine-devel >= 17.4.8
 Requires: boost-date-time
 Requires: boost-filesystem
 Requires: boost-iostreams
@@ -30,8 +30,8 @@ Requires: glibc
 Requires: jemalloc
 Requires: jemalloc-devel
 Requires: libconfig
-Requires: smartmet-library-macgyver >= 17.3.14
-Requires: smartmet-library-spine >= 17.3.15
+Requires: smartmet-library-macgyver >= 17.3.16
+Requires: smartmet-library-spine >= 17.4.8
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -79,6 +79,9 @@ fi
 
 
 %changelog
+* Sat Apr  8 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.4.8-1.fmi
+- Simplified error handling
+
 * Fri Apr  7 2017 Mika Heiskanen <mika.heiskanen@fmi.fi> - 17.4.7-1.fmi
 - Improved signal handling
 
