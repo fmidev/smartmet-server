@@ -1,19 +1,19 @@
+#include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <fstream>
 
 #include <spine/HTTP.h>
 
-#include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/asio.hpp>
-#include <boost/foreach.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/array.hpp>
+#include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/foreach.hpp>
+#include <boost/program_options.hpp>
 
 #include <macgyver/ThreadPool.h>
 
@@ -139,7 +139,7 @@ class Tester
     }
 
     itsSignals.add(SIGQUIT);
-
+    itsSignals.add(SIGALRM);
     itsSignals.async_wait(boost::bind(&Tester::handleSignal, this, _1, _2));
 
     itsTimer.reset(new boost::asio::deadline_timer(itsIO));
@@ -264,7 +264,7 @@ class Tester
   {
     itsIO.stop();
     itsThreadPool->shutdown();
-    if (signal_number == 3)  // SigQuit should print results
+    if (signal_number == SIGQUIT)  // SigQuit should print results
     {
       itsPrintResults = true;
     }
@@ -383,6 +383,7 @@ int main(int argc, const char* argv[])
   string host;
   unsigned short port;
   string suite_file;
+  unsigned int timeout;
 
   po::options_description desc("Allowed Options");
 
@@ -390,7 +391,8 @@ int main(int argc, const char* argv[])
       "host,H", po::value<string>(&host)->default_value("brainstormgw.fmi.fi"), "Host")(
       "port,p", po::value<unsigned short>(&port)->default_value(80), "Port")(
       "suite,s", po::value<string>(&suite_file), "File from which to read the suite")(
-      "threads,t", po::value<unsigned int>(&threads)->default_value(5), "Number of worker threads");
+      "threads,t", po::value<unsigned int>(&threads)->default_value(5), "Number of worker threads")(
+      "timeout,T", po::value<unsigned int>(&timeout)->default_value(0), "Run for this many seconds and exit");
 
   po::variables_map vmap;
 
@@ -427,10 +429,17 @@ int main(int argc, const char* argv[])
 
   std::cerr << "Succesfully probed, running test..." << std::endl;
 
+  if (timeout > 0)
+  {
+    std::cerr << "Running a maximum of " << timeout << " seconds" << std::endl;
+    alarm(timeout);
+  }
   theTester.run();
 
   if (theTester.getPrintResults())
   {
     theTester.printResults();
   }
+
+  std::cerr << "Testing concluded" << std::endl;
 }
