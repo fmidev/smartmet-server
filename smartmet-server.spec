@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 17.8.28
+Version: 17.11.10
 Release: 1%{?dist}.fmi
 License: MIT
 Group: SmartMet/Daemons
@@ -18,7 +18,7 @@ BuildRequires: jemalloc-devel
 BuildRequires: libconfig
 BuildRequires: libconfig-devel
 BuildRequires: smartmet-library-macgyver-devel >= 17.8.28
-BuildRequires: smartmet-library-spine-devel >= 17.8.28
+BuildRequires: smartmet-library-spine-devel >= 17.11.10
 Requires: boost-date-time
 Requires: boost-filesystem
 Requires: boost-iostreams
@@ -33,7 +33,7 @@ Requires: jemalloc
 Requires: jemalloc-devel
 Requires: libconfig
 Requires: smartmet-library-macgyver >= 17.8.28
-Requires: smartmet-library-spine >= 17.8.28
+Requires: smartmet-library-spine >= 17.11.10
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
