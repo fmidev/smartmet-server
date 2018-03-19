@@ -43,6 +43,11 @@ COPY avi-test.sql.gz /tmp
 COPY auth-test.sql.gz /tmp
 COPY icemap-test.sql.gz /tmp
 COPY icemap-copy.tar.gz /tmp
+COPY icemappublications-test.dmp.gz /tmp
+COPY iceeggannotation-test.dmp.gz /tmp
+COPY icemapmetadata-test.dmp.gz /tmp
+COPY map_number-test.dmp.gz /tmp
+COPY strptc-test.dmp.gz /tmp
 COPY mosaic-radar-test.dmp.gz /tmp
 
 RUN tar xvf /tmp/icemap-copy.tar.gz -C /tmp && \
@@ -91,7 +96,7 @@ RUN /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} -o "-p 5432" start && \
     # dump will not load in that case.
     cd /tmp/ && pv -f fminames-test.sql.gz | gunzip > fminames.sql && \
     /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} -o "-p 5432" start && \
-    pv -f /tmp/fminames.sql | /usr/pgsql-9.5/bin/psql fminames && \
+    pv -f /tmp/fminames.sql | sed 's/postgis\-2\.1/postgis\-2\.3/g' | /usr/pgsql-9.5/bin/psql fminames && \
     /usr/pgsql-9.5/bin/psql fminames -c "GRANT INSERT ON public.geonames TO fminames_user;" && \
     rm /tmp/fminames.sql && \
     pv -f /tmp/fminames-altadditional-test.dmp.gz | gunzip > fminames-altadditional.dmp && \
@@ -108,7 +113,7 @@ RUN /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} -o "-p 5432" start && \
     rm /tmp/fminames-kwhgnadditional.dmp && \
     /usr/pgsql-9.5/bin/psql fminames -c "GRANT SELECT ON ALL TABLES IN SCHEMA public TO fminames_user;" && \
     pv -f gis-test.sql.gz | gunzip | grep -v "OWNER TO partio;" > gis.sql && \
-    pv -f /tmp/gis.sql | /usr/pgsql-9.5/bin/psql gis && \
+    pv -f /tmp/gis.sql | sed 's/postgis\-2\.1/postgis\-2\.3/g' | /usr/pgsql-9.5/bin/psql gis && \
     /usr/pgsql-9.5/bin/psql gis admin -c "SELECT UpdateGeometrySRID('natural_earth', 'admin_0_countries', 'the_geom', 4326);" && \
     /usr/pgsql-9.5/bin/psql gis admin -c "GRANT USAGE ON SCHEMA public TO gis_user;" && \
     rm /tmp/gis.sql && \
@@ -121,10 +126,9 @@ RUN /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} -o "-p 5432" start && \
     sed -i 's/ TO avidb_iwxxm/ TO admin/g' avi.sql && \
     pv -f /tmp/avi.sql | /usr/pgsql-9.5/bin/psql avi && \
     rm /tmp/avi.sql && \
-    /usr/pgsql-9.5/bin/psql avi -c "ALTER SCHEMA avidb_bs_ro RENAME TO avi_user;" && \
-    /usr/pgsql-9.5/bin/psql avi -c "GRANT USAGE ON SCHEMA avi_user TO avi_user;" && \
-    /usr/pgsql-9.5/bin/psql -c "ALTER ROLE avi_user SET search_path TO avi_user,public;" && \
-    /usr/pgsql-9.5/bin/psql avi -c "GRANT SELECT ON ALL TABLES IN SCHEMA avi_user,public TO avi_user;" && \
+    /usr/pgsql-9.5/bin/psql avi -c "GRANT USAGE ON SCHEMA avidb_bs_ro TO avi_user;" && \
+    /usr/pgsql-9.5/bin/psql -c "ALTER ROLE avi_user SET search_path TO avidb_bs_ro,public;" && \
+    /usr/pgsql-9.5/bin/psql avi -c "GRANT SELECT ON ALL TABLES IN SCHEMA avidb_bs_ro,public TO avi_user;" && \
     /usr/pgsql-9.5/bin/psql avi -c "DROP FUNCTION public.avidb_messages_part_trig_func();" && \
     pv -f auth-test.sql.gz | gunzip > auth.sql && \
     sed -i 's/weatherproof_../admin/g' auth.sql && \
@@ -134,6 +138,16 @@ RUN /usr/pgsql-9.5/bin/pg_ctl -w -s -D ${PGDATA} -o "-p 5432" start && \
     /usr/pgsql-9.5/bin/psql authentication -c "GRANT SELECT ON ALL TABLES IN SCHEMA authengine_test TO auth_user;" && \
     pv -f /tmp/icemap-test.sql.gz | gunzip > icemap.sql && \
     pv -f /tmp/icemap.sql | /usr/pgsql-9.5/bin/psql icemap2storage_ro admin && \
+    pv -f /tmp/icemappublications-test.dmp.gz | gunzip > icemappublications.sql && \
+    pv -f /tmp/icemappublications.sql | /usr/pgsql-9.5/bin/psql icemap2storage_ro admin && \
+    pv -f /tmp/iceeggannotation-test.dmp.gz | gunzip > iceeggannotation.sql && \
+    pv -f /tmp/iceeggannotation.sql | /usr/pgsql-9.5/bin/psql icemap2storage_ro admin && \
+    pv -f /tmp/icemapmetadata-test.dmp.gz | gunzip > icemapmetadata.sql && \
+    pv -f /tmp/icemapmetadata.sql | /usr/pgsql-9.5/bin/psql icemap2storage_ro admin && \
+    pv -f /tmp/map_number-test.dmp.gz | gunzip > map_number.sql && \
+    pv -f /tmp/map_number.sql | /usr/pgsql-9.5/bin/psql icemap2storage_ro admin && \
+    pv -f /tmp/strptc-test.dmp.gz | gunzip > strptc.sql && \
+    pv -f /tmp/strptc.sql | /usr/pgsql-9.5/bin/psql icemap2storage_ro admin && \
     /usr/pgsql-9.5/bin/psql icemap2storage_ro admin -a -f /tmp/icemap-copy.sql && \
     rm /tmp/icemap.sql && \
     /usr/pgsql-9.5/bin/psql icemap2storage_ro -c "GRANT USAGE ON SCHEMA icemap,icemap_static TO iceservice;" && \
@@ -153,4 +167,3 @@ EXPOSE 5444
 
 #Launch the daemon
 ENTRYPOINT exec /usr/pgsql-9.5/bin/postgres -o "-p 5444" -D /var/lib/pgsql/data/9.5
-
