@@ -59,16 +59,16 @@
 #endif
 #endif
 
-#include <fstream>
-#include <iostream>
 #include <algorithm>
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
 #include <cctype>
-#include <string>
-#include <new>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
 #include <iomanip>
+#include <iostream>
+#include <new>
+#include <string>
 #include <vector>
 
 #if defined(BACKWARD_SYSTEM_LINUX)
@@ -176,13 +176,13 @@ extern "C" uintptr_t _Unwind_GetIPInfo(_Unwind_Context*, int*);
 
 #endif
 
+#include <sys/stat.h>
 #include <cxxabi.h>
 #include <fcntl.h>
 #include <link.h>
-#include <sys/stat.h>
+#include <signal.h>
 #include <syscall.h>
 #include <unistd.h>
-#include <signal.h>
 
 #if BACKWARD_HAS_BFD == 1
 //              NOTE: defining PACKAGE{,_VERSION} is required before including
@@ -526,6 +526,7 @@ class StackTraceLinuxImplBase
  public:
   StackTraceLinuxImplBase() : _thread_id(0), _skip(0) {}
   unsigned thread_id() const { return _thread_id; }
+
  protected:
   void load_thread_info()
   {
@@ -540,6 +541,7 @@ class StackTraceLinuxImplBase
 
   void skip_n_firsts(size_t n) { _skip = n; }
   size_t skip_n_firsts() const { return _skip; }
+
  private:
   size_t _thread_id;
   size_t _skip;
@@ -747,6 +749,7 @@ class TraceResolverLinuxImplBase
 {
  protected:
   std::string demangle(const char* funcname) { return _demangler.demangle(funcname); }
+
  private:
   details::demangler _demangler;
 };
@@ -1730,8 +1733,8 @@ class SnippetFactory
   {
     SourceFile& src_file = get_src_file(filename);
 
-    using std::min;
     using std::max;
+    using std::min;
     unsigned a = min(line_a, line_b);
     unsigned b = max(line_a, line_b);
 
@@ -2065,6 +2068,7 @@ class SignalHandling
   }
 
   bool loaded() const { return _loaded; }
+
  private:
   details::handle<char*> _stack_content;
   bool _loaded;

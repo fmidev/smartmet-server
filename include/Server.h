@@ -13,9 +13,9 @@
 #include <boost/asio.hpp>
 #include <boost/noncopyable.hpp>
 
-#include <spine/Reactor.h>
-#include <spine/Options.h>
 #include "Connection.h"
+#include <spine/Options.h>
+#include <spine/Reactor.h>
 
 namespace SmartMet
 {

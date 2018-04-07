@@ -30,10 +30,10 @@ namespace Server
 /*!
  * \brief Declaration of the Async Server object
  *
-     * This server is uses Half-Sync Half-Async (hahs) paradigm to handle
-     * requests. Network operations (socket reading and writing, request
-     * parsing) are done asynchronously with boost::asio IO service, while
-     * content production is threadpooled (and in that sense, run synchronously).
+ * This server is uses Half-Sync Half-Async (hahs) paradigm to handle
+ * requests. Network operations (socket reading and writing, request
+ * parsing) are done asynchronously with boost::asio IO service, while
+ * content production is threadpooled (and in that sense, run synchronously).
  */
 // ======================================================================
 class AsyncServer : public Server

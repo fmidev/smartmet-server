@@ -1,7 +1,7 @@
 #include "AsyncServer.h"
-#include <spine/Exception.h>
-#include <boost/thread.hpp>
 #include <boost/bind.hpp>
+#include <boost/thread.hpp>
+#include <spine/Exception.h>
 
 namespace SmartMet
 {

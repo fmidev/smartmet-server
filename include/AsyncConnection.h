@@ -7,15 +7,15 @@
 // ======================================================================
 
 #pragma once
-#include <boost/asio.hpp>
 #include <boost/array.hpp>
+#include <boost/asio.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <spine/HTTP.h>
-#include <spine/Reactor.h>
-#include <spine/HandlerView.h>
 #include <macgyver/ThreadPool.h>
+#include <spine/HTTP.h>
+#include <spine/HandlerView.h>
+#include <spine/Reactor.h>
 
 #include "Connection.h"
 

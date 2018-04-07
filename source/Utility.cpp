@@ -3,18 +3,18 @@
 
 #include <spine/Exception.h>
 
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
 
-#include <macgyver/StringConversion.h>
 #include <fmt/format.h>
+#include <macgyver/StringConversion.h>
 
-#include <sstream>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 
 namespace SmartMet
 {

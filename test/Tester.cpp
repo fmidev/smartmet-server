@@ -392,7 +392,9 @@ int main(int argc, const char* argv[])
       "port,p", po::value<unsigned short>(&port)->default_value(80), "Port")(
       "suite,s", po::value<string>(&suite_file), "File from which to read the suite")(
       "threads,t", po::value<unsigned int>(&threads)->default_value(5), "Number of worker threads")(
-      "timeout,T", po::value<unsigned int>(&timeout)->default_value(0), "Run for this many seconds and exit");
+      "timeout,T",
+      po::value<unsigned int>(&timeout)->default_value(0),
+      "Run for this many seconds and exit");
 
   po::variables_map vmap;
 

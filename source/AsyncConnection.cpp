@@ -5,13 +5,13 @@
 //===================================
 
 #include "AsyncConnection.h"
-#include "Utility.h"
 #include "AsyncServer.h"
+#include "Utility.h"
 
 #include <spine/Exception.h>
 
-#include <vector>
 #include <sstream>
+#include <vector>
 
 #include <boost/bind.hpp>
 
@@ -60,7 +60,10 @@ AsyncConnection::~AsyncConnection()
   }
 }
 
-boost::asio::ip::tcp::socket& AsyncConnection::socket() { return itsSocket; }
+boost::asio::ip::tcp::socket& AsyncConnection::socket()
+{
+  return itsSocket;
+}
 void AsyncConnection::handleTimer(const boost::system::error_code& err)
 {
   try
@@ -531,8 +534,8 @@ void AsyncConnection::writeChunkedReply(const boost::system::error_code& e,
     }
     else
     {
-      reportInfo("Error in chunked reply send to " + itsRequest->getClientIP() + ". Reason: " +
-                 e.message());
+      reportInfo("Error in chunked reply send to " + itsRequest->getClientIP() +
+                 ". Reason: " + e.message());
     }
   }
   catch (...)
@@ -569,8 +572,8 @@ void AsyncConnection::finalizeChunkedReply(const boost::system::error_code& e,
     }
     else
     {
-      reportInfo("Error in chunked reply send to " + itsRequest->getClientIP() + ". Reason: " +
-                 e.message());
+      reportInfo("Error in chunked reply send to " + itsRequest->getClientIP() +
+                 ". Reason: " + e.message());
     }
   }
   catch (...)
@@ -719,8 +722,8 @@ void AsyncConnection::writeStreamReply(const boost::system::error_code& e,
     }
     else
     {
-      reportInfo("Error in stream reply send to " + itsRequest->getClientIP() + ". Reason: " +
-                 e.message());
+      reportInfo("Error in stream reply send to " + itsRequest->getClientIP() +
+                 ". Reason: " + e.message());
       if (itsResponse->isGatewayResponse)
       {
         // If the response is a gateway response (sent by frontend plugin) call the associated hooks
@@ -767,8 +770,8 @@ void AsyncConnection::writeRegularReply(const boost::system::error_code& e,
     }
     else
     {
-      reportInfo("Error in reply send to " + itsRequest->getClientIP() + ". Reason: " +
-                 e.message());
+      reportInfo("Error in reply send to " + itsRequest->getClientIP() +
+                 ". Reason: " + e.message());
     }
   }
   catch (...)
