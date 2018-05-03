@@ -423,7 +423,7 @@ void AsyncConnection::startChunkedReply()
         return;
       }
     }
-    catch (std::runtime_error&)
+    catch (const std::runtime_error&)
     {
       boost::system::error_code e;
       reportInfo("Response status not set, defaulting to 501 Not Implemented");
@@ -475,7 +475,7 @@ void AsyncConnection::startStreamReply()
         return;
       }
     }
-    catch (std::runtime_error&)
+    catch (const std::runtime_error&)
     {
       boost::system::error_code e;
       reportInfo("Response status not set, defaulting to 501 Not Implemented");
@@ -802,7 +802,7 @@ void AsyncConnection::startRegularReply()
     {
       headers = itsResponse->headersToString();
     }
-    catch (std::runtime_error&)
+    catch (const std::runtime_error&)
     {
       reportInfo("Response status not set, defaulting to 501 Not Implemented");
       itsResponse->setStatus(SmartMet::Spine::HTTP::Status::not_implemented, true);

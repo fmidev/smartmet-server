@@ -37,7 +37,7 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
     {
       itsAcceptor.bind(endpoint);
     }
-    catch (boost::system::system_error& err)
+    catch (const boost::system::system_error& err)
     {
       std::cout << "Error: Unable to bind listening socket to port " << theOptions.port
                 << std::endl;
