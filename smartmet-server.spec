@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 18.4.7
+Version: 18.4.9
 Release: 1%{?dist}.fmi
 License: MIT
 Group: SmartMet/Daemons
@@ -19,7 +19,7 @@ BuildRequires: jemalloc-devel
 BuildRequires: libconfig
 BuildRequires: libconfig-devel
 BuildRequires: smartmet-library-macgyver-devel >= 18.4.7
-BuildRequires: smartmet-library-spine-devel >= 18.4.7
+BuildRequires: smartmet-library-spine-devel >= 18.5.9
 Requires: boost-date-time
 Requires: boost-filesystem
 Requires: boost-iostreams
@@ -34,7 +34,7 @@ Requires: jemalloc
 Requires: jemalloc-devel
 Requires: libconfig
 Requires: smartmet-library-macgyver >= 18.4.7
-Requires: smartmet-library-spine >= 18.4.7
+Requires: smartmet-library-spine >= 18.5.9
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -82,6 +82,9 @@ fi
 
 
 %changelog
+* Wed May  9 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.4.9-1.fmi
+- Repackaged since Reactor ABI changed
+
 * Sat Apr  7 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.4.7-1.fmi
 - Upgrade to boost 1.66
 
