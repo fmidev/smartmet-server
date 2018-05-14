@@ -123,6 +123,12 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
       return;
     }
 
+    if (itsReactor.isLoadHigh())
+    {
+      sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
+      return;
+    }
+
     // Initialize the connection status.
     itsFinalStatus = e;
 
