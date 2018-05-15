@@ -23,11 +23,6 @@ namespace SmartMet
 {
 namespace Server
 {
-// Max request size in bytes
-#ifndef MAX_REQUEST_SIZE
-#define MAX_REQUEST_SIZE 131072
-#endif
-
 class AsyncServer;
 
 // ======================================================================
@@ -67,6 +62,7 @@ class AsyncConnection : public Connection,
   explicit AsyncConnection(AsyncServer* serverInstance,
                            bool canGzipResponse,
                            std::size_t compressLimit,
+                           std::size_t maxRequestSize,
                            long timeout,
                            bool dumpRequests,
                            boost::asio::io_service& io_service,

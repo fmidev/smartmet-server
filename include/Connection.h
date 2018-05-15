@@ -31,6 +31,7 @@ class Connection
   explicit Connection(Server* theServer,
                       bool canGzipResponse,
                       std::size_t compressLimit,
+                      std::size_t maxRequestSize,
                       long timeout,
                       bool dumpRequests,
                       boost::asio::io_service& io_service,
@@ -107,6 +108,9 @@ class Connection
 
   /// Response compression limit
   std::size_t itsCompressLimit;
+
+  // Maximum request size (0=unlimited)
+  std::size_t itsMaxRequestSize;
 
   /// Connection timeout in seconds
   long itsTimeout;

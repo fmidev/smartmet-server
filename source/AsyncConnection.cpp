@@ -22,6 +22,7 @@ namespace Server
 AsyncConnection::AsyncConnection(AsyncServer* serverInstance,
                                  bool canGzipResponse,
                                  std::size_t compressLimit,
+                                 std::size_t maxRequestSize,
                                  long timeout,
                                  bool dumpRequests,
                                  boost::asio::io_service& io_service,
@@ -31,6 +32,7 @@ AsyncConnection::AsyncConnection(AsyncServer* serverInstance,
     : Connection(serverInstance,
                  canGzipResponse,
                  compressLimit,
+                 maxRequestSize,
                  timeout,
                  dumpRequests,
                  io_service,
@@ -136,7 +138,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
     {
       itsReceivedBytes += bytes_transferred;
 
-      if (itsReceivedBytes > MAX_REQUEST_SIZE)
+      if (itsMaxRequestSize > 0 && itsReceivedBytes > itsMaxRequestSize)
       {
         // Request is larger than the incoming buffer size.
 

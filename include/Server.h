@@ -74,6 +74,9 @@ class Server : private boost::noncopyable
   /// Compression limit for responses
   std::size_t itsCompressLimit;
 
+  // Maximum request size (0=unlimited)
+  std::size_t itsMaxRequestSize;
+
   /// Connection timeout in seconds
   long itsTimeout;
 

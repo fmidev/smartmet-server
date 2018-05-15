@@ -100,6 +100,7 @@ void AsyncServer::startAccept()
     itsNewConnection.reset(new AsyncConnection(this,
                                                itsCanGzip,
                                                itsCompressLimit,
+                                               itsMaxRequestSize,
                                                itsTimeout,
                                                itsDumpRequests,
                                                itsIoService,

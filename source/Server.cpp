@@ -18,6 +18,7 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
       itsFastExecutor(theOptions.fastpool.minsize, theOptions.fastpool.maxrequeuesize),
       itsCanGzip(theOptions.compress),
       itsCompressLimit(theOptions.compresslimit),
+      itsMaxRequestSize(theOptions.maxrequestsize),
       itsTimeout(theOptions.timeout),
       itsDumpRequests(theOptions.logrequests),
       itsShutdownRequested(false)
