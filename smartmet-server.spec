@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 18.5.15
+Version: 18.6.6
 Release: 1%{?dist}.fmi
 License: MIT
 Group: SmartMet/Daemons
@@ -18,8 +18,8 @@ BuildRequires: fmt-devel
 BuildRequires: jemalloc-devel
 BuildRequires: libconfig
 BuildRequires: libconfig-devel
-BuildRequires: smartmet-library-macgyver-devel >= 18.4.11
-BuildRequires: smartmet-library-spine-devel >= 18.5.15
+BuildRequires: smartmet-library-macgyver-devel >= 18.5.23
+BuildRequires: smartmet-library-spine-devel >= 18.6.6
 Requires: boost-date-time
 Requires: boost-filesystem
 Requires: boost-iostreams
@@ -27,14 +27,12 @@ Requires: boost-program-options
 Requires: boost-regex
 Requires: boost-system
 Requires: boost-thread
-Requires: elfutils-devel
 Requires: fmt
 Requires: glibc
 Requires: jemalloc
-Requires: jemalloc-devel
 Requires: libconfig
-Requires: smartmet-library-macgyver >= 18.4.11
-Requires: smartmet-library-spine >= 18.5.15
+Requires: smartmet-library-macgyver >= 18.5.23
+Requires: smartmet-library-spine >= 18.6.6
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -82,6 +80,9 @@ fi
 
 
 %changelog
+* Wed Jun  6 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.6.6-1.fmi
+- Removed incorrect dependencies on devel-packages
+
 * Tue May 15 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.5.15-1.fmi
 - Added option --maxrequestsize
 
