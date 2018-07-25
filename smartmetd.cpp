@@ -18,8 +18,8 @@
 #include <iostream>
 #include <signal.h>
 
-SmartMet::Server::Server* theServer = NULL;
-SmartMet::Spine::Reactor* theReactor = NULL;
+SmartMet::Server::Server* theServer = nullptr;
+SmartMet::Spine::Reactor* theReactor = nullptr;
 
 int last_signal = 0;
 
@@ -45,7 +45,7 @@ void block_signals()
   for (auto sig : core_signals)
     sigdelset(&signal_set, sig);
 
-  pthread_sigmask(SIG_BLOCK, &signal_set, NULL);
+  pthread_sigmask(SIG_BLOCK, &signal_set, nullptr);
 }
 
 /* [[noreturn]] */ void run(int argc, char* argv[])
@@ -70,18 +70,18 @@ void block_signals()
     action.sa_handler = signal_handler;
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
-    sigaction(SIGBUS, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-    sigaction(SIGWINCH, &action, NULL);
+    sigaction(SIGBUS, &action, nullptr);
+    sigaction(SIGTERM, &action, nullptr);
+    sigaction(SIGWINCH, &action, nullptr);
 
     // We also want to record other common non-core dumping signals
-    sigaction(SIGHUP, &action, NULL);
-    sigaction(SIGINT, &action, NULL);
+    sigaction(SIGHUP, &action, nullptr);
+    sigaction(SIGINT, &action, nullptr);
 
     backward::SignalHandling sh(core_signals);
 
     // Save heap profile if it has been enabled
-    mallctl("prof.dump", NULL, NULL, NULL, 0);
+    mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
 
     // Load engines and plugins
 
@@ -100,13 +100,13 @@ void block_signals()
     // delete theServer;
 
     // Save heap profile if it has been enabled
-    //  mallctl("prof.dump", NULL, NULL, NULL, 0);
+    //  mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
 
     //  exit(0);
   }
   catch (...)
   {
-    SmartMet::Spine::Exception exception(BCP, "Operation failed!", NULL);
+    SmartMet::Spine::Exception exception(BCP, "Operation failed!", nullptr);
     exception.printError();
     kill(getpid(), SIGKILL);  // If we use exit() we might get a core dump.
                               // exit(-1);
@@ -155,7 +155,7 @@ int main(int argc, char* argv[])
           delete theReactor;
         }
         // Save heap profile if it has been enabled
-        mallctl("prof.dump", NULL, NULL, NULL, 0);
+        mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
         return 0;
       }
       else
@@ -170,7 +170,7 @@ int main(int argc, char* argv[])
   }
   catch (...)
   {
-    SmartMet::Spine::Exception exception(BCP, "Operation failed!", NULL);
+    SmartMet::Spine::Exception exception(BCP, "Operation failed!", nullptr);
     exception.printError();
 
     return -1;

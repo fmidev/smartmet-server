@@ -53,7 +53,7 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
   }
   catch (...)
   {
-    throw SmartMet::Spine::Exception(BCP, "Operation failed!", NULL);
+    throw SmartMet::Spine::Exception::Trace(BCP, "Operation failed!");
   }
 }
 
@@ -72,13 +72,13 @@ void Server::shutdownServer()
     itsShutdownRequested = true;
 
     // Take heap snapshots before and after engine+plugin shutdown if profiling is enabled
-    mallctl("prof.dump", NULL, NULL, NULL, 0);
+    mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
     shutdown();
-    mallctl("prof.dump", NULL, NULL, NULL, 0);
+    mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
   }
   catch (...)
   {
-    throw SmartMet::Spine::Exception(BCP, "Operation failed!", NULL);
+    throw SmartMet::Spine::Exception::Trace(BCP, "Operation failed!");
   }
 }
 

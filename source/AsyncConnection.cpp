@@ -58,7 +58,7 @@ AsyncConnection::~AsyncConnection()
   }
   catch (...)
   {
-    throw SmartMet::Spine::Exception(BCP, "Operation failed!", NULL);
+    throw SmartMet::Spine::Exception::Trace(BCP, "Operation failed!");
   }
 }
 
@@ -85,7 +85,7 @@ void AsyncConnection::handleTimer(const boost::system::error_code& err)
   }
   catch (...)
   {
-    throw SmartMet::Spine::Exception(BCP, "Operation failed!", NULL);
+    throw SmartMet::Spine::Exception::Trace(BCP, "Operation failed!");
   }
 }
 
@@ -111,7 +111,7 @@ void AsyncConnection::start()
   }
   catch (...)
   {
-    throw SmartMet::Spine::Exception(BCP, "Operation failed!", NULL);
+    throw SmartMet::Spine::Exception::Trace(BCP, "Operation failed!");
   }
 }
 
@@ -176,7 +176,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
           }
           catch (...)
           {
-            SmartMet::Spine::Exception exception(BCP, "Operation failed!", NULL);
+            SmartMet::Spine::Exception exception(BCP, "Operation failed!", nullptr);
             reportError(std::string("Failed to obtain remote endpoint IP address:\n") +
                         exception.what());
             return;
@@ -404,7 +404,7 @@ void AsyncConnection::startGatewayReply()
   }
   catch (...)
   {
-    throw SmartMet::Spine::Exception(BCP, "Operation failed!", NULL);
+    throw SmartMet::Spine::Exception::Trace(BCP, "Operation failed!");
   }
 }
 

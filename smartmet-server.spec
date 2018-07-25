@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 18.6.6
+Version: 18.7.25
 Release: 1%{?dist}.fmi
 License: MIT
 Group: SmartMet/Daemons
@@ -18,8 +18,8 @@ BuildRequires: fmt-devel
 BuildRequires: jemalloc-devel
 BuildRequires: libconfig
 BuildRequires: libconfig-devel
-BuildRequires: smartmet-library-macgyver-devel >= 18.5.23
-BuildRequires: smartmet-library-spine-devel >= 18.6.6
+BuildRequires: smartmet-library-macgyver-devel >= 18.7.25
+BuildRequires: smartmet-library-spine-devel >= 18.7.23
 Requires: boost-date-time
 Requires: boost-filesystem
 Requires: boost-iostreams
@@ -31,8 +31,8 @@ Requires: fmt
 Requires: glibc
 Requires: jemalloc
 Requires: libconfig
-Requires: smartmet-library-macgyver >= 18.5.23
-Requires: smartmet-library-spine >= 18.6.6
+Requires: smartmet-library-macgyver >= 18.7.25
+Requires: smartmet-library-spine >= 18.7.23
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -80,6 +80,9 @@ fi
 
 
 %changelog
+* Wed Jul 25 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.7.25-1.fmi
+- Prefer nullptr over NULL
+
 * Wed Jun  6 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.6.6-1.fmi
 - Removed incorrect dependencies on devel-packages
 

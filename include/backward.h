@@ -1235,7 +1235,7 @@ class TraceResolverLinuxImpl<trace_resolver_tag::libdw> : public TraceResolverLi
       // ...from the current process.
       dwfl_report_begin(_dwfl_handle.get());
       int r = dwfl_linux_proc_report(_dwfl_handle.get(), getpid());
-      dwfl_report_end(_dwfl_handle.get(), NULL, NULL);
+      dwfl_report_end(_dwfl_handle.get(), nullptr, nullptr);
       if (r < 0)
       {
         return trace;

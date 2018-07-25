@@ -150,10 +150,10 @@ class Tester
 
   ~Tester()
   {
-    if (itsThreadPool != NULL)
+    if (itsThreadPool != nullptr)
     {
       delete itsThreadPool;
-      itsThreadPool = NULL;
+      itsThreadPool = nullptr;
     }
   }
 
