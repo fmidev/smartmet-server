@@ -219,51 +219,49 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         }
 
         bool scheduled = false;
-        // Check if the handler is a regular handler
-        if (!handlerView->isCatchNoMatch())
+
+        // Handle frontends and backends separately
+
+        if (handlerView->isCatchNoMatch())
         {
-          // Insert handler into approriate queue
-          if (handlerView->queryIsFast(*itsRequest))
+          // frontend
+          itsQueryIsFast = true;
+          scheduled = itsFastExecutor.schedule(boost::bind(
+              &AsyncConnection::handleCompletedRead, shared_from_this(), boost::ref(*handlerView)));
+
+          if (!scheduled)
           {
-            itsQueryIsFast = true;
+            // Task queue was full, send busy response
+            sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
+            reportInfo("Frontend request queue was full");
+          }
+        }
+
+        else
+        {
+          // backend
+
+          itsQueryIsFast = handlerView->queryIsFast(*itsRequest);
+
+          if (itsQueryIsFast)
+          {
             scheduled = itsFastExecutor.schedule(boost::bind(&AsyncConnection::handleCompletedRead,
                                                              shared_from_this(),
                                                              boost::ref(*handlerView)));
           }
           else
           {
-            itsQueryIsFast = false;
             scheduled = itsSlowExecutor.schedule(boost::bind(&AsyncConnection::handleCompletedRead,
                                                              shared_from_this(),
                                                              boost::ref(*handlerView)));
           }
-        }
-        else
-        {
-          // Handle the CatchNoMatch fallthrough-handler (frontend behaviour), it goes automatically
-          // to the fast pool
-          itsQueryIsFast = true;
-          scheduled = itsFastExecutor.schedule(boost::bind(
-              &AsyncConnection::handleCompletedRead, shared_from_this(), boost::ref(*handlerView)));
-        }
 
-        if (!scheduled)
-        {
-          // Task queue was full, send busy response
-
-          sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
-
-          reportInfo("Server request queue was full");
-        }
-        else
-        {
-          // Successfully queued, make a dummy read operation to check for client disconnection
-          // This uses the same socket buffer as the real receiver function
-          // itsSocket.async_read_some(boost::asio::buffer(itsSocketBuffer),
-          // 							boost::bind(&AsyncConnection::notifyClientDisconnect,
-          // shared_from_this(),
-          // 										boost::asio::placeholders::error,
-          // 										boost::asio::placeholders::bytes_transferred));
+          if (!scheduled)
+          {
+            // Task queue was full, send high load response to frontend
+            sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
+            reportInfo("Backend request queue was full, returning high load notification");
+          }
         }
       }
       else if (parsedRequest.first == SmartMet::Spine::HTTP::ParsingStatus::FAILED)
