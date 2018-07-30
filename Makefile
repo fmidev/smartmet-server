@@ -1,70 +1,26 @@
-PROG = smartmetd
+MODULE = smartmet-server
 SPEC = smartmet-server
 
-# Installation directories
+MAINFLAGS = -MD -Wall -W -Wno-unused-parameter
 
-processor := $(shell uname -p)
-
-ifeq ($(origin PREFIX), undefined)
-  PREFIX = /usr
+ifeq (6, $(RHEL_VERSION))
+  MAINFLAGS += -std=c++0x
 else
-  PREFIX = $(PREFIX)
+  MAINFLAGS += -std=c++11 -fdiagnostics-color=always
 endif
 
-ifeq ($(processor), x86_64)
-  libdir = $(PREFIX)/lib64
-else
-  libdir = $(PREFIX)/lib
-endif
+# mdsplib does not declare things correctly
 
-ifeq ($(origin SYSCONFDIR), undefined)
-  sysconfdir = /etc
-else
-  sysconfdir = $(SYSCONFDIR)
-endif
+MAINFLAGS += -fpermissive
 
-sharedir = $(PREFIX)/share
 
-objdir = obj
-includedir = $(PREFIX)/include
-
-ifeq ($(origin SBINDIR), undefined)
-  sbindir = $(PREFIX)/sbin
-else
-  sbindir = $(SBINDIR)
-endif
-
-# Compiler options
-
-DEFINES = -DUNIX -D_REENTRANT
-
-ifeq ($(CXX), clang++)
-
- FLAGS = -std=c++11 -fPIC -MD \
-	-Weverything \
-	-Wno-c++98-compat-pedantic \
-	-Wno-padded \
-	-Wno-missing-prototypes \
-	-Wno-documentation-unknown-command
-
- INCLUDES = \
-	-isystem $(includedir) \
-	-I$(includedir)/smartmet \
-	`pkg-config --cflags libconfig++`
-
-else
-
- FLAGS = -std=c++11 -fPIC -MD -Wall -W \
-	-Wno-unused-parameter -fno-omit-frame-pointer -fdiagnostics-color=always
-
- FLAGS_DEBUG = \
+EXTRAFLAGS = \
 	-Werror \
+	-Winline \
 	-Wpointer-arith \
 	-Wcast-qual \
 	-Wcast-align \
 	-Wwrite-strings \
-	-Winline \
-	-Wctor-dtor-privacy \
 	-Wnon-virtual-dtor \
 	-Wno-pmf-conversions \
 	-Wsign-promo \
@@ -72,25 +28,35 @@ else
 	-Wredundant-decls \
 	-Woverloaded-virtual
 
- INCLUDES = \
-	-I$(includedir) \
+DIFFICULTFLAGS = \
+	-Wunreachable-code \
+	-Wconversion \
+	-Wctor-dtor-privacy \
+	-Weffc++ \
+	-Wold-style-cast \
+	-pedantic \
+	-Wshadow
+
+CC = g++
+
+# Default compiler flags
+
+DEFINES = -DUNIX
+
+CFLAGS = $(DEFINES) -O2 -DNDEBUG $(MAINFLAGS)
+override LDFLAGS += -rdynamic
+
+# Special modes
+
+CFLAGS_DEBUG = $(DEFINES) -O0 -g $(MAINFLAGS) $(EXTRAFLAGS) -Werror
+CFLAGS_PROFILE = $(DEFINES) -O2 -g -pg -DNDEBUG $(MAINFLAGS)
+
+override LDFLAGS_DEBUG += -rdynamic
+override LDFLAGS_PROFILE += -rdynamic
+
+INCLUDES = -I$(includedir) \
 	-I$(includedir)/smartmet \
 	`pkg-config --cflags libconfig++`
-
-endif
-
-# Compile options in detault, debug and profile modes
-
-CFLAGS_RELEASE = $(DEFINES) $(FLAGS) $(FLAGS_RELEASE) -DNDEBUG -O2 -g
-CFLAGS_DEBUG   = $(DEFINES) $(FLAGS) $(FLAGS_DEBUG)   -Werror  -O0 -g
-
-ifneq (,$(findstring debug,$(MAKECMDGOALS)))
-  override CFLAGS += $(CFLAGS_DEBUG)
-else
-  override CFLAGS += $(CFLAGS_RELEASE)
-endif
-
-override LDFLAGS += -rdynamic
 
 LIBS = -L$(libdir) \
 	-lsmartmet-spine \
@@ -118,66 +84,107 @@ else
 endif
 endif
 
+
 # Common library compiling template
 
-# rpm variables
+# Installation directories
 
-CWP = $(shell pwd)
-BIN = $(shell basename $(CWP))
+processor := $(shell uname -p)
+
+ifeq ($(origin PREFIX), undefined)
+  PREFIX = /usr
+else
+  PREFIX = $(PREFIX)
+endif
+
+ifeq ($(processor), x86_64)
+  libdir = $(PREFIX)/lib64
+else
+  libdir = $(PREFIX)/lib
+endif
+
+objdir = obj
+includedir = $(PREFIX)/include
+
+ifeq ($(origin SBINDIR), undefined)
+  sbindir = $(PREFIX)/bin
+else
+  sbindir = $(SBINDIR)
+endif
+
+ifeq ($(origin DATADIR), undefined)
+  datadir = $(PREFIX)/share
+else
+  datadir = $(DATADIR)
+endif
+
+# Special modes
+
+ifneq (,$(findstring debug,$(MAKECMDGOALS)))
+  CFLAGS = $(CFLAGS_DEBUG)
+  LDFLAGS = $(LDFLAGS_DEBUG)
+endif
+
+ifneq (,$(findstring profile,$(MAKECMDGOALS)))
+  CFLAGS = $(CFLAGS_PROFILE)
+  LDFLAGS = $(LDFLAGS_PROFILE)
+endif
 
 # Compilation directories
 
-vpath %.cpp source
+vpath %.cpp source main
 vpath %.h include
 vpath %.o $(objdir)
+vpath %.d $(objdir)
 
 # How to install
 
-INSTALL_PROG = install -p -m 755
-INSTALL_DATA = install -p -m 664
+INSTALL_PROG = install -m 775
+INSTALL_DATA = install -m 664
 
 # The files to be compiled
 
-SRCS = $(patsubst source/%,%,$(wildcard source/*.cpp))
-HDRS = $(patsubst include/%,%,$(wildcard include/*.h))
-OBJS = $(SRCS:%.cpp=%.o)
+HDRS = $(patsubst include/%,%,$(wildcard *.h include/*.h))
 
+MAINSRCS     = $(patsubst main/%,%,$(wildcard main/*.cpp))
+MAINPROGS    = $(MAINSRCS:%.cpp=%)
+MAINOBJS     = $(MAINSRCS:%.cpp=%.o)
+MAINOBJFILES = $(MAINOBJS:%.o=obj/%.o)
+
+SRCS     = $(patsubst source/%,%,$(wildcard source/*.cpp))
+OBJS     = $(SRCS:%.cpp=%.o)
 OBJFILES = $(OBJS:%.o=obj/%.o)
-
-MAINSRCS = $(PROG:%=%.cpp)
-SUBSRCS = $(filter-out $(MAINSRCS),$(SRCS))
-SUBOBJS = $(SUBSRCS:%.cpp=%.o)
-SUBOBJFILES = $(SUBOBJS:%.o=obj/%.o)
 
 INCLUDES := -Iinclude $(INCLUDES)
 
-# For makedepend:
+# For make depend:
 
-ALLSRCS = $(wildcard *.cpp source/*.cpp)
+ALLSRCS = $(wildcard main/*.cpp source/*.cpp)
 
 .PHONY: test rpm
 
 # The rules
 
-all: objdir $(PROG)
-debug: all
-release: all
-profile: all
+all: objdir $(MAINPROGS)
+debug: objdir $(MAINPROGS)
+release: objdir $(MAINPROGS)
+profile: objdir $(MAINPROGS)
 
-$(PROG): % : $(SUBOBJS) %.o Makefile
-	$(CXX) $(LDFLAGS) -o $@ obj/$@.o $(SUBOBJFILES) $(LIBS)
+.SECONDEXPANSION:
+$(MAINPROGS): % : obj/%.o $(OBJFILES)
+	$(CC) $(LDFLAGS) -o $@ obj/$@.o $(OBJFILES) $(LIBS)
 
 clean:
-	rm -f $(PROG) *~ source/*~ include/*~
+	rm -f $(MAINPROGS) source/*~ include/*~
 	rm -rf obj
 	rm -f test/suites/*
 
 format:
-	clang-format -i -style=file include/*.h source/*.cpp test/*.cpp
+	clang-format -i -style=file include/*.h source/*.cpp main/*.cpp
 
 install:
 	@mkdir -p $(sbindir)
-	@list='$(PROG)'; \
+	@list='$(MAINPROGS)'; \
 	for prog in $$list; do \
 	  echo $(INSTALL_PROG) $$prog $(sbindir)/$$prog; \
 	  $(INSTALL_PROG) $$prog $(sbindir)/$$prog; \
@@ -187,6 +194,7 @@ install:
 	$(INSTALL_DATA) etc/smartmet-server-access-log-rotate $(sysconfdir)/logrotate.d/smartmet-server
 	@mkdir -p $(libdir)/../lib/systemd/system
 	$(INSTALL_DATA) systemd/smartmet-server.service $(libdir)/../lib/systemd/system/
+
 
 test:
 	cd test && make test
@@ -204,12 +212,9 @@ rpm: clean
 	  echo $(SPEC).spec missing; \
 	fi;
 
-
 .SUFFIXES: $(SUFFIXES) .cpp
 
-.cpp.o : %.cpp %.h Makefile
-	$(CXX) $(CFLAGS) $(INCLUDES) -c -o $(objdir)/$@ $<
+obj/%.o : %.cpp
+	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
-ifneq ($(wildcard obj/*.d),)
--include $(wildcard obj/*.d)
-endif
+-include obj/*.d

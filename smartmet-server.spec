@@ -3,7 +3,7 @@
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
 Version: 18.7.30
-Release: 1%{?dist}.fmi
+Release: 2%{?dist}.fmi
 License: MIT
 Group: SmartMet/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -80,6 +80,9 @@ fi
 
 
 %changelog
+* Mon Jul 30 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.7.30-2.fmi
+- Fixed the build system to detect modified files
+
 * Mon Jul 30 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.7.30-1.fmi
 - Silenced CodeChecker warning by using std::move
 
