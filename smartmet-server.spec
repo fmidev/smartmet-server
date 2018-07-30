@@ -2,8 +2,8 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 18.7.25
-Release: 2%{?dist}.fmi
+Version: 18.7.30
+Release: 1%{?dist}.fmi
 License: MIT
 Group: SmartMet/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -80,6 +80,9 @@ fi
 
 
 %changelog
+* Mon Jul 30 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.7.30-1.fmi
+- Silenced CodeChecker warning by using std::move
+
 * Wed Jul 25 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.7.25-2.fmi
 - Return high load HTTP response code 1234 if backend request queue is full
 

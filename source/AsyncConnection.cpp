@@ -159,7 +159,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
       if (parsedRequest.first == SmartMet::Spine::HTTP::ParsingStatus::COMPLETE)
       {
         // Successfully parsed the request, set connection request
-        itsRequest.reset(parsedRequest.second.release());
+        itsRequest = std::move(parsedRequest.second);
 
         // Set client ip
         auto forwardHeader = itsRequest->getHeader("X-Forwarded-For");
