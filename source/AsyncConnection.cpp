@@ -301,7 +301,9 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::handleRead aborted" << std::endl;
+    Spine::Exception ex(BCP, "Operation failed! AsyncConnection::handleRead aborted", nullptr);
+    std::cerr << ex.getStackTrace();
+    // std::cerr << "Operation failed! AsyncConnection::handleRead aborted" << std::endl;
   }
 }
 
@@ -384,8 +386,12 @@ void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandl
   }
   catch (...)
   {
+    // Dump stack trace to find possible causes
+    Spine::Exception ex(
+        BCP, "Operation failed! AsyncConnection::handleCompletedRead aborted", nullptr);
+    std::cerr << ex.getStackTrace();
     // Must not continue throwing here or the server will terminate
-    std::cerr << "Operation failed! AsyncConnection::handleCompletedRead aborted" << std::endl;
+    // std::cerr << "Operation failed! AsyncConnection::handleCompletedRead aborted" << std::endl;
   }
 }
 
@@ -452,7 +458,10 @@ void AsyncConnection::startChunkedReply()
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::startChunkedReply aborted" << std::endl;
+    Spine::Exception ex(
+        BCP, "Operation failed! AsyncConnection::startChunkedReply aborted", nullptr);
+    std::cerr << ex.getStackTrace();
+    // std::cerr << "Operation failed! AsyncConnection::startChunkedReply aborted" << std::endl;
   }
 }
 
@@ -505,7 +514,10 @@ void AsyncConnection::startStreamReply()
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::startStreamReply aborted" << std::endl;
+    Spine::Exception ex(
+        BCP, "Operation failed! AsyncConnection::startStreamReply aborted", nullptr);
+    std::cerr << ex.getStackTrace();
+    // std::cerr << "Operation failed! AsyncConnection::startStreamReply aborted" << std::endl;
   }
 }
 
@@ -546,7 +558,9 @@ void AsyncConnection::writeChunkedReply(const boost::system::error_code& e,
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::writeChunkedReply aborted" << std::endl;
+    Spine::Exception ex(BCP, "Operation failed! AsyncConnection::writeChunkedReply", nullptr);
+    std::cerr << ex.getStackTrace();
+    // std::cerr << "Operation failed! AsyncConnection::writeChunkedReply aborted" << std::endl;
   }
 }
 
@@ -584,7 +598,10 @@ void AsyncConnection::finalizeChunkedReply(const boost::system::error_code& e,
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::finalizeChunkedReply aborted" << std::endl;
+    Spine::Exception ex(
+        BCP, "Operation failed! AsyncConnection::finalizeChunkedReply aborted", nullptr);
+    std::cerr << ex.getStackTrace();
+    // std::cerr << "Operation failed! AsyncConnection::finalizeChunkedReply aborted" << std::endl;
   }
 }
 
@@ -635,7 +652,9 @@ void AsyncConnection::getNextChunk()
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::getNextChunk aborted" << std::endl;
+    Spine::Exception ex(BCP, "Operation failed! AsyncConnection::getNextChunk aborted", nullptr);
+    std::cerr << ex.getStackTrace();
+    // std::cerr << "Operation failed! AsyncConnection::getNextChunk aborted" << std::endl;
   }
 }
 
@@ -693,7 +712,10 @@ void AsyncConnection::getNextChunkedChunk()
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::getNextChunkedChunk aborted" << std::endl;
+    Spine::Exception ex(
+        BCP, "Operation failed! AsyncConnection::getNextChunkedChunk aborted", nullptr);
+    std::cerr << ex.getStackTrace();
+    // std::cerr << "Operation failed! AsyncConnection::getNextChunkedChunk aborted" << std::endl;
   }
 }
 
@@ -742,7 +764,10 @@ void AsyncConnection::writeStreamReply(const boost::system::error_code& e,
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::writeStreamReply aborted" << std::endl;
+    Spine::Exception ex(
+        BCP, "Operation failed! AsyncConnection::writeStreamReply aborted", nullptr);
+    std::cerr << ex.getStackTrace();
+    // std::cerr << "Operation failed! AsyncConnection::writeStreamReply aborted" << std::endl;
   }
 }
 
@@ -782,7 +807,10 @@ void AsyncConnection::writeRegularReply(const boost::system::error_code& e,
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::writeRegularReply aborted" << std::endl;
+    Spine::Exception ex(
+        BCP, "Operation failed! AsyncConnection::writeRegularReply aborted", nullptr);
+    std::cerr << ex.getStackTrace();
+    // std::cerr << "Operation failed! AsyncConnection::writeRegularReply aborted" << std::endl;
   }
 }
 
@@ -829,7 +857,10 @@ void AsyncConnection::startRegularReply()
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::startRegularReply aborted" << std::endl;
+    Spine::Exception ex(
+        BCP, "Operation failed! AsyncConnection::startRegularReply aborted", nullptr);
+    std::cerr << ex.getStackTrace();
+    // std::cerr << "Operation failed! AsyncConnection::startRegularReply aborted" << std::endl;
   }
 }
 
@@ -918,7 +949,10 @@ void AsyncConnection::scheduleChunkGetter()
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::scheduleChunkGetter aborted" << std::endl;
+    Spine::Exception ex(
+        BCP, "Operation failed! AsyncConnection::scheduleChunkGetter aborted", nullptr);
+    std::cerr << ex.getStackTrace();
+    // std::cerr << "Operation failed! AsyncConnection::scheduleChunkGetter aborted" << std::endl;
   }
 }
 
@@ -957,8 +991,11 @@ void AsyncConnection::scheduleChunkedChunkGetter()
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::scheduleChunkedChunkGetter aborted"
-              << std::endl;
+    Spine::Exception ex(
+        BCP, "Operation failed! AsyncConnection::scheduleChunkedChunkGetter aborted", nullptr);
+    std::cerr << ex.getStackTrace();
+    // std::cerr << "Operation failed! AsyncConnection::scheduleChunkedChunkGetter aborted" <<
+    // std::endl;
   }
 }
 
@@ -996,7 +1033,11 @@ void AsyncConnection::notifyClientDisconnect(const boost::system::error_code& e,
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::notifyClientDisconnect aborted" << std::endl;
+    Spine::Exception ex(
+        BCP, "Operation failed! AsyncConnection::notifyClientDisconnect aborted", nullptr);
+    std::cerr << ex.getStackTrace();
+    // std::cerr << "Operation failed! AsyncConnection::notifyClientDisconnect aborted" <<
+    // std::endl;
   }
 }
 
