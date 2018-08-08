@@ -30,7 +30,7 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
     std::cout << "Attempting to bind to port " << theOptions.port << std::endl;
 #endif
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(),
-                                            (unsigned short)(theOptions.port));
+                                            static_cast<unsigned short>(theOptions.port));
     itsAcceptor.open(endpoint.protocol());
     itsAcceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(
         true));  // Allows multiple servers to use same port

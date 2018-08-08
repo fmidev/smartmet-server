@@ -463,8 +463,9 @@ void AsyncConnection::startStreamReply()
   try
   {
     // Set Content-Length header, just to be sure
-    itsResponse->setHeader("Content-Length",
-                           std::to_string((long long unsigned int)itsResponse->getContentLength()));
+    itsResponse->setHeader(
+        "Content-Length",
+        std::to_string(static_cast<long long unsigned int>(itsResponse->getContentLength())));
 
     // Currently headers a written syncronously
     try
@@ -818,8 +819,9 @@ void AsyncConnection::startRegularReply()
     }
 
     // Set Content-Length header, as it may change during compression
-    itsResponse->setHeader("Content-Length",
-                           std::to_string((long long unsigned int)itsResponse->getContentLength()));
+    itsResponse->setHeader(
+        "Content-Length",
+        std::to_string(static_cast<long long unsigned int>(itsResponse->getContentLength())));
 
     std::string headers, content;
 
@@ -886,8 +888,9 @@ void AsyncConnection::sendStockReply(const SmartMet::Spine::HTTP::Status theStat
     boost::system::error_code err;
 
     itsResponse->setStatus(theStatus, true);
-    itsResponse->setHeader("Content-Length",
-                           std::to_string((long long unsigned int)itsResponse->getContentLength()));
+    itsResponse->setHeader(
+        "Content-Length",
+        std::to_string(static_cast<long long unsigned int>(itsResponse->getContentLength())));
     setServerHeaders();  // Set the rest of server headers
 
     auto headerbuffer = itsResponse->headersToBuffer();
