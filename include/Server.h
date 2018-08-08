@@ -48,7 +48,7 @@ class Server : private boost::noncopyable
   void shutdownServer();
   bool isShutdownRequested();
 
-  virtual ~Server();
+  virtual ~Server() = default;
 
  protected:
   virtual void shutdown();
