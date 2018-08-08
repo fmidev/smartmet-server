@@ -47,18 +47,11 @@ AsyncConnection::AsyncConnection(AsyncServer* serverInstance,
 // Initiate graceful Connection closure after the reply is written (connection is destructing)
 AsyncConnection::~AsyncConnection()
 {
-  try
+  if (!hasTimedOut)
   {
-    if (!hasTimedOut)
-    {
-      boost::system::error_code ignored_ec;
-      itsSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-      itsSocket.close(ignored_ec);
-    }
-  }
-  catch (...)
-  {
-    throw SmartMet::Spine::Exception::Trace(BCP, "Operation failed!");
+    boost::system::error_code ignored_ec;
+    itsSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+    itsSocket.close(ignored_ec);
   }
 }
 

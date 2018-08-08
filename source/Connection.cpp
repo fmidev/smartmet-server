@@ -55,23 +55,16 @@ boost::asio::ip::tcp::socket& Connection::socket()
 
 Connection::~Connection()
 {
-  try
+  if (!itsServer->isShutdownRequested())
   {
-    if (!itsServer->isShutdownRequested())
-    {
-      // Call the client connection finished - hooks
-      itsReactor.callClientConnectionFinishedHooks(itsRequest->getClientIP(), itsFinalStatus);
+    // Call the client connection finished - hooks
+    itsReactor.callClientConnectionFinishedHooks(itsRequest->getClientIP(), itsFinalStatus);
 #ifndef NDEBUG
-      std::cout << "Slow pool queue size after connection: " << itsSlowExecutor.getQueueSize()
-                << std::endl;
-      std::cout << "Fast pool queue size after connection: " << itsFastExecutor.getQueueSize()
-                << std::endl;
+    std::cout << "Slow pool queue size after connection: " << itsSlowExecutor.getQueueSize()
+              << std::endl;
+    std::cout << "Fast pool queue size after connection: " << itsFastExecutor.getQueueSize()
+              << std::endl;
 #endif
-    }
-  }
-  catch (...)
-  {
-    throw SmartMet::Spine::Exception::Trace(BCP, "Operation failed!");
   }
 }
 
