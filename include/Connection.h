@@ -34,7 +34,7 @@ class Connection
                       long timeout,
                       bool dumpRequests,
                       boost::asio::io_service& io_service,
-                      SmartMet::Spine::Reactor& serverReactor,
+                      SmartMet::Spine::Reactor& theReactor,
                       ThreadPoolType& slowExecutor,
                       ThreadPoolType& fastExecutor);
 

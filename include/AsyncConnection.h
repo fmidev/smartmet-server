@@ -66,7 +66,7 @@ class AsyncConnection : public Connection,
                            long timeout,
                            bool dumpRequests,
                            boost::asio::io_service& io_service,
-                           SmartMet::Spine::Reactor& serverReactor,
+                           SmartMet::Spine::Reactor& theReactor,
                            ThreadPoolType& slowExecutor,
                            ThreadPoolType& fastExecutor);
 
@@ -124,7 +124,7 @@ class AsyncConnection : public Connection,
    */
   // ======================================================================
 
-  void handleCompletedRead(SmartMet::Spine::HandlerView& theView);
+  void handleCompletedRead(SmartMet::Spine::HandlerView& theHandlerView);
 
   // ======================================================================
   /*!
