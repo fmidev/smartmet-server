@@ -183,16 +183,16 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         std::cout << "Query string: " << itsRequest->getQueryString() << std::endl;
         std::cout << "Headers: " << std::endl;
         auto hmappi = itsRequest->getHeaders();
-        for (auto it = hmappi.begin(); it != hmappi.end(); ++it)
+        for (const auto& header : hmappi)
         {
-          std::cout << it->first << " : " << it->second << std::endl;
+          std::cout << header.first << " : " << header.second << std::endl;
         }
 
         std::cout << "Parsed parameters: " << std::endl;
         auto mappi = itsRequest->getParameterMap();
-        for (auto it = mappi.begin(); it != mappi.end(); ++it)
+        for (const auto& elem : mappi)
         {
-          std::cout << it->first << " : " << it->second << std::endl;
+          std::cout << elem.first << " : " << elem.second << std::endl;
         }
         std::cout << "Content: \"" << itsRequest->getContent() << "\"" << std::endl << std::endl;
 
