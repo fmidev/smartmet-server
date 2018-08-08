@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 18.8.1
+Version: 18.8.8
 Release: 1%{?dist}.fmi
 License: MIT
 Group: SmartMet/Daemons
@@ -18,8 +18,8 @@ BuildRequires: fmt-devel
 BuildRequires: jemalloc-devel
 BuildRequires: libconfig
 BuildRequires: libconfig-devel
-BuildRequires: smartmet-library-macgyver-devel >= 18.8.1
-BuildRequires: smartmet-library-spine-devel >= 18.8.1
+BuildRequires: smartmet-library-macgyver-devel >= 18.8.4
+BuildRequires: smartmet-library-spine-devel >= 18.8.7
 Requires: boost-date-time
 Requires: boost-filesystem
 Requires: boost-iostreams
@@ -31,8 +31,8 @@ Requires: fmt
 Requires: glibc
 Requires: jemalloc
 Requires: libconfig
-Requires: smartmet-library-macgyver >= 18.8.1
-Requires: smartmet-library-spine >= 18.8.1
+Requires: smartmet-library-macgyver >= 18.8.4
+Requires: smartmet-library-spine >= 18.8.7
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -80,6 +80,9 @@ fi
 
 
 %changelog
+* Wed Aug  8 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.8.8-1.fmi
+- Removed several CodeChecker warnings
+
 * Wed Aug  1 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.8.1-1.fmi
 - Print stack traces for async connection errors
 
