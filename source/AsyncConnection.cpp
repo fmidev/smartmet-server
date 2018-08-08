@@ -418,7 +418,7 @@ void AsyncConnection::startChunkedReply()
       auto headerbuffer = itsResponse->headersToBuffer();
       // Write headers
       boost::asio::write(itsSocket, headerbuffer, e);
-      if (e)
+      if (e != nullptr)
       {
         reportInfo("Unable to send chunk response headers to " + itsRequest->getClientIP() +
                    ". Reason: " + e.message());
@@ -435,7 +435,7 @@ void AsyncConnection::startChunkedReply()
       auto headerbuffer = itsResponse->headersToBuffer();
       // Write headers
       boost::asio::write(itsSocket, headerbuffer, e);
-      if (e)
+      if (e != nullptr)
       {
         reportInfo("Unable to send chunk response headers to " + itsRequest->getClientIP() +
                    ". Reason: " + e.message());
@@ -474,7 +474,7 @@ void AsyncConnection::startStreamReply()
       auto headerbuffer = itsResponse->headersToBuffer();
       // Write headers
       boost::asio::write(itsSocket, headerbuffer, e);
-      if (e)
+      if (e != nullptr)
       {
         reportInfo("Unable to send stream response headers to " + itsRequest->getClientIP() +
                    ". Reason: " + e.message());
@@ -491,7 +491,7 @@ void AsyncConnection::startStreamReply()
       auto headerbuffer = itsResponse->headersToBuffer();
       // Write headers
       boost::asio::write(itsSocket, headerbuffer, e);
-      if (e)
+      if (e != nullptr)
       {
         reportInfo("Unable to send stream response headers to " + itsRequest->getClientIP() +
                    ". Reason: " + e.message());
@@ -1002,7 +1002,7 @@ void AsyncConnection::notifyClientDisconnect(const boost::system::error_code& e,
     // client disconnect
     // has been signaled
     boost::lock_guard<boost::mutex> lock(itsDisconnectMutex);
-    if (e)
+    if (e != nullptr)
     {
       // Some error occurred, the client may have disconnected
       if (e == boost::asio::error::operation_aborted)
