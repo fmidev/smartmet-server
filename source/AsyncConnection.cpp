@@ -7,13 +7,11 @@
 #include "AsyncConnection.h"
 #include "AsyncServer.h"
 #include "Utility.h"
-
+#include <boost/bind.hpp>
+#include <boost/move/make_unique.hpp>
 #include <spine/Exception.h>
-
 #include <sstream>
 #include <vector>
-
-#include <boost/bind.hpp>
 
 namespace SmartMet
 {
@@ -89,8 +87,8 @@ void AsyncConnection::start()
   {
     // Start the timeout timer
 
-    itsTimeoutTimer.reset(
-        new boost::asio::deadline_timer(itsIoService, boost::posix_time::seconds(itsTimeout)));
+    itsTimeoutTimer = boost::movelib::make_unique<boost::asio::deadline_timer>(
+        itsIoService, boost::posix_time::seconds(itsTimeout));
 
     itsTimeoutTimer->async_wait(boost::bind(&AsyncConnection::handleTimer, shared_from_this(), _1));
 

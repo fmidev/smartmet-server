@@ -10,10 +10,9 @@
 #pragma once
 
 #include <boost/asio.hpp>
+#include <boost/move/unique_ptr.hpp>
 #include <boost/thread.hpp>
-
 #include <macgyver/ThreadPool.h>
-
 #include <spine/Reactor.h>
 #include <spine/Thread.h>
 
@@ -83,7 +82,7 @@ class Connection
   SmartMet::Spine::Reactor& itsReactor;
 
   /// Connection timeout timer
-  std::unique_ptr<boost::asio::deadline_timer> itsTimeoutTimer;
+  boost::movelib::unique_ptr<boost::asio::deadline_timer> itsTimeoutTimer;
 
   /// Socket reads into this buffer
   boost::array<char, 8192> itsSocketBuffer;
