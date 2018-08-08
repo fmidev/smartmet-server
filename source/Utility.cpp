@@ -169,15 +169,11 @@ std::string parseXForwardedFor(const std::string& input)
   try
   {
     std::size_t loc = input.find(',');
+
     if (loc == std::string::npos)
-    {
-      // No comma, ip is the entre token
-      return input;
-    }
-    else
-    {
-      return input.substr(0, loc);
-    }
+      return input;  // No comma, ip is the entre token
+
+    return input.substr(0, loc);
   }
   catch (...)
   {

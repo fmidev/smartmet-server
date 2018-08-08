@@ -309,7 +309,12 @@ void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandl
     // See if client has prematurely disconnected
     {
       boost::lock_guard<boost::mutex> lock(itsDisconnectMutex);
-      if (itsPrematurelyDisconnected)
+      if (!itsPrematurelyDisconnected)
+      {
+        // Cancel the client disconnect notify handler
+        itsSocket.cancel();
+      }
+      else
       {
         if (theHandlerView.isCatchNoMatch())
         {
@@ -323,11 +328,6 @@ void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandl
                      theHandlerView.getPluginName());
         }
         return;
-      }
-      else
-      {
-        // Cancel the client disconnect notify handler
-        itsSocket.cancel();
       }
     }
 
