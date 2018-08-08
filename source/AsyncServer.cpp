@@ -14,7 +14,7 @@ namespace Server
 
 AsyncServer::AsyncServer(const SmartMet::Spine::Options& theOptions,
                          SmartMet::Spine::Reactor& theReactor)
-    : Server(theOptions, theReactor), itsNewConnection(), itsMutex(), itsConnections(0)
+    : Server(theOptions, theReactor), itsConnections(0)
 
 {
   try
