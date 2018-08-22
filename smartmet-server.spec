@@ -2,10 +2,10 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 18.8.8
+Version: 18.8.22
 Release: 1%{?dist}.fmi
 License: MIT
-Group: SmartMet/Daemons
+Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
 Source0: smartmet-server.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -18,6 +18,7 @@ BuildRequires: fmt-devel
 BuildRequires: jemalloc-devel
 BuildRequires: libconfig
 BuildRequires: libconfig-devel
+BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 18.8.4
 BuildRequires: smartmet-library-spine-devel >= 18.8.7
 Requires: boost-date-time
@@ -42,7 +43,6 @@ Summary: SmartMet server
 SmartMet server
 
 %prep
-rm -rf $RPM_BUILD_ROOT
 
 %setup -q -n %{SPECNAME}
  
@@ -59,8 +59,8 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(0755,root,root,0755)
 %{_sbindir}/smartmetd
 %defattr(0644,root,root,0755)
-%config(noreplace) /usr/lib/systemd/system/smartmet-server.service
 %config(noreplace) %{_sysconfdir}/logrotate.d/smartmet-server
+%{_unitdir}/smartmet-server.service
 %{_sysconfdir}/smartmet
 
 %post
@@ -80,6 +80,9 @@ fi
 
 
 %changelog
+* Wed Aug 22 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.8.22-1.fmi
+- Fixed systemd file not to be a configuration file
+
 * Wed Aug  8 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.8.8-1.fmi
 - Removed several CodeChecker warnings
 
