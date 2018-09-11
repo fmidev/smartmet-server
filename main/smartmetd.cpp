@@ -48,8 +48,6 @@ void block_signals()
 {
   try
   {
-    using namespace SmartMet;
-
     // Parse options
 
     SmartMet::Spine::Options options;
@@ -85,7 +83,7 @@ void block_signals()
 
     // Start the server
 
-    server.reset(new Server::AsyncServer(options, *reactor));
+    server.reset(new SmartMet::Server::AsyncServer(options, *reactor));
     std::cout << ANSI_BG_GREEN << ANSI_BOLD_ON << ANSI_FG_WHITE << "Launched Synapse server"
               << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT << std::endl;
 
