@@ -43,9 +43,9 @@ std::string makeDateString()
     int second = time.seconds();
 
     std::string date_string = fmt::sprintf("%s, %02ld %s %d %02ld:%02ld:%02ld GMT",
-                                           weekdays[weekday],
+                                           weekdays[weekday],  // NOLINT
                                            day,
-                                           months[month],
+                                           months[month],  // NOLINT
                                            year,
                                            hour,
                                            minute,
