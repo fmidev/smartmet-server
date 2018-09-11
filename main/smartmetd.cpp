@@ -7,8 +7,8 @@
 #include <spine/Reactor.h>
 #include <spine/SmartMet.h>
 #include <sys/types.h>
+#include <csignal>
 #include <iostream>
-#include <signal.h>
 
 // libdw from elfutils-devel provides more details than libbfd
 #define BACKWARD_HAS_DW 1
