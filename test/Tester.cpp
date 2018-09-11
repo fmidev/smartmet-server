@@ -1,21 +1,17 @@
-#include <fstream>
-#include <iostream>
-#include <stdexcept>
-#include <string>
-#include <vector>
-
-#include <spine/HTTP.h>
-
 #include <boost/algorithm/string.hpp>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
-
 #include <macgyver/ThreadPool.h>
+#include <spine/HTTP.h>
+#include <fstream>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 typedef Fmi::ThreadPool::ThreadPool<> pool;
 
@@ -133,7 +129,7 @@ class Tester
     itsResults.reserve(itsRequests.size());
 
     // Fill the pool prior to starting
-    BOOST_FOREACH (const auto& req, itsRequests)
+    for (const auto& req : itsRequests)
     {
       itsThreadPool->schedule(boost::bind(&Tester::performRequest, this, req));
     }
@@ -171,7 +167,7 @@ class Tester
   void printResults()
   {
     boost::lock_guard<boost::mutex> lock(itsResultMutex);
-    BOOST_FOREACH (const auto& res, itsResults)
+    for (const auto& res : itsResults)
     {
       cout << res << endl;
     }
@@ -180,7 +176,7 @@ class Tester
   bool getPrintResults() { return itsPrintResults; }
   void dumpRequests()
   {
-    BOOST_FOREACH (const auto& req, itsRequests)
+    for (const auto& req : itsRequests)
     {
       cout << req << endl;
     }
@@ -287,7 +283,7 @@ class Tester
 
         long average_duration = 0;
 
-        BOOST_FOREACH (const auto& res, theseResults)
+        for (const auto& res : theseResults)
         {
           average_duration += res.duration.total_milliseconds();
         }
