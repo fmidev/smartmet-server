@@ -1,25 +1,21 @@
 #include "AsyncServer.h"
-
-// libdw from elfutils-devel provides more details than libbfd
-#define BACKWARD_HAS_DW 1
-#include "backward.h"
-
+#include <jemalloc/jemalloc.h>
+#include <macgyver/AnsiEscapeCodes.h>
 #include <spine/Exception.h>
 #include <spine/HTTP.h>
 #include <spine/Options.h>
 #include <spine/Reactor.h>
 #include <spine/SmartMet.h>
-
-#include <macgyver/AnsiEscapeCodes.h>
-
-#include <jemalloc/jemalloc.h>
-
 #include <sys/types.h>
 #include <iostream>
 #include <signal.h>
 
-SmartMet::Server::Server* theServer = nullptr;
-SmartMet::Spine::Reactor* theReactor = nullptr;
+// libdw from elfutils-devel provides more details than libbfd
+#define BACKWARD_HAS_DW 1
+#include "backward.h"
+
+std::unique_ptr<SmartMet::Server::Server> server;
+std::unique_ptr<SmartMet::Spine::Reactor> reactor;
 
 int last_signal = 0;
 
@@ -85,19 +81,17 @@ void block_signals()
 
     // Load engines and plugins
 
-    theReactor = new SmartMet::Spine::Reactor(options);
+    reactor.reset(new SmartMet::Spine::Reactor(options));
 
     // Start the server
 
-    theServer = new Server::AsyncServer(options, *theReactor);
+    server.reset(new Server::AsyncServer(options, *reactor));
     std::cout << ANSI_BG_GREEN << ANSI_BOLD_ON << ANSI_FG_WHITE << "Launched Synapse server"
               << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT << std::endl;
 
-    theServer->run();
+    server->run();
 
     // When we are here, shutdown has been signaled (however, this is not the main thread).
-
-    // delete theServer;
 
     // Save heap profile if it has been enabled
     //  mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
@@ -140,20 +134,10 @@ int main(int argc, char* argv[])
       {
         std::cout << " - shutting down!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
                   << std::endl;
-        if (theServer)
-        {
-          theServer->shutdownServer();
-          delete theServer;
-        }
 
-        // We cannot delete the reactor before the server is deleted. That's because
-        // there are some methods in the server that try to call the reactor during
-        // the delete operation.
+        if (server != nullptr)
+          server->shutdownServer();
 
-        if (theReactor)
-        {
-          delete theReactor;
-        }
         // Save heap profile if it has been enabled
         mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
         return 0;

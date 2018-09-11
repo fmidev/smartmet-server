@@ -36,6 +36,7 @@ void AsyncServer::run()
     boost::thread_group workerThreads;
     for (std::size_t i = 0; i < ASYNC_THREAD_SIZE; ++i)
     {
+      // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
       workerThreads.add_thread(
           new boost::thread(boost::bind(&boost::asio::io_service::run, &itsIoService)));
     }
