@@ -61,7 +61,7 @@ void block_signals()
     // Set special SIGTERM, SIGBUS and SIGWINCH handlers
 
     struct sigaction action;
-    action.sa_handler = signal_handler;
+    action.sa_handler = signal_handler;  // NOLINT(cppcoreguidelines-pro-type-union-access)
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
     sigaction(SIGBUS, &action, nullptr);
