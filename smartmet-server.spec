@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 18.9.11
+Version: 18.9.12
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -20,7 +20,7 @@ BuildRequires: libconfig
 BuildRequires: libconfig-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 18.9.5
-BuildRequires: smartmet-library-spine-devel >= 18.9.11
+BuildRequires: smartmet-library-spine-devel >= 18.9.12
 Requires: boost-date-time
 Requires: boost-filesystem
 Requires: boost-iostreams
@@ -33,7 +33,7 @@ Requires: glibc
 Requires: jemalloc
 Requires: libconfig
 Requires: smartmet-library-macgyver >= 18.9.5
-Requires: smartmet-library-spine >= 18.9.11
+Requires: smartmet-library-spine >= 18.9.12
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -80,6 +80,9 @@ fi
 
 
 %changelog
+* Wed Sep 12 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.9.12-1.fmi
+- Added new_handler for OOM situations
+
 * Tue Sep 11 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.9.11-1.fmi
 - Silenced CodeChecker warnings
 

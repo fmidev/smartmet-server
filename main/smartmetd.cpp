@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <csignal>
 #include <iostream>
+#include <new>
 
 // libdw from elfutils-devel provides more details than libbfd
 #define BACKWARD_HAS_DW 1
@@ -44,6 +45,18 @@ void block_signals()
   pthread_sigmask(SIG_BLOCK, &signal_set, nullptr);
 }
 
+void set_new_handler(const std::string& name)
+{
+  if (name == "default")  // system default may change in C++20
+    ;
+  else if (name == "bad_alloc")
+    std::set_new_handler([] { throw std::bad_alloc(); });
+  else if (name == "terminate")
+    std::set_new_handler([] { std::terminate(); });
+  else
+    throw SmartMet::Spine::Exception(BCP, "Unknown new_handler").addParameter("name", name);
+}
+
 /* [[noreturn]] */ void run(int argc, char* argv[])
 {
   try
@@ -53,6 +66,9 @@ void block_signals()
     SmartMet::Spine::Options options;
     if (!options.parse(argc, argv))
       exit(1);
+
+    // Set new_handler
+    set_new_handler(options.new_handler);
 
     // Block signals before starting new threads
 
