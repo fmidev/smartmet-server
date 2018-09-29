@@ -1,17 +1,13 @@
-
 #include "Utility.h"
-
-#include <spine/Exception.h>
-
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
-
 #include <fmt/format.h>
+#include <fmt/printf.h>
 #include <macgyver/StringConversion.h>
-
+#include <spine/Exception.h>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
