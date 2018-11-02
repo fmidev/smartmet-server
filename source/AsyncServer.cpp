@@ -62,25 +62,20 @@ void AsyncServer::shutdown()
 {
   try
   {
-    // STEP 1: Shutting down the server socket i.e we should not accept any more connections.
-
+    // Shutting down the server socket i.e we should not accept any more connections.
     itsAcceptor.close();
 
-    // STEP 2: Shutdown the reactor (i.e. plugins and engines)
+    // Shutdown the IO service - does not block (is this necessary after the above?)
+    itsIoService.stop();
 
-    itsReactor.shutdown();
-
-    // STEP 3: Shutdown the thread pools
-
-    // Let's sleep few seconds, because there might be still some
-    // data that needs to be tranported.
-
-    boost::this_thread::sleep(boost::posix_time::milliseconds(5000));
-
+    // Shutdown the thread pools
     itsSlowExecutor.setGracefulShutdown(true);
     itsFastExecutor.setGracefulShutdown(true);
     itsSlowExecutor.shutdown();
     itsFastExecutor.shutdown();
+
+    // Shutdown the reactor (i.e. plugins and engines)
+    itsReactor.shutdown();
   }
   catch (...)
   {
