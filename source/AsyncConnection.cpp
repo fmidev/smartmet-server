@@ -9,6 +9,7 @@
 #include "Utility.h"
 #include <boost/bind.hpp>
 #include <boost/move/make_unique.hpp>
+#include <spine/Convenience.h>
 #include <spine/Exception.h>
 #include <sstream>
 #include <vector>
@@ -64,12 +65,11 @@ void AsyncConnection::handleTimer(const boost::system::error_code& err)
     SmartMet::Spine::WriteLock lock(itsMutex);  // Lock here, just in case
     if (err != boost::asio::error::operation_aborted)
     {
-      boost::system::error_code ignored_ec;
-
       hasTimedOut = true;
 
       sendStockReply(SmartMet::Spine::HTTP::Status::request_timeout);
 
+      boost::system::error_code ignored_ec;
       itsSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
       itsSocket.close(ignored_ec);
     }
@@ -118,6 +118,8 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
 
     if (itsReactor.isLoadHigh())
     {
+      std::cout << Spine::log_time_str() << " Too many active requests, reporting high load"
+                << std::endl;
       sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
       return;
     }
@@ -544,8 +546,11 @@ void AsyncConnection::writeChunkedReply(const boost::system::error_code& e,
     }
     else
     {
+      boost::system::error_code ignored_ec;
+      itsSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+      itsSocket.close();
       reportInfo("Error in chunked reply send to " + itsRequest->getClientIP() +
-                 ". Reason: " + e.message());
+                 ". Reason: " + e.message() + ". Code: " + Fmi::to_string(e.value()));
     }
   }
   catch (...)
@@ -584,8 +589,11 @@ void AsyncConnection::finalizeChunkedReply(const boost::system::error_code& e,
     }
     else
     {
-      reportInfo("Error in chunked reply send to " + itsRequest->getClientIP() +
-                 ". Reason: " + e.message());
+      boost::system::error_code ignored_ec;
+      itsSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+      itsSocket.close();
+      reportInfo("Error in finalizing chunked reply send to " + itsRequest->getClientIP() +
+                 ". Reason: " + e.message() + ". Code: " + Fmi::to_string(e.value()));
     }
   }
   catch (...)
@@ -752,6 +760,9 @@ void AsyncConnection::writeStreamReply(const boost::system::error_code& e,
                                                       itsResponse->itsBackendPort,
                                                       itsResponse->getStreamingStatus());
       }
+      boost::system::error_code ignored_ec;
+      itsSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+      itsSocket.close();
     }
   }
   catch (...)
@@ -795,6 +806,9 @@ void AsyncConnection::writeRegularReply(const boost::system::error_code& e,
     {
       reportInfo("Error in reply send to " + itsRequest->getClientIP() +
                  ". Reason: " + e.message());
+      boost::system::error_code ignored_ec;
+      itsSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+      itsSocket.close();
     }
   }
   catch (...)
