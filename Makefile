@@ -43,7 +43,7 @@ CC = g++
 
 DEFINES = -DUNIX
 
-CFLAGS = $(DEFINES) -O2 -DNDEBUG $(MAINFLAGS)
+CFLAGS = $(DEFINES) -O2 -g -DNDEBUG $(MAINFLAGS)
 override LDFLAGS += -rdynamic
 
 # Special modes
