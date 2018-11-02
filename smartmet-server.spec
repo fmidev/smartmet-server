@@ -2,8 +2,8 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 18.9.29
-Release: 1%{?dist}.fmi
+Version: 18.11.2
+Release: 6%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -80,6 +80,15 @@ fi
 
 
 %changelog
+* Fri Nov  2 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.11.2-6.fmi
+- Do not wait for queues if unable to schedule a requests, return 503 instead
+- Added shutdown calls for sockets about to be closed
+- Added CLOSE_WAIT tests
+- Fixed debuginfo package to include symbols
+- Close socket if regular reply is aborted
+- Close socket if chunked reply is aborted
+- Improved shutdown sequence to prevent segmentation faults
+
 * Sat Sep 29 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.9.29-1.fmi
 - Upgraded to newer fmt
 

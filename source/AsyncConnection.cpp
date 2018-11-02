@@ -68,10 +68,6 @@ void AsyncConnection::handleTimer(const boost::system::error_code& err)
       hasTimedOut = true;
 
       sendStockReply(SmartMet::Spine::HTTP::Status::request_timeout);
-
-      boost::system::error_code ignored_ec;
-      itsSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-      itsSocket.close(ignored_ec);
     }
   }
   catch (...)
@@ -260,7 +256,6 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
       else if (parsedRequest.first == SmartMet::Spine::HTTP::ParsingStatus::FAILED)
       {
         // Failed parse, something (fundamentally) wrong with the request
-
         sendStockReply(SmartMet::Spine::HTTP::Status::bad_request);
       }
       else
@@ -546,9 +541,7 @@ void AsyncConnection::writeChunkedReply(const boost::system::error_code& e,
     }
     else
     {
-      boost::system::error_code ignored_ec;
-      itsSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-      itsSocket.close();
+      sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
       reportInfo("Error in chunked reply send to " + itsRequest->getClientIP() +
                  ". Reason: " + e.message() + ". Code: " + Fmi::to_string(e.value()));
     }
@@ -589,9 +582,7 @@ void AsyncConnection::finalizeChunkedReply(const boost::system::error_code& e,
     }
     else
     {
-      boost::system::error_code ignored_ec;
-      itsSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-      itsSocket.close();
+      sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
       reportInfo("Error in finalizing chunked reply send to " + itsRequest->getClientIP() +
                  ". Reason: " + e.message() + ". Code: " + Fmi::to_string(e.value()));
     }
@@ -750,6 +741,7 @@ void AsyncConnection::writeStreamReply(const boost::system::error_code& e,
     }
     else
     {
+      sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
       reportInfo("Error in stream reply send to " + itsRequest->getClientIP() +
                  ". Reason: " + e.message());
       if (itsResponse->isGatewayResponse)
@@ -760,9 +752,6 @@ void AsyncConnection::writeStreamReply(const boost::system::error_code& e,
                                                       itsResponse->itsBackendPort,
                                                       itsResponse->getStreamingStatus());
       }
-      boost::system::error_code ignored_ec;
-      itsSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-      itsSocket.close();
     }
   }
   catch (...)
@@ -804,11 +793,9 @@ void AsyncConnection::writeRegularReply(const boost::system::error_code& e,
     }
     else
     {
+      sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
       reportInfo("Error in reply send to " + itsRequest->getClientIP() +
                  ". Reason: " + e.message());
-      boost::system::error_code ignored_ec;
-      itsSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-      itsSocket.close();
     }
   }
   catch (...)
@@ -915,6 +902,11 @@ void AsyncConnection::sendStockReply(const SmartMet::Spine::HTTP::Status theStat
     boost::asio::write(itsSocket, contentbuffer, err);
 
     itsFinalStatus = err;
+
+    // Shutdown immediately to avoid lingering CLOSE_WAIT sockets
+    boost::system::error_code ignored_ec;
+    itsSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+    itsSocket.close(ignored_ec);
   }
   catch (...)
   {
@@ -930,29 +922,20 @@ void AsyncConnection::scheduleChunkGetter()
     // Put the chunk getter function in the appropriate pool
     if (itsQueryIsFast)
     {
-      while (!scheduled)
-      {
-        scheduled = itsFastExecutor.schedule(
-            boost::bind(&AsyncConnection::getNextChunk, shared_from_this()));
-        if (!scheduled)
-        {
-          // If SmartMet Reactor queue is full, sleep for a while to let it clear
-          boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-        }
-      }
+      scheduled =
+          itsFastExecutor.schedule(boost::bind(&AsyncConnection::getNextChunk, shared_from_this()));
     }
     else
     {
-      while (!scheduled)
-      {
-        scheduled = itsSlowExecutor.schedule(
-            boost::bind(&AsyncConnection::getNextChunk, shared_from_this()));
-        if (!scheduled)
-        {
-          // If SmartMet Reactor queue is full, sleep for a while to let it clear
-          boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-        }
-      }
+      scheduled =
+          itsSlowExecutor.schedule(boost::bind(&AsyncConnection::getNextChunk, shared_from_this()));
+    }
+
+    // Task queue was full, send busy response
+    if (!scheduled)
+    {
+      sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
+      reportInfo("Request queue was full, aborting chunked transfer");
     }
   }
   catch (...)
@@ -972,29 +955,20 @@ void AsyncConnection::scheduleChunkedChunkGetter()
     // Put the chunk getter function in the appropriate pool
     if (itsQueryIsFast)
     {
-      while (!scheduled)
-      {
-        scheduled = itsFastExecutor.schedule(
-            boost::bind(&AsyncConnection::getNextChunkedChunk, shared_from_this()));
-        if (!scheduled)
-        {
-          // If the queue is full, sleep for a while to let it clear
-          boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-        }
-      }
+      scheduled = itsFastExecutor.schedule(
+          boost::bind(&AsyncConnection::getNextChunkedChunk, shared_from_this()));
     }
     else
     {
-      while (!scheduled)
-      {
-        scheduled = itsSlowExecutor.schedule(
-            boost::bind(&AsyncConnection::getNextChunkedChunk, shared_from_this()));
-        if (!scheduled)
-        {
-          // If the queue is full, sleep for a while to let it clear
-          boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-        }
-      }
+      scheduled = itsSlowExecutor.schedule(
+          boost::bind(&AsyncConnection::getNextChunkedChunk, shared_from_this()));
+    }
+
+    // Task queue was full, send busy response
+    if (!scheduled)
+    {
+      sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
+      reportInfo("Request queue was full, aborting chunked transfer");
     }
   }
   catch (...)
