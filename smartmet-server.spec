@@ -2,8 +2,8 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 18.11.2
-Release: 6%{?dist}.fmi
+Version: 18.11.5
+Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -20,7 +20,7 @@ BuildRequires: libconfig
 BuildRequires: libconfig-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 18.9.29
-BuildRequires: smartmet-library-spine-devel >= 18.9.29
+BuildRequires: smartmet-library-spine-devel >= 18.11.5
 Requires: boost-date-time
 Requires: boost-filesystem
 Requires: boost-iostreams
@@ -33,7 +33,7 @@ Requires: glibc
 Requires: jemalloc
 Requires: libconfig
 Requires: smartmet-library-macgyver >= 18.9.29
-Requires: smartmet-library-spine >= 18.9.29
+Requires: smartmet-library-spine >= 18.11.5
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -80,13 +80,10 @@ fi
 
 
 %changelog
-* Fri Nov  2 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.11.2-6.fmi
-- Do not wait for queues if unable to schedule a requests, return 503 instead
-- Added shutdown calls for sockets about to be closed
-- Added CLOSE_WAIT tests
+* Mon Nov  5 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.11.5-1.fmi
+- Do not wait for queues if unable to schedule a request, return 503 instead
+- Added shutdown calls for sockets about to be closed to avoid WAIT-states
 - Fixed debuginfo package to include symbols
-- Close socket if regular reply is aborted
-- Close socket if chunked reply is aborted
 - Improved shutdown sequence to prevent segmentation faults
 
 * Sat Sep 29 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.9.29-1.fmi
