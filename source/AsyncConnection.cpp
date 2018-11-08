@@ -114,10 +114,18 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
 
     if (itsReactor.isLoadHigh())
     {
-      std::cout << Spine::log_time_str() << " Too many active requests, reporting high load"
+      bool is_admin_request = (itsRequest && itsRequest->getResource() == "admin");
+
+      if(!is_admin_request)
+      {
+        std::cout << Spine::log_time_str() << " Too many active requests, reporting high load"
+                  << std::endl;
+        sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
+        return;
+      }
+
+      std::cout << Spine::log_time_str() << " Letting admin request pass despite high load"
                 << std::endl;
-      sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
-      return;
     }
 
     // Initialize the connection status.

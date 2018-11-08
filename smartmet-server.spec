@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 18.11.5
+Version: 18.11.8
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -80,6 +80,9 @@ fi
 
 
 %changelog
+* Thu Nov  8 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.11.8-1.fmi
+- Let admin requests pass despite a high load
+
 * Mon Nov  5 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.11.5-1.fmi
 - Do not wait for queues if unable to schedule a request, return 503 instead
 - Added shutdown calls for sockets about to be closed to avoid WAIT-states
