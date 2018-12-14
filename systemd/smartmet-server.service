@@ -4,6 +4,9 @@ Description=Smartmet Weather Server
 
 # Not required, but must be started after if docker is in use
 After=docker.service
+# Not required, but preferable if the mount exists
+After=smartmet-data.mount
+
 # Requires=docker.service
  
 [Service]
