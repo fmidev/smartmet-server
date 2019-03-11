@@ -1,1 +1,7 @@
 compile_commands.json
+/.cproject
+/.project
+/*.so
+.settings/
+dist/
+.circleci/tmp.*
