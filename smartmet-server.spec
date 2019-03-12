@@ -37,10 +37,8 @@ Requires: smartmet-library-spine >= 18.12.13
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
-#TestRequires: boost-devel
-#TestRequires: gcc-c++
-#TestRequires: smartmet-library-macgyver-devel
-#TestRequires: smartmet-library-spine-devel
+#TestRequires: /bin/bash
+#TestRequires: make
 
 Summary: SmartMet server
 %description

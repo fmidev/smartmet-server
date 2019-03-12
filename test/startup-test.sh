@@ -4,6 +4,13 @@ waittime=60  # What is the timeout limit
 
 cd `dirname $0`
 
+smartmetd=../smartmetd
+if [ "$1" ] ; then smartmetd=$1 ; fi
+if [ ! -x "$smartmetd" ] ; then
+    echo "Smartmet server at '$smartmetd' is not found or not executable"
+    exit 127
+fi
+
 function waitloop {
     echo "Waiting for server to start ..."
     while ! grep -q "Launched.*server" test.out ; do
@@ -24,7 +31,7 @@ function waitloop {
 
 rm -f test.status  # Appearance of this file signals smartmetd exited
 touch test.out # Avoid missing file warnings when grepping
-( timeout $waittime ../smartmetd -d -v -c ./minimal.conf >test.out 2>&1 ; echo $? > test.status ) &
+( timeout $waittime "$smartmetd" -d -v -c ./minimal.conf >test.out 2>&1 ; echo $? > test.status ) &
 childpid=$!
 
 waitloop
