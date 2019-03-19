@@ -42,7 +42,7 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
     {
       std::cout << "Error: Unable to bind listening socket to port " << theOptions.port
                 << std::endl;
-      std::exit(1);
+      throw;
     }
 
 #ifndef NDEBUG

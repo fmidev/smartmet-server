@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 18.12.14
+Version: 19.3.19
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -20,7 +20,7 @@ BuildRequires: libconfig
 BuildRequires: libconfig-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 18.11.24
-BuildRequires: smartmet-library-spine-devel >= 18.12.13
+BuildRequires: smartmet-library-spine-devel >= 19.3.14
 Requires: boost-date-time
 Requires: boost-filesystem
 Requires: boost-iostreams
@@ -33,7 +33,7 @@ Requires: glibc
 Requires: jemalloc
 Requires: libconfig
 Requires: smartmet-library-macgyver >= 18.11.24
-Requires: smartmet-library-spine >= 18.12.13
+Requires: smartmet-library-spine >= 19.3.14
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -80,6 +80,9 @@ fi
 
 
 %changelog
+* Tue Mar 19 2019 Mika Heiskanen <mika.heiskanen@fmi.fi> - 19.3.19-1.fmi
+- Improved error handling if socket is already in use
+
 * Fri Dec 14 2018 Mika Heiskanen <mika.heiskanen@fmi.fi> - 18.12.14-1.fmi
 - Start server after /smartmet/data has been mounted - if it is present
 
