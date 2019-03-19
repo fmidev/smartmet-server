@@ -37,6 +37,8 @@ Requires: smartmet-library-spine >= 19.3.14
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
+#TestRequires: /bin/bash
+#TestRequires: make
 
 Summary: SmartMet server
 %description

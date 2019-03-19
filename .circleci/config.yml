@@ -1,0 +1,44 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: fmidev/smartmet-cibase:latest
+    steps:
+      - checkout
+      - run:
+          name: Install build dependencies
+          command: ci-build deps
+      - run:
+          name: Build RPM
+          command: ci-build rpm
+      - persist_to_workspace:
+          root: /dist
+          paths: ./*.rpm
+  test:
+    docker:
+      - image: fmidev/smartmet-cibase:latest
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /dist
+      - run:
+          name: Installation test
+          command: sudo yum install -y /dist/*.rpm
+      - run:
+          name: Test prepare
+          command: ci-build testprep
+      - run:
+          name: Test
+          command: ci-build test
+      - store_artifacts:
+          path: /dist
+          destination: dist/
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
