@@ -107,7 +107,7 @@ objdir = obj
 includedir = $(PREFIX)/include
 
 ifeq ($(origin SBINDIR), undefined)
-  sbindir = $(PREFIX)/bin
+  sbindir = $(PREFIX)/sbin
 else
   sbindir = $(SBINDIR)
 endif
