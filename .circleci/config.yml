@@ -23,7 +23,7 @@ jobs:
           at: /dist
       - run:
           name: Installation test
-          command: sudo yum install -y /dist/*.rpm
+          command: ci-build dummy ; sudo yum install -y /dist/*.rpm
       - run:
           name: Test prepare
           command: ci-build testprep
