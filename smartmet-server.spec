@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 19.3.19
+Version: 19.6.20
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -62,6 +62,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/smartmetd
 %defattr(0644,root,root,0755)
 %config(noreplace) %{_sysconfdir}/logrotate.d/smartmet-server
+%config(noreplace) %{_sysconfdir}/smartmet/smartmetd.env
 %{_unitdir}/smartmet-server.service
 %{_sysconfdir}/smartmet
 
@@ -82,6 +83,9 @@ fi
 
 
 %changelog
+* Thu Jun 20 2019 Mika Heiskanen <mika.heiskanen@fmi.fi> - 19.6.20-1.fmi
+- Added smartmetd.env
+
 * Tue Mar 19 2019 Mika Heiskanen <mika.heiskanen@fmi.fi> - 19.3.19-1.fmi
 - Improved error handling if socket is already in use
 
