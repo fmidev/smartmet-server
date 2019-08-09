@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 19.3.19
+Version: 19.8.9
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -82,6 +82,9 @@ fi
 
 
 %changelog
+* Fri Aug  9 2019 Mika Heiskanen <mika.heiskanen@fmi.fi> - 19.8.9-1.fmi
+- Use the system locale globally in the server for proper character conversions
+
 * Tue Mar 19 2019 Mika Heiskanen <mika.heiskanen@fmi.fi> - 19.3.19-1.fmi
 - Improved error handling if socket is already in use
 

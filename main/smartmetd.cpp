@@ -1,4 +1,5 @@
 #include "AsyncServer.h"
+
 #include <jemalloc/jemalloc.h>
 #include <macgyver/AnsiEscapeCodes.h>
 #include <spine/Exception.h>
@@ -7,6 +8,7 @@
 #include <spine/Reactor.h>
 #include <spine/SmartMet.h>
 #include <sys/types.h>
+
 #include <csignal>
 #include <iostream>
 #include <new>
@@ -66,6 +68,9 @@ void set_new_handler(const std::string& name)
     SmartMet::Spine::Options options;
     if (!options.parse(argc, argv))
       exit(1);
+
+    // Use the system locale or autocomplete may not work properly (iconv requirement)
+    std::setlocale(LC_ALL, "");
 
     // Set new_handler
     set_new_handler(options.new_handler);
