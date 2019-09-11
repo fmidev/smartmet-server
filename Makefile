@@ -6,7 +6,7 @@ MAINFLAGS = -MD -Wall -W -Wno-unused-parameter
 ifeq (6, $(RHEL_VERSION))
   MAINFLAGS += -std=c++0x
 else
-  MAINFLAGS += -std=c++11 -fdiagnostics-color=always
+  MAINFLAGS += -std=c++11 -fdiagnostics-color=always -fsanitize=thread
 endif
 
 # mdsplib does not declare things correctly
@@ -70,6 +70,7 @@ LIBS = -L$(libdir) \
 	-lboost_regex \
 	-lboost_thread \
 	-lboost_system \
+	-lpq \
 	-lfmt \
 	-lz -lpthread \
 	-ldw

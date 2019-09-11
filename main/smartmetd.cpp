@@ -1,6 +1,6 @@
 #include "AsyncServer.h"
 
-#include <jemalloc/jemalloc.h>
+// #include <jemalloc/jemalloc.h>
 #include <macgyver/AnsiEscapeCodes.h>
 #include <spine/Exception.h>
 #include <spine/HTTP.h>
@@ -96,7 +96,7 @@ void set_new_handler(const std::string& name)
     backward::SignalHandling sh(core_signals);
 
     // Save heap profile if it has been enabled
-    mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
+    // mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
 
     // Load engines and plugins
 
@@ -158,7 +158,7 @@ int main(int argc, char* argv[])
           server->shutdownServer();
 
         // Save heap profile if it has been enabled
-        mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
+        // mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
         return 0;
       }
       else

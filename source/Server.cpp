@@ -70,9 +70,9 @@ void Server::shutdownServer()
     itsShutdownRequested = true;
 
     // Take heap snapshots before and after engine+plugin shutdown if profiling is enabled
-    mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
+    // mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
     shutdown();
-    mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
+    // mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
   }
   catch (...)
   {
