@@ -116,7 +116,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
     {
       bool is_admin_request = (itsRequest && itsRequest->getResource() == "admin");
 
-      if(!is_admin_request)
+      if (!is_admin_request)
       {
         std::cout << Spine::log_time_str() << " Too many active requests, reporting high load"
                   << std::endl;
@@ -423,7 +423,7 @@ void AsyncConnection::startChunkedReply()
       auto headerbuffer = itsResponse->headersToBuffer();
       // Write headers
       boost::asio::write(itsSocket, headerbuffer, e);
-      if (e != nullptr)
+      if (e)
       {
         reportInfo("Unable to send chunk response headers to " + itsRequest->getClientIP() +
                    ". Reason: " + e.message());
@@ -440,7 +440,7 @@ void AsyncConnection::startChunkedReply()
       auto headerbuffer = itsResponse->headersToBuffer();
       // Write headers
       boost::asio::write(itsSocket, headerbuffer, e);
-      if (e != nullptr)
+      if (e)
       {
         reportInfo("Unable to send chunk response headers to " + itsRequest->getClientIP() +
                    ". Reason: " + e.message());
@@ -479,7 +479,7 @@ void AsyncConnection::startStreamReply()
       auto headerbuffer = itsResponse->headersToBuffer();
       // Write headers
       boost::asio::write(itsSocket, headerbuffer, e);
-      if (e != nullptr)
+      if (e)
       {
         reportInfo("Unable to send stream response headers to " + itsRequest->getClientIP() +
                    ". Reason: " + e.message());
@@ -496,7 +496,7 @@ void AsyncConnection::startStreamReply()
       auto headerbuffer = itsResponse->headersToBuffer();
       // Write headers
       boost::asio::write(itsSocket, headerbuffer, e);
-      if (e != nullptr)
+      if (e)
       {
         reportInfo("Unable to send stream response headers to " + itsRequest->getClientIP() +
                    ". Reason: " + e.message());
@@ -998,7 +998,7 @@ void AsyncConnection::notifyClientDisconnect(const boost::system::error_code& e,
     // client disconnect
     // has been signaled
     boost::lock_guard<boost::mutex> lock(itsDisconnectMutex);
-    if (e != nullptr)
+    if (e)
     {
       // Some error occurred, the client may have disconnected
       if (e == boost::asio::error::operation_aborted)
