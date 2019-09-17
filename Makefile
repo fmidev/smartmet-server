@@ -6,7 +6,7 @@ MAINFLAGS = -MD -Wall -W -Wno-unused-parameter
 ifeq (6, $(RHEL_VERSION))
   MAINFLAGS += -std=c++0x
 else
-  MAINFLAGS += -std=c++11 -fdiagnostics-color=always -fsanitize=thread
+  MAINFLAGS += -std=c++11 -fdiagnostics-color=always
 endif
 
 # mdsplib does not declare things correctly
