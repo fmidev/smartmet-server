@@ -70,7 +70,6 @@ LIBS = -L$(libdir) \
 	-lboost_regex \
 	-lboost_thread \
 	-lboost_system \
-	-lpq \
 	-lfmt \
 	-lz -lpthread \
 	-ldw
