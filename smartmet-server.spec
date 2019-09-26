@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 19.8.9
+Version: 19.9.26
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -83,6 +83,9 @@ fi
 
 
 %changelog
+* Thu Sep 26 2019 Mika Heiskanen <mika.heiskanen@fmi.fi> - 19.9.26-1.fmi
+- Added support for ASAN and TSAN builds
+
 * Fri Aug  9 2019 Mika Heiskanen <mika.heiskanen@fmi.fi> - 19.8.9-1.fmi
 - Use the system locale globally in the server for proper character conversions
 
