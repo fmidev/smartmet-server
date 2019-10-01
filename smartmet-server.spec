@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 19.9.17
+Version: 19.10.1
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -83,6 +83,9 @@ fi
 
 
 %changelog
+* Tue Oct  1 2019 Mika Heiskanen <mika.heiskanen@fmi.fi> - 19.10.1-1.fmi
+- Added option --stacktrace
+
 * Tue Sep 17 2019 Mika Heiskanen <mika.heiskanen@fmi.fi> - 19.9.17-1.fmi
 - Repackaged since Reactor object size changed
 

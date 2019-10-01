@@ -8,9 +8,9 @@
 #include <spine/Reactor.h>
 #include <spine/SmartMet.h>
 #include <sys/types.h>
-
 #include <csignal>
 #include <iostream>
+#include <memory>
 #include <new>
 
 // libdw from elfutils-devel provides more details than libbfd
@@ -93,7 +93,10 @@ void set_new_handler(const std::string& name)
     sigaction(SIGHUP, &action, nullptr);
     sigaction(SIGINT, &action, nullptr);
 
-    backward::SignalHandling sh(core_signals);
+    std::unique_ptr<backward::SignalHandling> sh;
+
+    if (options.stacktrace)
+      sh.reset(new backward::SignalHandling(core_signals));
 
     // Save heap profile if it has been enabled
     // mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
