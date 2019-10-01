@@ -1,17 +1,14 @@
 MODULE = smartmet-server
 SPEC = smartmet-server
 
-MAINFLAGS = -MD -Wall -W -Wno-unused-parameter
+-include $(HOME)/.smartmet.mk
+GCC_DIAG_COLOR ?= always
 
-ifeq (6, $(RHEL_VERSION))
-  MAINFLAGS += -std=c++0x
-else
-  MAINFLAGS += -std=c++11 -fdiagnostics-color=always
-endif
+FLAGS = -MD -Wall -W -Wno-unused-parameter -std=c++11 -fdiagnostics-color=$(GCC_DIAG_COLOR)
 
 # mdsplib does not declare things correctly
 
-MAINFLAGS += -fpermissive
+FLAGS += -fpermissive
 
 
 EXTRAFLAGS = \
@@ -37,19 +34,26 @@ DIFFICULTFLAGS = \
 	-pedantic \
 	-Wshadow
 
+ifeq ($(TSAN), yes)
+  FLAGS += -fsanitize=thread
+endif
+ifeq ($(ASAN), yes)
+  FLAGS += -fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract -fsanitize=undefined -fsanitize-address-use-after-scope
+endif
+
 CC = g++
 
 # Default compiler flags
 
 DEFINES = -DUNIX
 
-CFLAGS = $(DEFINES) -O2 -g -DNDEBUG $(MAINFLAGS)
+CFLAGS = $(DEFINES) -O2 -g -DNDEBUG $(FLAGS)
 override LDFLAGS += -rdynamic
 
 # Special modes
 
-CFLAGS_DEBUG = $(DEFINES) -O0 -g $(MAINFLAGS) $(EXTRAFLAGS) -Werror
-CFLAGS_PROFILE = $(DEFINES) -O2 -g -pg -DNDEBUG $(MAINFLAGS)
+CFLAGS_DEBUG = $(DEFINES) -O0 -g $(FLAGS) $(EXTRAFLAGS) -Werror
+CFLAGS_PROFILE = $(DEFINES) -O2 -g -pg -DNDEBUG $(FLAGS)
 
 override LDFLAGS_DEBUG += -rdynamic
 override LDFLAGS_PROFILE += -rdynamic
@@ -64,10 +68,10 @@ LIBS = -L$(libdir) \
 	`pkg-config --libs libconfig++` \
 	-ldl \
 	-lboost_filesystem \
+	-lboost_regex \
 	-lboost_date_time \
 	-lboost_iostreams \
 	-lboost_program_options \
-	-lboost_regex \
 	-lboost_thread \
 	-lboost_system \
 	-lfmt \
@@ -75,10 +79,8 @@ LIBS = -L$(libdir) \
 	-ldw
 
 ifneq (,$(findstring sanitize=address,$(CFLAGS)))
-  LIBS += -lasan
 else
 ifneq (,$(findstring sanitize=thread,$(CFLAGS)))
-  LIBS += -ltsan
 else
   LIBS += -ljemalloc
 endif
@@ -172,7 +174,7 @@ profile: objdir $(MAINPROGS)
 
 .SECONDEXPANSION:
 $(MAINPROGS): % : obj/%.o $(OBJFILES)
-	$(CC) $(LDFLAGS) -o $@ obj/$@.o $(OBJFILES) $(LIBS)
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ obj/$@.o $(OBJFILES) $(LIBS)
 
 clean:
 	rm -f $(MAINPROGS) source/*~ include/*~
