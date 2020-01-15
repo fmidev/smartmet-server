@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 19.10.1
+Version: 20.1.15
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -20,7 +20,7 @@ BuildRequires: libconfig
 BuildRequires: libconfig-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 19.8.2
-BuildRequires: smartmet-library-spine-devel >= 19.9.17
+BuildRequires: smartmet-library-spine-devel >= 20.1.15
 Requires: boost-date-time
 Requires: boost-filesystem
 Requires: boost-iostreams
@@ -33,7 +33,7 @@ Requires: glibc
 Requires: jemalloc
 Requires: libconfig
 Requires: smartmet-library-macgyver >= 19.8.2
-Requires: smartmet-library-spine >= 19.9.17
+Requires: smartmet-library-spine >= 20.1.15
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -83,6 +83,9 @@ fi
 
 
 %changelog
+* Wed Jan 15 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.1.15-1.fmi
+- New command line options for throttling
+
 * Tue Oct  1 2019 Mika Heiskanen <mika.heiskanen@fmi.fi> - 19.10.1-1.fmi
 - Added option --stacktrace
 
