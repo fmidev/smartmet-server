@@ -3,7 +3,7 @@
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
 Version: 20.2.13
-Release: 1%{?dist}.fmi
+Release: 2%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -30,7 +30,7 @@ Requires: boost-system
 Requires: boost-thread
 Requires: fmt >= 5.2.0
 Requires: glibc
-Requires: jemalloc-debug
+Requires: jemalloc
 Requires: libconfig
 Requires: smartmet-library-macgyver >= 20.2.5
 Requires: smartmet-library-spine >= 20.2.13
@@ -83,6 +83,9 @@ fi
 
 
 %changelog
+* Thu Feb 13 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.2.13-2.fmi
+- Fixed dependency to be on jemalloc instead of jemalloc-debug
+
 * Thu Feb 13 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.2.13-1.fmi
 - Rebuilt since Reactor object size changed
 
