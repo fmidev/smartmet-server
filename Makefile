@@ -82,7 +82,7 @@ ifneq (,$(findstring sanitize=address,$(CFLAGS)))
 else
 ifneq (,$(findstring sanitize=thread,$(CFLAGS)))
 else
-  LIBS += -ljemalloc-debug
+  LIBS += -ljemalloc
 endif
 endif
 
