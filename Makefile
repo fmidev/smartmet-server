@@ -207,7 +207,7 @@ objdir:
 
 rpm: clean $(SPEC).spec
 	rm -f $(SPEC).tar.gz # Clean a possible leftover from previous attempt
-	tar -czvf $(SPEC).tar.gz --exclude test --exclude-vcs --transform "s,^,$(SPEC)/," *
+	tar -czvf $(SPEC).tar.gz --exclude test --exclude loadtest --exclude-vcs --transform "s,^,$(SPEC)/," *
 	rpmbuild -ta $(SPEC).tar.gz
 	rm -f $(SPEC).tar.gz
 
