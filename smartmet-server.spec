@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 20.1.15
+Version: 20.2.13
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -19,8 +19,8 @@ BuildRequires: jemalloc-devel
 BuildRequires: libconfig
 BuildRequires: libconfig-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 19.8.2
-BuildRequires: smartmet-library-spine-devel >= 20.1.15
+BuildRequires: smartmet-library-macgyver-devel >= 20.2.5
+BuildRequires: smartmet-library-spine-devel >= 20.2.13
 Requires: boost-date-time
 Requires: boost-filesystem
 Requires: boost-iostreams
@@ -30,10 +30,10 @@ Requires: boost-system
 Requires: boost-thread
 Requires: fmt >= 5.2.0
 Requires: glibc
-Requires: jemalloc
+Requires: jemalloc-debug
 Requires: libconfig
-Requires: smartmet-library-macgyver >= 19.8.2
-Requires: smartmet-library-spine >= 20.1.15
+Requires: smartmet-library-macgyver >= 20.2.5
+Requires: smartmet-library-spine >= 20.2.13
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -83,6 +83,9 @@ fi
 
 
 %changelog
+* Thu Feb 13 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.2.13-1.fmi
+- Rebuilt since Reactor object size changed
+
 * Wed Jan 15 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.1.15-1.fmi
 - New command line options for throttling
 
