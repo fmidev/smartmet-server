@@ -20,7 +20,7 @@ BuildRequires: libconfig
 BuildRequires: libconfig-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 20.2.5
-BuildRequires: smartmet-library-spine-devel >= 20.2.13
+BuildRequires: smartmet-library-spine-devel >= 20.2.7
 Requires: boost-date-time
 Requires: boost-filesystem
 Requires: boost-iostreams
@@ -33,7 +33,7 @@ Requires: glibc
 Requires: jemalloc-debug
 Requires: libconfig
 Requires: smartmet-library-macgyver >= 20.2.5
-Requires: smartmet-library-spine >= 20.2.13
+Requires: smartmet-library-spine >= 20.2.7
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
