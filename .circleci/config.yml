@@ -44,4 +44,4 @@ workflows:
               only: master
       - test:
           requires:
-            - build:
+            - build
