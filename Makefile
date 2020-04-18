@@ -18,20 +18,20 @@ EXTRAFLAGS = \
 	-Wcast-qual \
 	-Wcast-align \
 	-Wwrite-strings \
-	-Wnon-virtual-dtor \
 	-Wno-pmf-conversions \
 	-Wsign-promo \
-	-Wchar-subscripts \
-	-Wredundant-decls \
-	-Woverloaded-virtual
+	-Wchar-subscripts
 
 DIFFICULTFLAGS = \
 	-Wunreachable-code \
 	-Wconversion \
 	-Wctor-dtor-privacy \
+	-Wnon-virtual-dtor \
+	-Wredundant-decls \
 	-Weffc++ \
 	-Wold-style-cast \
 	-pedantic \
+	-Woverloaded-virtual \
 	-Wshadow
 
 ifeq ($(TSAN), yes)
@@ -58,11 +58,18 @@ CFLAGS_PROFILE = $(DEFINES) -O2 -g -pg -DNDEBUG $(FLAGS)
 override LDFLAGS_DEBUG += -rdynamic
 override LDFLAGS_PROFILE += -rdynamic
 
-INCLUDES = -I$(includedir) \
+# Boost 1.69
+
+ifneq "$(wildcard /usr/include/boost169)" ""
+  INCLUDES += -I/usr/include/boost169
+  LIBS += -L/usr/lib64/boost169
+endif
+
+INCLUDES += -I$(includedir) \
 	-I$(includedir)/smartmet \
 	`pkg-config --cflags libconfig++`
 
-LIBS = -L$(libdir) \
+LIBS += -L$(libdir) \
 	-lsmartmet-spine \
 	-lsmartmet-macgyver \
 	`pkg-config --libs libconfig++` \
