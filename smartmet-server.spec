@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 20.4.18
+Version: 20.7.31
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -19,8 +19,8 @@ BuildRequires: jemalloc-devel
 BuildRequires: libconfig
 BuildRequires: libconfig-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 20.4.18
-BuildRequires: smartmet-library-spine-devel >= 20.4.18
+BuildRequires: smartmet-library-macgyver-devel >= 20.7.31
+BuildRequires: smartmet-library-spine-devel >= 20.7.31
 Requires: boost169-date-time
 Requires: boost169-filesystem
 Requires: boost169-iostreams
@@ -32,8 +32,8 @@ Requires: fmt >= 5.2.0
 Requires: glibc
 Requires: jemalloc
 Requires: libconfig
-Requires: smartmet-library-macgyver >= 20.4.18
-Requires: smartmet-library-spine >= 20.4.18
+Requires: smartmet-library-macgyver >= 20.7.31
+Requires: smartmet-library-spine >= 20.7.31
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -83,6 +83,9 @@ fi
 
 
 %changelog
+* Fri Jul 31 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.7.31-1.fmi
+- Repackaged due to libpqxx upgrade
+
 * Sat Apr 18 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.4.18-1.fmi
 - Upgraded to Boost 1.69
 
