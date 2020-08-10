@@ -85,6 +85,7 @@ fi
 %changelog
 * Mon Aug 10 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.8.10-1.fmi
 - Repackaged since Spine::Options changed
+- Allow /admin requests during high load
 
 * Sat Apr 18 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.4.18-1.fmi
 - Upgraded to Boost 1.69
