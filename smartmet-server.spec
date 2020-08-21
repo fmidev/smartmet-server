@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 20.7.31
+Version: 20.8.21
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -14,13 +14,13 @@ BuildRequires: gcc-c++
 BuildRequires: make
 BuildRequires: boost169-devel
 BuildRequires: elfutils-devel
-BuildRequires: fmt-devel >= 5.2.0
+BuildRequires: fmt-devel >= 6.2.1
 BuildRequires: jemalloc-devel
 BuildRequires: libconfig
 BuildRequires: libconfig-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 20.7.31
-BuildRequires: smartmet-library-spine-devel >= 20.7.31
+BuildRequires: smartmet-library-macgyver-devel >= 20.8.21
+BuildRequires: smartmet-library-spine-devel >= 20.8.21
 Requires: boost169-date-time
 Requires: boost169-filesystem
 Requires: boost169-iostreams
@@ -28,12 +28,12 @@ Requires: boost169-program-options
 Requires: boost169-regex
 Requires: boost169-system
 Requires: boost169-thread
-Requires: fmt >= 5.2.0
+Requires: fmt >= 6.2.1
 Requires: glibc
 Requires: jemalloc
 Requires: libconfig
-Requires: smartmet-library-macgyver >= 20.7.31
-Requires: smartmet-library-spine >= 20.7.31
+Requires: smartmet-library-macgyver >= 20.8.21
+Requires: smartmet-library-spine >= 20.8.21
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -83,6 +83,13 @@ fi
 
 
 %changelog
+* Fri Aug 21 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.8.21-1.fmi
+- Upgrade to fmt 6.2
+
+* Mon Aug 10 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.8.10-1.fmi
+- Repackaged since Spine::Options changed
+- Allow /admin requests during high load
+
 * Fri Jul 31 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.7.31-1.fmi
 - Repackaged due to libpqxx upgrade
 

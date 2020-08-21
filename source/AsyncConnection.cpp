@@ -114,7 +114,8 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
 
     if (itsReactor.isLoadHigh())
     {
-      bool is_admin_request = (itsRequest && itsRequest->getResource() == "admin");
+      bool is_admin_request = (itsRequest && (itsRequest->getResource() == "admin" ||
+                                              itsRequest->getResource() == "/admin"));
 
       if (!is_admin_request)
       {
