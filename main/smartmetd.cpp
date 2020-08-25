@@ -105,6 +105,8 @@ void set_new_handler(const std::string& name)
 
     reactor.reset(new SmartMet::Spine::Reactor(options));
 
+    reactor->init();
+
     // Start the server
 
     server.reset(new SmartMet::Server::AsyncServer(options, *reactor));
