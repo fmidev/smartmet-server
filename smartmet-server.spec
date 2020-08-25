@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 20.8.21
+Version: 20.8.25
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -20,7 +20,7 @@ BuildRequires: libconfig
 BuildRequires: libconfig-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 20.8.21
-BuildRequires: smartmet-library-spine-devel >= 20.8.21
+BuildRequires: smartmet-library-spine-devel >= 20.8.25
 Requires: boost169-date-time
 Requires: boost169-filesystem
 Requires: boost169-iostreams
@@ -33,7 +33,7 @@ Requires: glibc
 Requires: jemalloc
 Requires: libconfig
 Requires: smartmet-library-macgyver >= 20.8.21
-Requires: smartmet-library-spine >= 20.8.21
+Requires: smartmet-library-spine >= 20.8.25
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -83,6 +83,9 @@ fi
 
 
 %changelog
+* Tue Aug 25 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.8.25-1.fmi
+- Adapt to SmartMet::Spine::Reactor changes (separate init method)
+
 * Fri Aug 21 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.8.21-1.fmi
 - Upgrade to fmt 6.2
 
