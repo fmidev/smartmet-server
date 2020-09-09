@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 20.8.25
+Version: 20.9.9
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -20,7 +20,7 @@ BuildRequires: libconfig
 BuildRequires: libconfig-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 20.8.21
-BuildRequires: smartmet-library-spine-devel >= 20.8.25
+BuildRequires: smartmet-library-spine-devel >= 20.9.8
 Requires: boost169-date-time
 Requires: boost169-filesystem
 Requires: boost169-iostreams
@@ -33,7 +33,7 @@ Requires: glibc
 Requires: jemalloc
 Requires: libconfig
 Requires: smartmet-library-macgyver >= 20.8.21
-Requires: smartmet-library-spine >= 20.8.25
+Requires: smartmet-library-spine >= 20.9.8
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -83,6 +83,9 @@ fi
 
 
 %changelog
+* Wed Sep  9 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.9.9-1.fmi
+- Ensure reactor shutdown when SIGTERM received before creating AsyncServer object
+
 * Tue Aug 25 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.8.25-1.fmi
 - Adapt to SmartMet::Spine::Reactor changes (separate init method)
 
