@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 20.9.9
+Version: 20.9.14
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -19,8 +19,8 @@ BuildRequires: jemalloc-devel
 BuildRequires: libconfig
 BuildRequires: libconfig-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 20.8.21
-BuildRequires: smartmet-library-spine-devel >= 20.9.8
+BuildRequires: smartmet-library-macgyver-devel >= 20.9.3
+BuildRequires: smartmet-library-spine-devel >= 20.9.14
 Requires: boost169-date-time
 Requires: boost169-filesystem
 Requires: boost169-iostreams
@@ -32,8 +32,8 @@ Requires: fmt >= 6.2.1
 Requires: glibc
 Requires: jemalloc
 Requires: libconfig
-Requires: smartmet-library-macgyver >= 20.8.21
-Requires: smartmet-library-spine >= 20.9.8
+Requires: smartmet-library-macgyver >= 20.9.3
+Requires: smartmet-library-spine >= 20.9.14
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -83,6 +83,9 @@ fi
 
 
 %changelog
+* Mon Sep 14 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.9.14-1.fmi
+- New option for running a script when active requests limit is broken
+
 * Wed Sep  9 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.9.9-1.fmi
 - Ensure reactor shutdown when SIGTERM received before creating AsyncServer object
 
