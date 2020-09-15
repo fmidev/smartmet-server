@@ -1,10 +1,9 @@
 MODULE = smartmet-server
 SPEC = smartmet-server
 
--include $(HOME)/.smartmet.mk
-GCC_DIAG_COLOR ?= always
+include common.mk
 
-FLAGS = -MD -Wall -W -Wno-unused-parameter -std=c++11 -fdiagnostics-color=$(GCC_DIAG_COLOR)
+FLAGS = -MD -Wall -W -Wno-unused-parameter -std=$(CXX_STD) -fdiagnostics-color=$(GCC_DIAG_COLOR)
 
 # mdsplib does not declare things correctly
 
@@ -41,8 +40,6 @@ ifeq ($(ASAN), yes)
   FLAGS += -fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract -fsanitize=undefined -fsanitize-address-use-after-scope
 endif
 
-CC = g++
-
 # Default compiler flags
 
 DEFINES = -DUNIX
@@ -61,7 +58,7 @@ override LDFLAGS_PROFILE += -rdynamic
 # Boost 1.69
 
 ifneq "$(wildcard /usr/include/boost169)" ""
-  INCLUDES += -I/usr/include/boost169
+  INCLUDES += -isystem /usr/include/boost169
   LIBS += -L/usr/lib64/boost169
 endif
 
@@ -95,22 +92,6 @@ endif
 
 
 # Common library compiling template
-
-# Installation directories
-
-processor := $(shell uname -p)
-
-ifeq ($(origin PREFIX), undefined)
-  PREFIX = /usr
-else
-  PREFIX = $(PREFIX)
-endif
-
-ifeq ($(processor), x86_64)
-  libdir = $(PREFIX)/lib64
-else
-  libdir = $(PREFIX)/lib
-endif
 
 objdir = obj
 includedir = $(PREFIX)/include
@@ -181,7 +162,7 @@ profile: objdir $(MAINPROGS)
 
 .SECONDEXPANSION:
 $(MAINPROGS): % : obj/%.o $(OBJFILES)
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ obj/$@.o $(OBJFILES) $(LIBS)
+	$(CXX) $(LDFLAGS) $(CFLAGS) -o $@ obj/$@.o $(OBJFILES) $(LIBS)
 
 clean:
 	rm -f $(MAINPROGS) source/*~ include/*~
@@ -221,6 +202,6 @@ rpm: clean $(SPEC).spec
 .SUFFIXES: $(SUFFIXES) .cpp
 
 obj/%.o : %.cpp
-	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+	$(CXX) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
 -include obj/*.d
