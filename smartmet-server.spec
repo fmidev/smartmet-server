@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 20.9.14
+Version: 20.9.23
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -19,8 +19,8 @@ BuildRequires: jemalloc-devel
 BuildRequires: libconfig
 BuildRequires: libconfig-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 20.9.3
-BuildRequires: smartmet-library-spine-devel >= 20.9.14
+BuildRequires: smartmet-library-macgyver-devel >= 20.9.18
+BuildRequires: smartmet-library-spine-devel >= 20.9.23
 Requires: boost169-date-time
 Requires: boost169-filesystem
 Requires: boost169-iostreams
@@ -32,8 +32,8 @@ Requires: fmt >= 6.2.1
 Requires: glibc
 Requires: jemalloc
 Requires: libconfig
-Requires: smartmet-library-macgyver >= 20.9.3
-Requires: smartmet-library-spine >= 20.9.14
+Requires: smartmet-library-macgyver >= 20.9.18
+Requires: smartmet-library-spine >= 20.9.23
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -83,6 +83,9 @@ fi
 
 
 %changelog
+* Wed Sep 23 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.9.23-1.fmi
+- Use Fmi::Exception instead of Spine::Exception
+
 * Mon Sep 14 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.9.14-1.fmi
 - New option for running a script when active requests limit is broken
 

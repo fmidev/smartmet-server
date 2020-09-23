@@ -7,7 +7,7 @@
 #include "Connection.h"
 #include "Server.h"
 
-#include <spine/Exception.h>
+#include <macgyver/Exception.h>
 
 namespace SmartMet
 {

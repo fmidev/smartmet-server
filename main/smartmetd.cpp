@@ -2,7 +2,7 @@
 
 // #include <jemalloc/jemalloc.h>
 #include <macgyver/AnsiEscapeCodes.h>
-#include <spine/Exception.h>
+#include <macgyver/Exception.h>
 #include <spine/HTTP.h>
 #include <spine/Options.h>
 #include <spine/Reactor.h>
@@ -57,7 +57,7 @@ void set_new_handler(const std::string& name)
   else if (name == "terminate")
     std::set_new_handler([] { std::terminate(); });
   else
-    throw SmartMet::Spine::Exception(BCP, "Unknown new_handler").addParameter("name", name);
+    throw Fmi::Exception(BCP, "Unknown new_handler").addParameter("name", name);
 }
 
 /* [[noreturn]] */ void run(int argc, char* argv[])
@@ -126,7 +126,7 @@ void set_new_handler(const std::string& name)
   }
   catch (...)
   {
-    SmartMet::Spine::Exception exception(BCP, "Operation failed!", nullptr);
+    Fmi::Exception exception(BCP, "Operation failed!", nullptr);
     exception.printError();
     kill(getpid(), SIGKILL);  // If we use exit() we might get a core dump.
                               // exit(-1);
@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
   }
   catch (...)
   {
-    SmartMet::Spine::Exception exception(BCP, "Operation failed!", nullptr);
+    Fmi::Exception exception(BCP, "Operation failed!", nullptr);
     exception.printError();
 
     return -1;
