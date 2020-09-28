@@ -10,7 +10,7 @@
 #include <boost/bind.hpp>
 #include <boost/move/make_unique.hpp>
 #include <spine/Convenience.h>
-#include <spine/Exception.h>
+#include <macgyver/Exception.h>
 #include <sstream>
 #include <vector>
 
@@ -72,7 +72,7 @@ void AsyncConnection::handleTimer(const boost::system::error_code& err)
   }
   catch (...)
   {
-    throw SmartMet::Spine::Exception::Trace(BCP, "Operation failed!");
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
   }
 }
 
@@ -98,7 +98,7 @@ void AsyncConnection::start()
   }
   catch (...)
   {
-    throw SmartMet::Spine::Exception::Trace(BCP, "Operation failed!");
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
   }
 }
 
@@ -174,7 +174,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
           }
           catch (...)
           {
-            SmartMet::Spine::Exception exception(BCP, "Operation failed!", nullptr);
+            Fmi::Exception exception(BCP, "Operation failed!", nullptr);
             reportError(std::string("Failed to obtain remote endpoint IP address:\n") +
                         exception.what());
             return;
@@ -298,7 +298,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
   }
   catch (...)
   {
-    Spine::Exception ex(BCP, "Operation failed! AsyncConnection::handleRead aborted", nullptr);
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::handleRead aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::handleRead aborted" << std::endl;
   }
@@ -384,7 +384,7 @@ void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandl
   catch (...)
   {
     // Dump stack trace to find possible causes
-    Spine::Exception ex(
+    Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::handleCompletedRead aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // Must not continue throwing here or the server will terminate
@@ -405,7 +405,7 @@ void AsyncConnection::startGatewayReply()
   }
   catch (...)
   {
-    throw SmartMet::Spine::Exception::Trace(BCP, "Operation failed!");
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
   }
 }
 
@@ -455,7 +455,7 @@ void AsyncConnection::startChunkedReply()
   }
   catch (...)
   {
-    Spine::Exception ex(
+    Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::startChunkedReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::startChunkedReply aborted" << std::endl;
@@ -512,7 +512,7 @@ void AsyncConnection::startStreamReply()
   }
   catch (...)
   {
-    Spine::Exception ex(
+    Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::startStreamReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::startStreamReply aborted" << std::endl;
@@ -557,7 +557,7 @@ void AsyncConnection::writeChunkedReply(const boost::system::error_code& e,
   }
   catch (...)
   {
-    Spine::Exception ex(BCP, "Operation failed! AsyncConnection::writeChunkedReply", nullptr);
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::writeChunkedReply", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::writeChunkedReply aborted" << std::endl;
   }
@@ -598,7 +598,7 @@ void AsyncConnection::finalizeChunkedReply(const boost::system::error_code& e,
   }
   catch (...)
   {
-    Spine::Exception ex(
+    Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::finalizeChunkedReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::finalizeChunkedReply aborted" << std::endl;
@@ -652,7 +652,7 @@ void AsyncConnection::getNextChunk()
   }
   catch (...)
   {
-    Spine::Exception ex(BCP, "Operation failed! AsyncConnection::getNextChunk aborted", nullptr);
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::getNextChunk aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::getNextChunk aborted" << std::endl;
   }
@@ -712,7 +712,7 @@ void AsyncConnection::getNextChunkedChunk()
   }
   catch (...)
   {
-    Spine::Exception ex(
+    Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::getNextChunkedChunk aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::getNextChunkedChunk aborted" << std::endl;
@@ -765,7 +765,7 @@ void AsyncConnection::writeStreamReply(const boost::system::error_code& e,
   }
   catch (...)
   {
-    Spine::Exception ex(
+    Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::writeStreamReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::writeStreamReply aborted" << std::endl;
@@ -809,7 +809,7 @@ void AsyncConnection::writeRegularReply(const boost::system::error_code& e,
   }
   catch (...)
   {
-    Spine::Exception ex(
+    Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::writeRegularReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::writeRegularReply aborted" << std::endl;
@@ -860,7 +860,7 @@ void AsyncConnection::startRegularReply()
   }
   catch (...)
   {
-    Spine::Exception ex(
+    Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::startRegularReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::startRegularReply aborted" << std::endl;
@@ -949,7 +949,7 @@ void AsyncConnection::scheduleChunkGetter()
   }
   catch (...)
   {
-    Spine::Exception ex(
+    Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::scheduleChunkGetter aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::scheduleChunkGetter aborted" << std::endl;
@@ -982,7 +982,7 @@ void AsyncConnection::scheduleChunkedChunkGetter()
   }
   catch (...)
   {
-    Spine::Exception ex(
+    Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::scheduleChunkedChunkGetter aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::scheduleChunkedChunkGetter aborted" <<
@@ -1024,7 +1024,7 @@ void AsyncConnection::notifyClientDisconnect(const boost::system::error_code& e,
   }
   catch (...)
   {
-    Spine::Exception ex(
+    Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::notifyClientDisconnect aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::notifyClientDisconnect aborted" <<

@@ -5,6 +5,7 @@ BreakBeforeBraces: Allman
 AllowShortLoopsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: false
+IncludeBlocks: Preserve
 # 80 is too little
 ColumnLimit: 100
 

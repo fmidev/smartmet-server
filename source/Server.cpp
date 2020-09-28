@@ -1,6 +1,6 @@
 #include "Server.h"
 
-#include <spine/Exception.h>
+#include <macgyver/Exception.h>
 
 #include <jemalloc/jemalloc.h>
 
@@ -53,7 +53,7 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
   }
   catch (...)
   {
-    throw SmartMet::Spine::Exception::Trace(BCP, "Operation failed!");
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
   }
 }
 
@@ -76,7 +76,7 @@ void Server::shutdownServer()
   }
   catch (...)
   {
-    throw SmartMet::Spine::Exception::Trace(BCP, "Operation failed!");
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
   }
 }
 

@@ -2,7 +2,7 @@
 
 // #include <jemalloc/jemalloc.h>
 #include <macgyver/AnsiEscapeCodes.h>
-#include <spine/Exception.h>
+#include <macgyver/Exception.h>
 #include <spine/HTTP.h>
 #include <spine/Options.h>
 #include <spine/Reactor.h>
@@ -21,6 +21,7 @@ std::unique_ptr<SmartMet::Server::Server> server;
 std::unique_ptr<SmartMet::Spine::Reactor> reactor;
 
 int last_signal = 0;
+bool may_start_server = true;
 
 // Allowed core dump signals. Note that we choose to ignore SIGBUS though due to
 // NFS problems, and SIGQUIT since we want to allow quitting via keyboard
@@ -56,7 +57,7 @@ void set_new_handler(const std::string& name)
   else if (name == "terminate")
     std::set_new_handler([] { std::terminate(); });
   else
-    throw SmartMet::Spine::Exception(BCP, "Unknown new_handler").addParameter("name", name);
+    throw Fmi::Exception(BCP, "Unknown new_handler").addParameter("name", name);
 }
 
 /* [[noreturn]] */ void run(int argc, char* argv[])
@@ -105,13 +106,16 @@ void set_new_handler(const std::string& name)
 
     reactor.reset(new SmartMet::Spine::Reactor(options));
 
+    reactor->init();
+
     // Start the server
 
-    server.reset(new SmartMet::Server::AsyncServer(options, *reactor));
-    std::cout << ANSI_BG_GREEN << ANSI_BOLD_ON << ANSI_FG_WHITE << "Launched Synapse server"
-              << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT << std::endl;
-
-    server->run();
+    if (may_start_server) {
+        server.reset(new SmartMet::Server::AsyncServer(options, *reactor));
+        std::cout << ANSI_BG_GREEN << ANSI_BOLD_ON << ANSI_FG_WHITE << "Launched Synapse server"
+                  << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT << std::endl;
+        server->run();
+    }
 
     // When we are here, shutdown has been signaled (however, this is not the main thread).
 
@@ -122,7 +126,7 @@ void set_new_handler(const std::string& name)
   }
   catch (...)
   {
-    SmartMet::Spine::Exception exception(BCP, "Operation failed!", nullptr);
+    Fmi::Exception exception(BCP, "Operation failed!", nullptr);
     exception.printError();
     kill(getpid(), SIGKILL);  // If we use exit() we might get a core dump.
                               // exit(-1);
@@ -157,8 +161,12 @@ int main(int argc, char* argv[])
         std::cout << " - shutting down!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
                   << std::endl;
 
-        if (server != nullptr)
+        if (server != nullptr) {
           server->shutdownServer();
+        } else if (reactor != nullptr) {
+          may_start_server = false;
+          reactor->shutdown();
+        }
 
         // Save heap profile if it has been enabled
         // mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
@@ -176,7 +184,7 @@ int main(int argc, char* argv[])
   }
   catch (...)
   {
-    SmartMet::Spine::Exception exception(BCP, "Operation failed!", nullptr);
+    Fmi::Exception exception(BCP, "Operation failed!", nullptr);
     exception.printError();
 
     return -1;
