@@ -80,8 +80,7 @@ LIBS += -L$(libdir) \
 	-lboost_system \
 	-lfmt \
 	-lz -lpthread \
-	-ldw \
-	-lstdc++ -lm
+	-ldw
 
 ifneq (,$(findstring sanitize=address,$(CFLAGS)))
 else
@@ -163,7 +162,7 @@ profile: objdir $(MAINPROGS)
 
 .SECONDEXPANSION:
 $(MAINPROGS): % : obj/%.o $(OBJFILES)
-	$(CC) $(LDFLAGS) -o $@ obj/$@.o $(OBJFILES) $(LIBS)
+	$(CXX) $(LDFLAGS) $(CFLAGS) -o $@ obj/$@.o $(OBJFILES) $(LIBS)
 
 clean:
 	rm -f $(MAINPROGS) source/*~ include/*~
