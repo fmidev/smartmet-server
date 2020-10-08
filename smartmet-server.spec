@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 20.9.23
+Version: 20.10.8
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -19,7 +19,7 @@ BuildRequires: jemalloc-devel
 BuildRequires: libconfig
 BuildRequires: libconfig-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 20.9.18
+BuildRequires: smartmet-library-macgyver-devel >= 20.10.7
 BuildRequires: smartmet-library-spine-devel >= 20.9.23
 Requires: boost169-date-time
 Requires: boost169-filesystem
@@ -32,7 +32,7 @@ Requires: fmt >= 6.2.1
 Requires: glibc
 Requires: jemalloc
 Requires: libconfig
-Requires: smartmet-library-macgyver >= 20.9.18
+Requires: smartmet-library-macgyver >= 20.10.7
 Requires: smartmet-library-spine >= 20.9.23
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
@@ -83,6 +83,10 @@ fi
 
 
 %changelog
+* Thu Oct  8 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.10.8-1.fmi
+- Start handling requests while engine and plugin initioalization is still ongoing
+- Build update: use makefile.inc from smartmet-library-macgyver
+
 * Wed Sep 23 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.9.23-1.fmi
 - Use Fmi::Exception instead of Spine::Exception
 
