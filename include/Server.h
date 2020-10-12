@@ -46,7 +46,7 @@ class Server : private boost::noncopyable
 
   virtual void run() = 0;
   void shutdownServer();
-  bool isShutdownRequested();
+  bool isShutdownRequested() const;
 
   virtual ~Server() = default;
 

@@ -8,22 +8,27 @@
 #include <fmt/printf.h>
 #include <macgyver/StringConversion.h>
 #include <macgyver/Exception.h>
+#include <array>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 
+namespace
+{
+const std::array<const char *,8> weekdays = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+const std::array<const char *,13> months = { "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+
+}
+
 namespace SmartMet
 {
+
 namespace Server
 {
 std::string makeDateString()
 {
   try
   {
-    static const char* weekdays[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
-
-    static const char* months[] = {
-        "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
     auto u_time = boost::posix_time::second_clock::universal_time();
     auto date = u_time.date();

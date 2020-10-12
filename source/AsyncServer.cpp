@@ -1,5 +1,4 @@
 #include "AsyncServer.h"
-#include <boost/bind.hpp>
 #include <boost/thread.hpp>
 #include <macgyver/Exception.h>
 
@@ -37,8 +36,7 @@ void AsyncServer::run()
     for (std::size_t i = 0; i < ASYNC_THREAD_SIZE; ++i)
     {
       // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-      workerThreads.add_thread(
-          new boost::thread(boost::bind(&boost::asio::io_service::run, &itsIoService)));
+      workerThreads.add_thread(new boost::thread([this]() { this->itsIoService.run(); }));
     }
 
     // Start the Slow Thread Pool Executor
@@ -105,7 +103,9 @@ void AsyncServer::startAccept()
                                                            itsFastExecutor);
     itsAcceptor.async_accept(
         itsNewConnection->socket(),
-        boost::bind(&AsyncServer::handleAccept, this, boost::asio::placeholders::error));
+        [this]
+        (const boost::system::error_code& err)
+        { this->handleAccept(err); });
   }
   catch (...)
   {

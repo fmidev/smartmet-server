@@ -1,75 +1,24 @@
 MODULE = smartmet-server
 SPEC = smartmet-server
 
-include common.mk
+REQUIRES = configpp
 
-FLAGS = -MD -Wall -W -Wno-unused-parameter -std=$(CXX_STD) -fdiagnostics-color=$(GCC_DIAG_COLOR)
-
-# mdsplib does not declare things correctly
-
-FLAGS += -fpermissive
-
-
-EXTRAFLAGS = \
-	-Werror \
-	-Winline \
-	-Wpointer-arith \
-	-Wcast-qual \
-	-Wcast-align \
-	-Wwrite-strings \
-	-Wno-pmf-conversions \
-	-Wsign-promo \
-	-Wchar-subscripts
-
-DIFFICULTFLAGS = \
-	-Wunreachable-code \
-	-Wconversion \
-	-Wctor-dtor-privacy \
-	-Wnon-virtual-dtor \
-	-Wredundant-decls \
-	-Weffc++ \
-	-Wold-style-cast \
-	-pedantic \
-	-Woverloaded-virtual \
-	-Wshadow
-
-ifeq ($(TSAN), yes)
-  FLAGS += -fsanitize=thread
-endif
-ifeq ($(ASAN), yes)
-  FLAGS += -fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract -fsanitize=undefined -fsanitize-address-use-after-scope
-endif
+include $(shell echo $${PREFIX-/usr})/share/smartmet/devel/makefile.inc
 
 # Default compiler flags
 
 DEFINES = -DUNIX
 
 CFLAGS = $(DEFINES) -O2 -g -DNDEBUG $(FLAGS)
+
 override LDFLAGS += -rdynamic
-
-# Special modes
-
-CFLAGS_DEBUG = $(DEFINES) -O0 -g $(FLAGS) $(EXTRAFLAGS) -Werror
-CFLAGS_PROFILE = $(DEFINES) -O2 -g -pg -DNDEBUG $(FLAGS)
-
 override LDFLAGS_DEBUG += -rdynamic
 override LDFLAGS_PROFILE += -rdynamic
-
-# Boost 1.69
-
-ifneq "$(wildcard /usr/include/boost169)" ""
-  INCLUDES += -isystem /usr/include/boost169
-  LIBS += -L/usr/lib64/boost169
-endif
-
-INCLUDES += -I$(includedir) \
-	-I$(includedir)/smartmet \
-	`pkg-config --cflags libconfig++`
 
 LIBS += -L$(libdir) \
 	-lsmartmet-spine \
 	-lsmartmet-macgyver \
-	`pkg-config --libs libconfig++` \
+	$(CONFIGPP_LIBS) \
 	-ldl \
 	-lboost_filesystem \
 	-lboost_regex \
@@ -80,8 +29,7 @@ LIBS += -L$(libdir) \
 	-lboost_system \
 	-lfmt \
 	-lz -lpthread \
-	-ldw \
-	-lstdc++ -lm
+	-ldw
 
 ifneq (,$(findstring sanitize=address,$(CFLAGS)))
 else
@@ -92,46 +40,12 @@ endif
 endif
 
 
-# Common library compiling template
-
-objdir = obj
-includedir = $(PREFIX)/include
-
-ifeq ($(origin SBINDIR), undefined)
-  sbindir = $(PREFIX)/sbin
-else
-  sbindir = $(SBINDIR)
-endif
-
-ifeq ($(origin DATADIR), undefined)
-  datadir = $(PREFIX)/share
-else
-  datadir = $(DATADIR)
-endif
-
-# Special modes
-
-ifneq (,$(findstring debug,$(MAKECMDGOALS)))
-  CFLAGS = $(CFLAGS_DEBUG)
-  LDFLAGS = $(LDFLAGS_DEBUG)
-endif
-
-ifneq (,$(findstring profile,$(MAKECMDGOALS)))
-  CFLAGS = $(CFLAGS_PROFILE)
-  LDFLAGS = $(LDFLAGS_PROFILE)
-endif
-
 # Compilation directories
 
 vpath %.cpp source main
 vpath %.h include
 vpath %.o $(objdir)
 vpath %.d $(objdir)
-
-# How to install
-
-INSTALL_PROG = install -m 775
-INSTALL_DATA = install -m 664
 
 # The files to be compiled
 
@@ -163,7 +77,7 @@ profile: objdir $(MAINPROGS)
 
 .SECONDEXPANSION:
 $(MAINPROGS): % : obj/%.o $(OBJFILES)
-	$(CC) $(LDFLAGS) -o $@ obj/$@.o $(OBJFILES) $(LIBS)
+	$(CXX) $(LDFLAGS) $(CFLAGS) -o $@ obj/$@.o $(OBJFILES) $(LIBS)
 
 clean:
 	rm -f $(MAINPROGS) source/*~ include/*~

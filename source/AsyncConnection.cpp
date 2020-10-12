@@ -86,15 +86,19 @@ void AsyncConnection::start()
     itsTimeoutTimer = boost::movelib::make_unique<boost::asio::deadline_timer>(
         itsIoService, boost::posix_time::seconds(itsTimeout));
 
-    itsTimeoutTimer->async_wait(boost::bind(&AsyncConnection::handleTimer, shared_from_this(), _1));
-
+    itsTimeoutTimer->async_wait([me=shared_from_this()]
+                                (const boost::system::error_code& err)
+                                {
+                                  me->handleTimer(err);
+                                });
     // Begin the reading process
 
     itsSocket.async_read_some(boost::asio::buffer(itsSocketBuffer),
-                              boost::bind(&AsyncConnection::handleRead,
-                                          shared_from_this(),
-                                          boost::asio::placeholders::error,
-                                          boost::asio::placeholders::bytes_transferred));
+                              [me=shared_from_this()]
+                              (const boost::system::error_code& err, std::size_t bytes_transferred)
+                              {
+                                me->handleRead(err, bytes_transferred);
+                              });
   }
   catch (...)
   {
@@ -224,8 +228,11 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         {
           // frontend
           itsQueryIsFast = true;
-          scheduled = itsFastExecutor.schedule(boost::bind(
-              &AsyncConnection::handleCompletedRead, shared_from_this(), boost::ref(*handlerView)));
+          scheduled = itsFastExecutor.schedule(
+              [me=shared_from_this(),handlerView]()
+              {
+                me->handleCompletedRead(*handlerView);
+              });
 
           if (!scheduled)
           {
@@ -243,15 +250,19 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
 
           if (itsQueryIsFast)
           {
-            scheduled = itsFastExecutor.schedule(boost::bind(&AsyncConnection::handleCompletedRead,
-                                                             shared_from_this(),
-                                                             boost::ref(*handlerView)));
+            scheduled = itsFastExecutor.schedule(
+                [me=shared_from_this(),handlerView]()
+                {
+                  me->handleCompletedRead(*handlerView);
+                });
           }
           else
           {
-            scheduled = itsSlowExecutor.schedule(boost::bind(&AsyncConnection::handleCompletedRead,
-                                                             shared_from_this(),
-                                                             boost::ref(*handlerView)));
+            scheduled = itsSlowExecutor.schedule(
+                [me=shared_from_this(),handlerView]()
+                {
+                  me->handleCompletedRead(*handlerView);
+                });
           }
 
           if (!scheduled)
@@ -271,10 +282,11 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
       {
         // Request is not succesfully parsed, attempt to get more data from socket and try again
         itsSocket.async_read_some(boost::asio::buffer(itsSocketBuffer),
-                                  boost::bind(&AsyncConnection::handleRead,
-                                              shared_from_this(),
-                                              boost::asio::placeholders::error,
-                                              boost::asio::placeholders::bytes_transferred));
+                                  [me=shared_from_this()]
+                                  (const boost::system::error_code& err, std::size_t bytes_transferred)
+                                  {
+                                    me->handleRead(err, bytes_transferred);
+                                  });
       }
     }
     else if (e == boost::asio::error::eof)
@@ -538,10 +550,11 @@ void AsyncConnection::writeChunkedReply(const boost::system::error_code& e,
         // Start async write to socket
         auto remaining_buffer = boost::asio::buffer(itsResponseString) + itsSentBytes;
         itsSocket.async_write_some(boost::asio::buffer(remaining_buffer),
-                                   boost::bind(&AsyncConnection::writeChunkedReply,
-                                               shared_from_this(),
-                                               boost::asio::placeholders::error,
-                                               boost::asio::placeholders::bytes_transferred));
+                                   [me=shared_from_this()]
+                                   (const boost::system::error_code& err, std::size_t bytes_transferred)
+                                   {
+                                     me->writeChunkedReply(err, bytes_transferred);
+                                   });
       }
       else
       {
@@ -582,10 +595,11 @@ void AsyncConnection::finalizeChunkedReply(const boost::system::error_code& e,
         // Start async write to socket
         auto remaining_buffer = boost::asio::buffer(itsResponseString) + itsSentBytes;
         itsSocket.async_write_some(boost::asio::buffer(remaining_buffer),
-                                   boost::bind(&AsyncConnection::finalizeChunkedReply,
-                                               shared_from_this(),
-                                               boost::asio::placeholders::error,
-                                               boost::asio::placeholders::bytes_transferred));
+                                   [me=shared_from_this()]
+                                   (const boost::system::error_code& err, std::size_t bytes_transferred)
+                                   {
+                                     me->finalizeChunkedReply(err, bytes_transferred);
+                                   });
       }
       // Implicit else here, this was the final chunk so stop scheduling async writes
     }
@@ -627,10 +641,11 @@ void AsyncConnection::getNextChunk()
 
         // Schedule next async write operation
         itsSocket.async_write_some(boost::asio::buffer(itsResponseString),
-                                   boost::bind(&AsyncConnection::writeStreamReply,
-                                               shared_from_this(),
-                                               boost::asio::placeholders::error,
-                                               boost::asio::placeholders::bytes_transferred));
+                                   [me=shared_from_this()]
+                                   (const boost::system::error_code& err, std::size_t bytes_transferred)
+                                   {
+                                     me->writeStreamReply(err, bytes_transferred);
+                                   });
       }
       else
       {
@@ -682,10 +697,11 @@ void AsyncConnection::getNextChunkedChunk()
 
         // Schedule the next asynchronous write
         itsSocket.async_write_some(boost::asio::buffer(itsResponseString),
-                                   boost::bind(&AsyncConnection::writeChunkedReply,
-                                               shared_from_this(),
-                                               boost::asio::placeholders::error,
-                                               boost::asio::placeholders::bytes_transferred));
+                                   [me=shared_from_this()]
+                                   (const boost::system::error_code& err, std::size_t bytes_transferred)
+                                   {
+                                     me->writeChunkedReply(err, bytes_transferred);
+                                   });
       }
       else
       {
@@ -704,10 +720,11 @@ void AsyncConnection::getNextChunkedChunk()
       itsSentBytes = 0;
 
       itsSocket.async_write_some(boost::asio::buffer(itsResponseString),
-                                 boost::bind(&AsyncConnection::finalizeChunkedReply,
-                                             shared_from_this(),
-                                             boost::asio::placeholders::error,
-                                             boost::asio::placeholders::bytes_transferred));
+                                 [me=shared_from_this()]
+                                 (const boost::system::error_code& err, std::size_t bytes_transferred)
+                                 {
+                                   me->finalizeChunkedReply(err, bytes_transferred);
+                                 });
     }
   }
   catch (...)
@@ -738,10 +755,11 @@ void AsyncConnection::writeStreamReply(const boost::system::error_code& e,
         // Start async write to socket
         auto remaining_buffer = boost::asio::buffer(itsResponseString) + itsSentBytes;
         itsSocket.async_write_some(boost::asio::buffer(remaining_buffer),
-                                   boost::bind(&AsyncConnection::writeStreamReply,
-                                               shared_from_this(),
-                                               boost::asio::placeholders::error,
-                                               boost::asio::placeholders::bytes_transferred));
+                                   [me=shared_from_this()]
+                                   (const boost::system::error_code& err, std::size_t bytes_transferred)
+                                   {
+                                     me->writeStreamReply(err, bytes_transferred);
+                                   });
       }
       else
       {
@@ -790,10 +808,11 @@ void AsyncConnection::writeRegularReply(const boost::system::error_code& e,
         // Start async write to socket
         auto remaining_buffer = boost::asio::buffer(itsResponseString) + itsSentBytes;
         itsSocket.async_write_some(boost::asio::buffer(remaining_buffer),
-                                   boost::bind(&AsyncConnection::writeRegularReply,
-                                               shared_from_this(),
-                                               boost::asio::placeholders::error,
-                                               boost::asio::placeholders::bytes_transferred));
+                                   [me=shared_from_this()]
+                                   (const boost::system::error_code& err, std::size_t bytes_transferred)
+                                   {
+                                     me->writeRegularReply(err, bytes_transferred);
+                                   });
         return;
       }
 
@@ -853,10 +872,11 @@ void AsyncConnection::startRegularReply()
 
     // Start async write to socket
     itsSocket.async_write_some(boost::asio::buffer(itsResponseString),
-                               boost::bind(&AsyncConnection::writeRegularReply,
-                                           shared_from_this(),
-                                           boost::asio::placeholders::error,
-                                           boost::asio::placeholders::bytes_transferred));
+                               [me=shared_from_this()]
+                               (const boost::system::error_code& err, std::size_t bytes_transferred)
+                               {
+                                 me->writeRegularReply(err, bytes_transferred);
+                               });
   }
   catch (...)
   {
@@ -931,13 +951,11 @@ void AsyncConnection::scheduleChunkGetter()
     // Put the chunk getter function in the appropriate pool
     if (itsQueryIsFast)
     {
-      scheduled =
-          itsFastExecutor.schedule(boost::bind(&AsyncConnection::getNextChunk, shared_from_this()));
+      scheduled = itsFastExecutor.schedule([me=shared_from_this()](){ me->getNextChunk(); });
     }
     else
     {
-      scheduled =
-          itsSlowExecutor.schedule(boost::bind(&AsyncConnection::getNextChunk, shared_from_this()));
+      scheduled = itsSlowExecutor.schedule([me=shared_from_this()](){ me->getNextChunk(); });
     }
 
     // Task queue was full, send busy response
@@ -964,13 +982,11 @@ void AsyncConnection::scheduleChunkedChunkGetter()
     // Put the chunk getter function in the appropriate pool
     if (itsQueryIsFast)
     {
-      scheduled = itsFastExecutor.schedule(
-          boost::bind(&AsyncConnection::getNextChunkedChunk, shared_from_this()));
+      scheduled = itsFastExecutor.schedule([me=shared_from_this()](){ me->getNextChunkedChunk(); });
     }
     else
     {
-      scheduled = itsSlowExecutor.schedule(
-          boost::bind(&AsyncConnection::getNextChunkedChunk, shared_from_this()));
+      scheduled = itsSlowExecutor.schedule([me=shared_from_this()](){ me->getNextChunkedChunk(); });
     }
 
     // Task queue was full, send busy response
@@ -1016,10 +1032,11 @@ void AsyncConnection::notifyClientDisconnect(const boost::system::error_code& e,
     {
       // Client sent something, ignore it and go back to listen
       itsSocket.async_read_some(boost::asio::buffer(itsSocketBuffer),
-                                boost::bind(&AsyncConnection::notifyClientDisconnect,
-                                            shared_from_this(),
-                                            boost::asio::placeholders::error,
-                                            boost::asio::placeholders::bytes_transferred));
+                                [me=shared_from_this()]
+                                (const boost::system::error_code& err, std::size_t bytes_transferred)
+                                {
+                                  me->notifyClientDisconnect(err, bytes_transferred);
+                                });
     }
   }
   catch (...)

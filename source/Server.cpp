@@ -57,7 +57,7 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
   }
 }
 
-bool Server::isShutdownRequested()
+bool Server::isShutdownRequested() const
 {
   return itsShutdownRequested;
 }
