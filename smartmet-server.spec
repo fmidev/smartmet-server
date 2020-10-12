@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 20.10.7
+Version: 20.10.12
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -47,7 +47,7 @@ SmartMet server
 %prep
 
 %setup -q -n %{SPECNAME}
- 
+
 %build
 make %{_smp_mflags}
 
@@ -83,6 +83,11 @@ fi
 
 
 %changelog
+=======
+* Thu Oct  8 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.10.8-1.fmi
+- Start handling requests while engine and plugin initioalization is still ongoing
+- Build update: use makefile.inc from smartmet-library-macgyver
+
 * Wed Oct  7 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.10.7-1.fmi
 - Repackaged since Options ABI changed
 
