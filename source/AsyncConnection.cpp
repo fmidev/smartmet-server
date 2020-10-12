@@ -229,7 +229,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
           // frontend
           itsQueryIsFast = true;
           scheduled = itsFastExecutor.schedule(
-              [me=shared_from_this(),&handlerView]()
+              [me=shared_from_this(),handlerView]()
               {
                 me->handleCompletedRead(*handlerView);
               });
@@ -251,7 +251,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
           if (itsQueryIsFast)
           {
             scheduled = itsFastExecutor.schedule(
-                [me=shared_from_this(),&handlerView]()
+                [me=shared_from_this(),handlerView]()
                 {
                   me->handleCompletedRead(*handlerView);
                 });
@@ -259,7 +259,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
           else
           {
             scheduled = itsSlowExecutor.schedule(
-                [me=shared_from_this(),&handlerView]()
+                [me=shared_from_this(),handlerView]()
                 {
                   me->handleCompletedRead(*handlerView);
                 });

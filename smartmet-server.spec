@@ -83,7 +83,9 @@ fi
 
 
 %changelog
-=======
+* Mon Oct 12 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.10.12-1.fmi
+- Use lambdas instead of boost::bind to avoid memory leaks
+
 * Thu Oct  8 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.10.8-1.fmi
 - Start handling requests while engine and plugin initioalization is still ongoing
 - Build update: use makefile.inc from smartmet-library-macgyver
