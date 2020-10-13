@@ -41,6 +41,7 @@ Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
 #TestRequires: make
 #TestRequires: smartmet-library-macgyver-devel >= 20.10.7
 #TestRequires: libconfig-devel
+#TestRequires: libconfig
 
 Summary: SmartMet server
 %description
