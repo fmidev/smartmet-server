@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 20.10.8
+Version: 20.10.20
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -16,8 +16,8 @@ BuildRequires: boost169-devel
 BuildRequires: elfutils-devel
 BuildRequires: fmt-devel >= 6.2.1
 BuildRequires: jemalloc-devel
-BuildRequires: libconfig
-BuildRequires: libconfig-devel
+BuildRequires: libconfig >= 1.7.2
+BuildRequires: libconfig-devel >= 1.7.2
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 20.10.7
 BuildRequires: smartmet-library-spine-devel >= 20.10.8
@@ -31,9 +31,9 @@ Requires: boost169-thread
 Requires: fmt >= 6.2.1
 Requires: glibc
 Requires: jemalloc
-Requires: libconfig
+Requires: libconfig >= 1.7.2
 Requires: smartmet-library-macgyver >= 20.10.7
-Requires: smartmet-library-spine >= 20.10.8
+Requires: smartmet-library-spine >= 20.10.20
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -83,6 +83,9 @@ fi
 
 
 %changelog
+* Tue Oct 20 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.10.20-1.fmi
+- Rebuild due to libconfig upgrade to version 1.7.2
+
 * Thu Oct  8 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.10.8-1.fmi
 - Start handling requests while engine and plugin initioalization is still ongoing
 - Build update: use makefile.inc from smartmet-library-macgyver
