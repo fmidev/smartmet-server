@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 20.10.20
+Version: 20.10.21
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -86,6 +86,9 @@ fi
 
 
 %changelog
+* Wed Oct 21 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.10.21-1.fmi
+- Rebuild due to part of changes missing in earlier 20.10.20-1.fmi
+
 * Tue Oct 20 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.10.20-1.fmi
 - Rebuild due to libconfig upgrade to version 1.7.2
 
