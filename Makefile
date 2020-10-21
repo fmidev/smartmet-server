@@ -39,6 +39,11 @@ else
 endif
 endif
 
+ifeq ($(origin SBINDIR), undefined)
+  sbindir = $(PREFIX)/sbin
+else
+  sbindir = $(SBINDIR)
+endif
 
 # Compilation directories
 
