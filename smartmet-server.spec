@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 20.10.21
+Version: 20.10.28
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -14,12 +14,12 @@ BuildRequires: gcc-c++
 BuildRequires: make
 BuildRequires: boost169-devel
 BuildRequires: elfutils-devel
-BuildRequires: fmt-devel >= 6.2.1
+BuildRequires: fmt-devel >= 7.1.0
 BuildRequires: jemalloc-devel
 BuildRequires: libconfig >= 1.7.2
 BuildRequires: libconfig-devel >= 1.7.2
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 20.10.7
+BuildRequires: smartmet-library-macgyver-devel >= 20.10.28
 BuildRequires: smartmet-library-spine-devel >= 20.10.20
 Requires: boost169-date-time
 Requires: boost169-filesystem
@@ -28,11 +28,11 @@ Requires: boost169-program-options
 Requires: boost169-regex
 Requires: boost169-system
 Requires: boost169-thread
-Requires: fmt >= 6.2.1
+Requires: fmt >= 7.1.0
 Requires: glibc
 Requires: jemalloc
 Requires: libconfig >= 1.7.2
-Requires: smartmet-library-macgyver >= 20.10.7
+Requires: smartmet-library-macgyver >= 20.10.28
 Requires: smartmet-library-spine >= 20.10.20
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
@@ -86,6 +86,9 @@ fi
 
 
 %changelog
+* Wed Oct 28 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.10.28-1.fmi
+- Rebuild due to fmt upgrade
+
 * Wed Oct 21 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.10.21-1.fmi
 - Rebuild due to part of changes missing in earlier 20.10.20-1.fmi
 
