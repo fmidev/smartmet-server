@@ -1,8 +1,8 @@
 version: 2
 jobs:
-  build:
+  build-rhel7:
     docker:
-      - image: fmidev/smartmet-cibase:latest
+      - image: fmidev/smartmet-cibase-7:latest
     steps:
       - checkout
       - run:
@@ -14,9 +14,42 @@ jobs:
       - persist_to_workspace:
           root: /dist
           paths: ./*.rpm
-  test:
+  test-rhel7:
     docker:
       - image: fmidev/smartmet-cibase:latest
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /dist
+      - run:
+          name: Installation test
+          command: ci-build dummy ; sudo yum install -y /dist/*.rpm
+      - run:
+          name: Test prepare
+          command: ci-build testprep
+      - run:
+          name: Test
+          command: ci-build test
+      - store_artifacts:
+          path: /dist
+          destination: dist/
+  build-rhel8:
+    docker:
+      - image: fmidev/smartmet-cibase-8:latest
+    steps:
+      - checkout
+      - run:
+          name: Install build dependencies
+          command: ci-build deps
+      - run:
+          name: Build RPM
+          command: ci-build rpm
+      - persist_to_workspace:
+          root: /dist
+          paths: ./*.rpm
+  test-rhel8:
+    docker:
+      - image: fmidev/smartmet-cibase-8:latest
     steps:
       - checkout
       - attach_workspace:
@@ -38,10 +71,11 @@ workflows:
   version: 2
   build-test:
     jobs:
-      - build:
-          filters:
-            branches:
-              only: master
-      - test:
+      - build-rhel7
+      - build-rhel8
+      - test-rhel7:
           requires:
-            - build
+            - build-rhel7
+      - test-rhel8:
+          requires:
+            - build-rhel8
