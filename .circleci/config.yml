@@ -16,7 +16,7 @@ jobs:
           paths: ./*.rpm
   test-rhel7:
     docker:
-      - image: fmidev/smartmet-cibase:latest
+      - image: fmidev/smartmet-cibase-7:latest
     steps:
       - checkout
       - attach_workspace:
