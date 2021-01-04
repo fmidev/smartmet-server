@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 jobs:
   build-rhel7:
     docker:
@@ -33,6 +33,24 @@ jobs:
       - store_artifacts:
           path: /dist
           destination: dist/
+  upload-rhel7:
+    docker:
+      - image: fmidev/smartmet-cibase-7:latest
+    steps:
+      - attach_workspace:
+          at: /dist
+      - run:
+          name: Installing AWS CLI
+          working_directory: /
+          command: |
+            sudo yum -y install dnf
+            sudo dnf -y install python3-pip
+            pip3 install awscli --upgrade --user
+      - run:
+          name: Sync artifacts to S3
+          command: |
+            export PATH=$PATH:~/.local/bin
+            aws s3 cp /dist s3://fmi-smartmet-cicd-beta/centos7/ --recursive
   build-rhel8:
     docker:
       - image: fmidev/smartmet-cibase-8:latest
@@ -66,9 +84,27 @@ jobs:
       - store_artifacts:
           path: /dist
           destination: dist/
+  upload-rhel8:
+    docker:
+      - image: fmidev/smartmet-cibase-7:latest
+    steps:
+      - attach_workspace:
+          at: /dist
+      - run:
+          name: Installing AWS CLI
+          working_directory: /
+          command: |
+            sudo yum -y install dnf
+            sudo dnf -y install python3-pip
+            pip3 install awscli --upgrade --user
+      - run:
+          name: Sync artifacts to S3
+          command: |
+            export PATH=$PATH:~/.local/bin
+            aws s3 cp /dist s3://fmi-smartmet-cicd-beta/centos8/ --recursive
 
 workflows:
-  version: 2
+  version: 2.1
   build-test:
     jobs:
       - build-rhel7
@@ -79,3 +115,11 @@ workflows:
       - test-rhel8:
           requires:
             - build-rhel8
+      - upload-rhel7:
+          context: fmi-global
+          requires:
+            - test-rhel7
+      - upload-rhel8:
+          context: fmi-global
+          requires:
+            - test-rhel8
