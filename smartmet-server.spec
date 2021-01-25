@@ -38,6 +38,7 @@ Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
 #TestRequires: /bin/bash
+#TestRequires: gcc-c++
 #TestRequires: make
 #TestRequires: smartmet-library-macgyver-devel >= 20.10.7
 #TestRequires: libconfig-devel
