@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 20.10.12
+Version: 21.1.14
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -14,13 +14,13 @@ BuildRequires: gcc-c++
 BuildRequires: make
 BuildRequires: boost169-devel
 BuildRequires: elfutils-devel
-BuildRequires: fmt-devel >= 6.2.1
+BuildRequires: fmt-devel >= 7.1.3
 BuildRequires: jemalloc-devel
-BuildRequires: libconfig
-BuildRequires: libconfig-devel
+BuildRequires: libconfig >= 1.7.2
+BuildRequires: libconfig-devel >= 1.7.2
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 20.10.7
-BuildRequires: smartmet-library-spine-devel >= 20.10.7
+BuildRequires: smartmet-library-macgyver-devel >= 21.1.14
+BuildRequires: smartmet-library-spine-devel >= 21.1.14
 Requires: boost169-date-time
 Requires: boost169-filesystem
 Requires: boost169-iostreams
@@ -28,17 +28,21 @@ Requires: boost169-program-options
 Requires: boost169-regex
 Requires: boost169-system
 Requires: boost169-thread
-Requires: fmt >= 6.2.1
+Requires: fmt >= 7.1.3
 Requires: glibc
 Requires: jemalloc
-Requires: libconfig
-Requires: smartmet-library-macgyver >= 20.10.7
-Requires: smartmet-library-spine >= 20.10.7
+Requires: libconfig >= 1.7.2
+Requires: smartmet-library-macgyver >= 21.1.14
+Requires: smartmet-library-spine >= 21.1.14
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
 #TestRequires: /bin/bash
+#TestRequires: gcc-c++
 #TestRequires: make
+#TestRequires: smartmet-library-macgyver-devel >= 20.10.7
+#TestRequires: libconfig-devel
+#TestRequires: libconfig
 
 Summary: SmartMet server
 %description
@@ -83,6 +87,21 @@ fi
 
 
 %changelog
+* Thu Jan 14 2021 Mika Heiskanen <mika.heiskanen@fmi.fi> - 21.1.14-1.fmi
+- Repackaged smartmet to resolve debuginfo issues
+
+* Tue Jan  5 2021 Mika Heiskanen <mika.heiskanen@fmi.fi> - 21.1.5-1.fmi
+- Upgraded fmt dependency
+
+* Wed Oct 28 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.10.28-1.fmi
+- Rebuild due to fmt upgrade
+
+* Wed Oct 21 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.10.21-1.fmi
+- Rebuild due to part of changes missing in earlier 20.10.20-1.fmi
+
+* Tue Oct 20 2020 Andris Pavenis <andris.pavenis@fmi.fi> - 20.10.20-1.fmi
+- Rebuild due to libconfig upgrade to version 1.7.2
+
 * Mon Oct 12 2020 Mika Heiskanen <mika.heiskanen@fmi.fi> - 20.10.12-1.fmi
 - Use lambdas instead of boost::bind to avoid memory leaks
 - Silenced some clang analyzer warnings

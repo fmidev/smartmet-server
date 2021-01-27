@@ -39,6 +39,11 @@ else
 endif
 endif
 
+ifeq ($(origin SBINDIR), undefined)
+  sbindir = $(PREFIX)/sbin
+else
+  sbindir = $(SBINDIR)
+endif
 
 # Compilation directories
 
@@ -111,7 +116,7 @@ objdir:
 rpm: clean $(SPEC).spec
 	rm -f $(SPEC).tar.gz # Clean a possible leftover from previous attempt
 	tar -czvf $(SPEC).tar.gz --exclude test --exclude loadtest --exclude-vcs --transform "s,^,$(SPEC)/," *
-	rpmbuild -ta $(SPEC).tar.gz
+	rpmbuild -tb $(SPEC).tar.gz
 	rm -f $(SPEC).tar.gz
 
 .SUFFIXES: $(SUFFIXES) .cpp
