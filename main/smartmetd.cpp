@@ -134,6 +134,8 @@ int main(int argc, char* argv[])
 
     // Sleep until a signal comes, and then either handle it or exit
 
+    double sigint_cnt = 0;
+
     while (true)
     {
         struct timeval tv;
@@ -173,6 +175,42 @@ int main(int argc, char* argv[])
                 tasks->stop();
                 server->shutdownServer();
                 tasks->wait();
+
+                // Save heap profile if it has been enabled
+                // mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
+                return 0;
+            }
+            else if (sig == SIGINT)
+            {
+	        last_signal = 0;
+                Fmi::AsyncTask shutdown_timer("Shutdown timer",
+					      [&sigint_cnt]()
+					      {
+						  for (int i = 0; i < 1200; i++)
+						  {
+						      boost::this_thread::sleep_for(boost::chrono::milliseconds(50));
+						      if (last_signal == SIGINT || last_signal == SIGTERM) {
+							  last_signal = 0;
+							  sigint_cnt++;
+                                                          if (sigint_cnt > 5) {
+							      std::cout << "*** Too many SIGINT or SIGTERM signals after first SIGINT. Commiting suicide" << std::endl;
+							      abort();
+							  }
+						      } else {
+							  sigint_cnt = std::max(0.0, sigint_cnt - 0.05);
+						      }
+						  }
+						  std::cout << "*** Timed out waiting for server to shut down after SIGINT" << std::endl;
+                                                  abort();
+					      });
+                std::cout << " - shutting down!"
+                          << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
+                          << std::endl;
+
+                tasks->stop();
+                server->shutdownServer();
+                tasks->wait();
+		shutdown_timer.cancel();
 
                 // Save heap profile if it has been enabled
                 // mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
