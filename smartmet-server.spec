@@ -16,11 +16,9 @@ BuildRequires: boost169-devel
 BuildRequires: elfutils-devel
 BuildRequires: fmt-devel >= 7.1.3
 BuildRequires: jemalloc-devel
-BuildRequires: libconfig >= 1.7.2
-BuildRequires: libconfig-devel >= 1.7.2
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 21.5.31
-BuildRequires: smartmet-library-spine-devel >= 21.5.31
+BuildRequires: smartmet-library-spine-devel >= 21.9.7
 Requires: boost169-date-time
 Requires: boost169-filesystem
 Requires: boost169-iostreams
@@ -31,9 +29,8 @@ Requires: boost169-thread
 Requires: fmt >= 7.1.3
 Requires: glibc
 Requires: jemalloc
-Requires: libconfig >= 1.7.2
 Requires: smartmet-library-macgyver >= 21.5.31
-Requires: smartmet-library-spine >= 21.5.31
+Requires: smartmet-library-spine >= 21.9.7
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -41,8 +38,6 @@ Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
 #TestRequires: gcc-c++
 #TestRequires: make
 #TestRequires: smartmet-library-macgyver-devel >= 20.10.7
-#TestRequires: libconfig-devel
-#TestRequires: libconfig
 
 Summary: SmartMet server
 %description
