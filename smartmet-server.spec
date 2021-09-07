@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 21.7.9
+Version: 21.9.7
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -82,6 +82,9 @@ fi
 
 
 %changelog
+* Tue Sep  7 2021 Andris Pavēnis <andris.pavenis@fmi.fi> 21.9.7-1.fmi
+- Rebuild due to dependence changes
+
 * Fri Jul  9 2021 Andris Pavēnis <andris.pavenis@fmi.fi> 21.7.9-1.fmi
 - Try to stop gracefully on SIGINT
 
