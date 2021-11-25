@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 21.9.7
+Version: 21.11.25
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -17,8 +17,8 @@ BuildRequires: elfutils-devel
 BuildRequires: fmt-devel >= 7.1.3
 BuildRequires: jemalloc-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 21.5.31
-BuildRequires: smartmet-library-spine-devel >= 21.9.7
+BuildRequires: smartmet-library-macgyver-devel >= 21.10.4
+BuildRequires: smartmet-library-spine-devel >= 21.11.23
 Requires: boost169-date-time
 Requires: boost169-filesystem
 Requires: boost169-iostreams
@@ -29,8 +29,8 @@ Requires: boost169-thread
 Requires: fmt >= 7.1.3
 Requires: glibc
 Requires: jemalloc
-Requires: smartmet-library-macgyver >= 21.5.31
-Requires: smartmet-library-spine >= 21.9.7
+Requires: smartmet-library-macgyver >= 21.10.4
+Requires: smartmet-library-spine >= 21.11.23
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -82,6 +82,9 @@ fi
 
 
 %changelog
+* Thu Nov 25 2021 Mika Heiskanen <mika.heiskanen@fmi.fi> - 21.11.25-1.fmi
+- Removed unnecessary empty lines from output when logrequests=true
+
 * Tue Sep  7 2021 Andris Pavēnis <andris.pavenis@fmi.fi> 21.9.7-1.fmi
 - Rebuild due to dependence changes
 
