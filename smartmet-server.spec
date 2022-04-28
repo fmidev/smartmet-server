@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 21.11.25
+Version: 22.4.28
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -82,6 +82,9 @@ fi
 
 
 %changelog
+* Thu Apr 28 2022 Andris Pavenis <andris.pavenis@fmi.fi> 22.4.28-1.fmi
+- Repackage due to SmartMet::Spine::Reactor ABI changes
+
 * Thu Nov 25 2021 Mika Heiskanen <mika.heiskanen@fmi.fi> - 21.11.25-1.fmi
 - Removed unnecessary empty lines from output when logrequests=true
 
