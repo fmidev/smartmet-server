@@ -18,7 +18,7 @@ BuildRequires: fmt-devel >= 7.1.3
 BuildRequires: jemalloc-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 21.10.4
-BuildRequires: smartmet-library-spine-devel >= 21.11.23
+BuildRequires: smartmet-library-spine-devel >= 22.4.26
 Requires: boost169-date-time
 Requires: boost169-filesystem
 Requires: boost169-iostreams
@@ -30,7 +30,7 @@ Requires: fmt >= 7.1.3
 Requires: glibc
 Requires: jemalloc
 Requires: smartmet-library-macgyver >= 21.10.4
-Requires: smartmet-library-spine >= 21.11.23
+Requires: smartmet-library-spine >= 22.4.26
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
