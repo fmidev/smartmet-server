@@ -6,6 +6,12 @@
 
 #include <cmath>
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+#define SMARTMETD_SSL_METHOD boost::asio::ssl::context::tlsv13
+#else
+#define SMARTMETD_SSL_METHOD boost::asio::ssl::context::tlsv11
+#endif
+
 namespace SmartMet
 {
 namespace Server
@@ -14,7 +20,7 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
     : itsIoService(),
       itsEncryptionEnabled(theOptions.encryptionEnabled),
       itsEncryptionPassword(theOptions.encryptionPassword),
-      itsEncryptionContext(boost::asio::ssl::context::tlsv13),
+      itsEncryptionContext(SMARTMETD_SSL_METHOD),
       itsAcceptor(itsIoService),
       itsReactor(theReactor),
       itsSlowExecutor(theOptions.slowpool.minsize, theOptions.slowpool.maxrequeuesize),
