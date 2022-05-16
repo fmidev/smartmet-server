@@ -16,6 +16,7 @@
 #include <iostream>
 #include <memory>
 #include <new>
+#include <thread>
 
 // libdw from elfutils-devel provides more details than libbfd
 #define BACKWARD_HAS_DW 1
