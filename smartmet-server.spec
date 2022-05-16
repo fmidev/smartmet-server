@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 22.4.28
+Version: 22.5.16
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -84,6 +84,9 @@ fi
 
 
 %changelog
+* Mon May 16 2022 Andris Pavēnis <andris.pavenis@fmi.fi> 22.5.16-1.fmi
+- Added HTTPS support
+
 * Thu Apr 28 2022 Andris Pavenis <andris.pavenis@fmi.fi> 22.4.28-1.fmi
 - Repackage due to SmartMet::Spine::Reactor ABI changes
 
