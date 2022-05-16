@@ -14,6 +14,8 @@ namespace SmartMet
 namespace Server
 {
 Connection::Connection(Server* theServer,
+                       bool encryptionEnabled,
+                       boost::asio::ssl::context& sslContext,
                        bool canGzipResponse,
                        std::size_t compressLimit,
                        std::size_t maxRequestSize,
@@ -24,7 +26,8 @@ Connection::Connection(Server* theServer,
                        ThreadPoolType& slowExecutor,
                        ThreadPoolType& fastExecutor)
     : itsServer(theServer),
-      itsSocket(io_service),
+      itsEncryptionEnabled(encryptionEnabled),
+      itsSocket(io_service,sslContext),
       itsIoService(io_service),
       itsSlowExecutor(slowExecutor),
       itsFastExecutor(fastExecutor),
@@ -44,10 +47,14 @@ Connection::Connection(Server* theServer,
 {
 }
 
+
+
 boost::asio::ip::tcp::socket& Connection::socket()
 {
-  return itsSocket;
+  return (boost::asio::ip::tcp::socket&)itsSocket.lowest_layer();
 }
+
+
 
 Connection::~Connection()
 {

@@ -60,6 +60,8 @@ class AsyncConnection : public Connection,
   // ======================================================================
 
   explicit AsyncConnection(AsyncServer* serverInstance,
+                           bool sslEnabled,
+                           boost::asio::ssl::context& sslContext,
                            bool canGzipResponse,
                            std::size_t compressLimit,
                            std::size_t maxRequestSize,
@@ -88,7 +90,7 @@ class AsyncConnection : public Connection,
    */
   // ======================================================================
 
-  boost::asio::ip::tcp::socket& socket();
+  //boost::asio::ip::tcp::socket& socket();
 
   // ======================================================================
   /*!
@@ -102,6 +104,9 @@ class AsyncConnection : public Connection,
   void start();
 
  private:
+
+  void handleHandshake(const boost::system::error_code& error);
+
   // ======================================================================
   /*!
    * \brief Handle partial read from socket

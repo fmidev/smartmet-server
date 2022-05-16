@@ -4,6 +4,23 @@ accesslogdir = "/var/log/smartmet/";
 
 port 		= 8080;
 
+
+// https support (SSL/TLS)
+
+// self-signed certificate: openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365
+
+encryption:
+{
+  enabled          = true;
+  certificatefile  = "cert.pem";
+  privatekeyfile   = "key.pem";
+  passwordfile     = "password.txt";
+  password         = "";
+};
+
+
+
+
 slowpool:
 {
   maxthreads = 15;

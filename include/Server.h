@@ -52,9 +52,15 @@ class Server : private boost::noncopyable
 
  protected:
   virtual void shutdown();
+  virtual std::string getPassword() const;
 
   /// The io_service used to perform asynchronous operations.
   boost::asio::io_service itsIoService;
+
+  bool itsEncryptionEnabled;
+  std::string itsEncryptionPassword;
+
+  boost::asio::ssl::context itsEncryptionContext;
 
   /// Acceptor used to listen for incoming connections.
   boost::asio::ip::tcp::acceptor itsAcceptor;

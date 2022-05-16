@@ -3,7 +3,6 @@
  * Definition of the class Connection
  */
 //===================================
-
 #include "AsyncConnection.h"
 #include "AsyncServer.h"
 #include "Utility.h"
@@ -18,30 +17,26 @@ namespace SmartMet
 {
 namespace Server
 {
-AsyncConnection::AsyncConnection(AsyncServer* serverInstance,
-                                 bool canGzipResponse,
-                                 std::size_t compressLimit,
-                                 std::size_t maxRequestSize,
-                                 long timeout,
-                                 bool dumpRequests,
-                                 boost::asio::io_service& io_service,
-                                 SmartMet::Spine::Reactor& theReactor,
-                                 ThreadPoolType& slowExecutor,
-                                 ThreadPoolType& fastExecutor)
-    : Connection(serverInstance,
-                 canGzipResponse,
-                 compressLimit,
-                 maxRequestSize,
-                 timeout,
-                 dumpRequests,
-                 io_service,
-                 theReactor,
-                 slowExecutor,
-                 fastExecutor),
-      itsSentBytes(0),
-      itsPrematurelyDisconnected(false)
+AsyncConnection::AsyncConnection(
+    AsyncServer* serverInstance,
+    bool encryptionEnabled,
+    boost::asio::ssl::context& encryptionContext,
+    bool canGzipResponse,
+    std::size_t compressLimit,
+    std::size_t maxRequestSize,
+    long timeout,
+    bool dumpRequests,
+    boost::asio::io_service& io_service,
+    SmartMet::Spine::Reactor& theReactor,
+    ThreadPoolType& slowExecutor,
+    ThreadPoolType& fastExecutor) :
+        Connection(serverInstance, encryptionEnabled, encryptionContext, canGzipResponse, compressLimit, maxRequestSize, timeout, dumpRequests, io_service, theReactor, slowExecutor, fastExecutor),
+        itsSentBytes(0),
+        itsPrematurelyDisconnected(false)
 {
 }
+
+
 
 // Initiate graceful Connection closure after the reply is written (connection is destructing)
 AsyncConnection::~AsyncConnection()
@@ -49,15 +44,14 @@ AsyncConnection::~AsyncConnection()
   if (!hasTimedOut)
   {
     boost::system::error_code ignored_ec;
-    itsSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-    itsSocket.close(ignored_ec);
+    socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+    socket().close(ignored_ec);
   }
 }
 
-boost::asio::ip::tcp::socket& AsyncConnection::socket()
-{
-  return itsSocket;
-}
+
+
+
 void AsyncConnection::handleTimer(const boost::system::error_code& err)
 {
   try
@@ -66,7 +60,6 @@ void AsyncConnection::handleTimer(const boost::system::error_code& err)
     if (err != boost::asio::error::operation_aborted)
     {
       hasTimedOut = true;
-
       sendStockReply(SmartMet::Spine::HTTP::Status::request_timeout);
     }
   }
@@ -76,35 +69,72 @@ void AsyncConnection::handleTimer(const boost::system::error_code& err)
   }
 }
 
+
+
 // Start a new connection
+
 void AsyncConnection::start()
 {
   try
   {
     // Start the timeout timer
 
-    itsTimeoutTimer = boost::movelib::make_unique<boost::asio::deadline_timer>(
-        itsIoService, boost::posix_time::seconds(itsTimeout));
+    itsTimeoutTimer = boost::movelib::make_unique < boost::asio::deadline_timer > (itsIoService, boost::posix_time::seconds(itsTimeout));
 
-    itsTimeoutTimer->async_wait([me=shared_from_this()]
-                                (const boost::system::error_code& err)
-                                {
-                                  me->handleTimer(err);
-                                });
-    // Begin the reading process
+    itsTimeoutTimer->async_wait(
+        [me=shared_from_this()](const boost::system::error_code& err)
+        {me->handleTimer(err);});
 
-    itsSocket.async_read_some(boost::asio::buffer(itsSocketBuffer),
-                              [me=shared_from_this()]
-                              (const boost::system::error_code& err, std::size_t bytes_transferred)
-                              {
-                                me->handleRead(err, bytes_transferred);
-                              });
+    if (itsEncryptionEnabled)
+    {
+      // Begin the handshake process
+      itsSocket.async_handshake(
+          boost::asio::ssl::stream_base::server,
+          boost::bind(&AsyncConnection::handleHandshake,this, boost::asio::placeholders::error));
+    }
+    else
+    {
+      // Begin the reading process
+       socket().async_read_some(
+           boost::asio::buffer(itsSocketBuffer),
+           [me=shared_from_this()]
+           (const boost::system::error_code& err, std::size_t bytes_transferred)
+           {me->handleRead(err, bytes_transferred);}
+       );
+    }
   }
   catch (...)
   {
     throw Fmi::Exception::Trace(BCP, "Operation failed!");
   }
 }
+
+
+
+void AsyncConnection::handleHandshake(const boost::system::error_code& error)
+{
+  if (!error)
+  {
+    // Handshake is ok. Start socket reading
+    itsSocket.async_read_some(
+        boost::asio::buffer(itsSocketBuffer),
+        [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+        {me->handleRead(err, bytes_transferred);}
+    );
+  }
+  else
+  {
+    //printf("HANDSHAKE ERROR\n");
+    // std::cout << error << "\n";
+
+    // Handshake error. Closing the connection.
+    boost::system::error_code ignored_ec;
+    socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+    socket().close(ignored_ec);
+  }
+}
+
+
 
 void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t bytes_transferred)
 {
@@ -118,19 +148,16 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
 
     if (itsReactor.isLoadHigh())
     {
-      bool is_admin_request = (itsRequest && (itsRequest->getResource() == "admin" ||
-                                              itsRequest->getResource() == "/admin"));
+      bool is_admin_request = (itsRequest && (itsRequest->getResource() == "admin" || itsRequest->getResource() == "/admin"));
 
       if (!is_admin_request)
       {
-        std::cout << Spine::log_time_str() << " Too many active requests, reporting high load"
-                  << std::endl;
+        std::cout << Spine::log_time_str() << " Too many active requests, reporting high load" << std::endl;
         sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
         return;
       }
 
-      std::cout << Spine::log_time_str() << " Letting admin request pass despite high load"
-                << std::endl;
+      std::cout << Spine::log_time_str() << " Letting admin request pass despite high load" << std::endl;
     }
 
     // Initialize the connection status.
@@ -143,20 +170,18 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
       if (itsMaxRequestSize > 0 && itsReceivedBytes > itsMaxRequestSize)
       {
         // Request is larger than the incoming buffer size.
-
         reportError("413 Entity too large");
-
         sendStockReply(SmartMet::Spine::HTTP::Status::request_entity_too_large);
-
         return;
       }
 
       // Copy incoming buffer into the received data buffer
       itsBuffer.append(itsSocketBuffer.data(), bytes_transferred);
 
+      // std::cout << itsBuffer << "\n";
+
       // Try to parse the incoming message
-      auto parsedRequest =
-          SmartMet::Spine::HTTP::parseRequest(itsBuffer);  // Of type (tribool, parsed request)
+      auto parsedRequest = SmartMet::Spine::HTTP::parseRequest(itsBuffer);  // Of type (tribool, parsed request)
 
       if (parsedRequest.first == SmartMet::Spine::HTTP::ParsingStatus::COMPLETE)
       {
@@ -174,13 +199,12 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         {
           try
           {
-            itsRequest->setClientIP(itsSocket.remote_endpoint().address().to_string());
+            itsRequest->setClientIP(socket().remote_endpoint().address().to_string());
           }
           catch (...)
           {
             Fmi::Exception exception(BCP, "Operation failed!", nullptr);
-            reportError(std::string("Failed to obtain remote endpoint IP address:\n") +
-                        exception.what());
+            reportError(std::string("Failed to obtain remote endpoint IP address:\n") + exception.what());
             return;
           }
         }
@@ -216,7 +240,6 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         {
           // Couldn't find handler for the request
           sendStockReply(SmartMet::Spine::HTTP::Status::not_found);
-
           return;
         }
 
@@ -230,9 +253,8 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
           itsQueryIsFast = true;
           scheduled = itsFastExecutor.schedule(
               [me=shared_from_this(),handlerView]()
-              {
-                me->handleCompletedRead(*handlerView);
-              });
+              {me->handleCompletedRead(*handlerView);}
+          );
 
           if (!scheduled)
           {
@@ -252,17 +274,15 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
           {
             scheduled = itsFastExecutor.schedule(
                 [me=shared_from_this(),handlerView]()
-                {
-                  me->handleCompletedRead(*handlerView);
-                });
+                {me->handleCompletedRead(*handlerView);}
+            );
           }
           else
           {
             scheduled = itsSlowExecutor.schedule(
                 [me=shared_from_this(),handlerView]()
-                {
-                  me->handleCompletedRead(*handlerView);
-                });
+                {me->handleCompletedRead(*handlerView);}
+            );
           }
 
           if (!scheduled)
@@ -281,12 +301,21 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
       else
       {
         // Request is not succesfully parsed, attempt to get more data from socket and try again
-        itsSocket.async_read_some(boost::asio::buffer(itsSocketBuffer),
-                                  [me=shared_from_this()]
-                                  (const boost::system::error_code& err, std::size_t bytes_transferred)
-                                  {
-                                    me->handleRead(err, bytes_transferred);
-                                  });
+        if (itsEncryptionEnabled)
+        {
+          itsSocket.async_read_some(
+              boost::asio::buffer(itsSocketBuffer),
+              [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+              {me->handleRead(err, bytes_transferred);}
+          );
+        }
+        else
+        {
+          socket().async_read_some(boost::asio::buffer(itsSocketBuffer),
+              [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+              {me->handleRead(err, bytes_transferred);}
+          );
+        }
       }
     }
     else if (e == boost::asio::error::eof)
@@ -316,6 +345,8 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
   }
 }
 
+
+
 // Calls SmartMet plugins. This function is always called from within the thread pool
 void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandlerView)
 {
@@ -326,11 +357,11 @@ void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandl
 
     // See if client has prematurely disconnected
     {
-      boost::lock_guard<boost::mutex> lock(itsDisconnectMutex);
+      boost::lock_guard < boost::mutex > lock(itsDisconnectMutex);
       if (!itsPrematurelyDisconnected)
       {
         // Cancel the client disconnect notify handler
-        itsSocket.cancel();
+        socket().cancel();
       }
       else
       {
@@ -341,9 +372,7 @@ void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandl
         }
         else
         {
-          reportInfo("Client '" + itsRequest->getClientIP() +
-                     "' has already disconnected, not calling the plugin " +
-                     theHandlerView.getPluginName());
+          reportInfo("Client '" + itsRequest->getClientIP() + "' has already disconnected, not calling the plugin " + theHandlerView.getPluginName());
         }
         return;
       }
@@ -396,13 +425,14 @@ void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandl
   catch (...)
   {
     // Dump stack trace to find possible causes
-    Fmi::Exception ex(
-        BCP, "Operation failed! AsyncConnection::handleCompletedRead aborted", nullptr);
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::handleCompletedRead aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // Must not continue throwing here or the server will terminate
     // std::cerr << "Operation failed! AsyncConnection::handleCompletedRead aborted" << std::endl;
   }
 }
+
+
 
 // Handle gateway writes. This function is always called from within the thread pool
 void AsyncConnection::startGatewayReply()
@@ -421,6 +451,8 @@ void AsyncConnection::startGatewayReply()
   }
 }
 
+
+
 // start chunked write. This function is always called from within the thread pool
 void AsyncConnection::startChunkedReply()
 {
@@ -435,11 +467,14 @@ void AsyncConnection::startChunkedReply()
       boost::system::error_code e;
       auto headerbuffer = itsResponse->headersToBuffer();
       // Write headers
-      boost::asio::write(itsSocket, headerbuffer, e);
+      if (itsEncryptionEnabled)
+        boost::asio::write(itsSocket, headerbuffer, e);
+      else
+        boost::asio::write(socket(), headerbuffer, e);
+
       if (e)
       {
-        reportInfo("Unable to send chunk response headers to " + itsRequest->getClientIP() +
-                   ". Reason: " + e.message());
+        reportInfo("Unable to send chunk response headers to " + itsRequest->getClientIP() + ". Reason: " + e.message());
         itsFinalStatus = e;
         return;
       }
@@ -452,11 +487,14 @@ void AsyncConnection::startChunkedReply()
 
       auto headerbuffer = itsResponse->headersToBuffer();
       // Write headers
-      boost::asio::write(itsSocket, headerbuffer, e);
+      if (itsEncryptionEnabled)
+        boost::asio::write(itsSocket, headerbuffer, e);
+      else
+        boost::asio::write(socket(), headerbuffer, e);
+
       if (e)
       {
-        reportInfo("Unable to send chunk response headers to " + itsRequest->getClientIP() +
-                   ". Reason: " + e.message());
+        reportInfo("Unable to send chunk response headers to " + itsRequest->getClientIP() + ". Reason: " + e.message());
         itsFinalStatus = e;
         return;
       }
@@ -467,12 +505,13 @@ void AsyncConnection::startChunkedReply()
   }
   catch (...)
   {
-    Fmi::Exception ex(
-        BCP, "Operation failed! AsyncConnection::startChunkedReply aborted", nullptr);
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::startChunkedReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::startChunkedReply aborted" << std::endl;
   }
 }
+
+
 
 // Response is streamed without chunked encoding. This function is always called from within the
 // thread pool
@@ -481,9 +520,7 @@ void AsyncConnection::startStreamReply()
   try
   {
     // Set Content-Length header, just to be sure
-    itsResponse->setHeader(
-        "Content-Length",
-        std::to_string(static_cast<long long unsigned int>(itsResponse->getContentLength())));
+    itsResponse->setHeader("Content-Length", std::to_string(static_cast<long long unsigned int>(itsResponse->getContentLength())));
 
     // Currently headers a written syncronously
     try
@@ -491,11 +528,14 @@ void AsyncConnection::startStreamReply()
       boost::system::error_code e;
       auto headerbuffer = itsResponse->headersToBuffer();
       // Write headers
-      boost::asio::write(itsSocket, headerbuffer, e);
+      if (itsEncryptionEnabled)
+        boost::asio::write(itsSocket, headerbuffer, e);
+      else
+        boost::asio::write(socket(), headerbuffer, e);
+
       if (e)
       {
-        reportInfo("Unable to send stream response headers to " + itsRequest->getClientIP() +
-                   ". Reason: " + e.message());
+        reportInfo("Unable to send stream response headers to " + itsRequest->getClientIP() + ". Reason: " + e.message());
         itsFinalStatus = e;
         return;
       }
@@ -508,11 +548,14 @@ void AsyncConnection::startStreamReply()
 
       auto headerbuffer = itsResponse->headersToBuffer();
       // Write headers
-      boost::asio::write(itsSocket, headerbuffer, e);
+      if (itsEncryptionEnabled)
+        boost::asio::write(itsSocket, headerbuffer, e);
+      else
+        boost::asio::write(socket(), headerbuffer, e);
+
       if (e)
       {
-        reportInfo("Unable to send stream response headers to " + itsRequest->getClientIP() +
-                   ". Reason: " + e.message());
+        reportInfo("Unable to send stream response headers to " + itsRequest->getClientIP() + ". Reason: " + e.message());
         itsFinalStatus = e;
         return;
       }
@@ -524,16 +567,16 @@ void AsyncConnection::startStreamReply()
   }
   catch (...)
   {
-    Fmi::Exception ex(
-        BCP, "Operation failed! AsyncConnection::startStreamReply aborted", nullptr);
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::startStreamReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::startStreamReply aborted" << std::endl;
   }
 }
 
+
+
 // perform a single chunked write
-void AsyncConnection::writeChunkedReply(const boost::system::error_code& e,
-                                        std::size_t bytes_transferred)
+void AsyncConnection::writeChunkedReply(const boost::system::error_code& e, std::size_t bytes_transferred)
 {
   try
   {
@@ -549,12 +592,22 @@ void AsyncConnection::writeChunkedReply(const boost::system::error_code& e,
 
         // Start async write to socket
         auto remaining_buffer = boost::asio::buffer(itsResponseString) + itsSentBytes;
-        itsSocket.async_write_some(boost::asio::buffer(remaining_buffer),
-                                   [me=shared_from_this()]
-                                   (const boost::system::error_code& err, std::size_t bytes_transferred)
-                                   {
-                                     me->writeChunkedReply(err, bytes_transferred);
-                                   });
+        if (itsEncryptionEnabled)
+        {
+          itsSocket.async_write_some(
+              boost::asio::buffer(remaining_buffer),
+              [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+              {me->writeChunkedReply(err, bytes_transferred);}
+          );
+        }
+        else
+        {
+          socket().async_write_some(
+              boost::asio::buffer(remaining_buffer),
+              [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+              {me->writeChunkedReply(err, bytes_transferred);}
+          );
+        }
       }
       else
       {
@@ -564,8 +617,7 @@ void AsyncConnection::writeChunkedReply(const boost::system::error_code& e,
     else
     {
       sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
-      reportInfo("Error in chunked reply send to " + itsRequest->getClientIP() +
-                 ". Reason: " + e.message() + ". Code: " + Fmi::to_string(e.value()));
+      reportInfo("Error in chunked reply send to " + itsRequest->getClientIP() + ". Reason: " + e.message() + ". Code: " + Fmi::to_string(e.value()));
     }
   }
   catch (...)
@@ -576,9 +628,10 @@ void AsyncConnection::writeChunkedReply(const boost::system::error_code& e,
   }
 }
 
+
+
 // finalize chunked response write
-void AsyncConnection::finalizeChunkedReply(const boost::system::error_code& e,
-                                           std::size_t bytes_transferred)
+void AsyncConnection::finalizeChunkedReply(const boost::system::error_code& e, std::size_t bytes_transferred)
 {
   try
   {
@@ -594,30 +647,41 @@ void AsyncConnection::finalizeChunkedReply(const boost::system::error_code& e,
 
         // Start async write to socket
         auto remaining_buffer = boost::asio::buffer(itsResponseString) + itsSentBytes;
-        itsSocket.async_write_some(boost::asio::buffer(remaining_buffer),
-                                   [me=shared_from_this()]
-                                   (const boost::system::error_code& err, std::size_t bytes_transferred)
-                                   {
-                                     me->finalizeChunkedReply(err, bytes_transferred);
-                                   });
+        if (itsEncryptionEnabled)
+        {
+          itsSocket.async_write_some(
+              boost::asio::buffer(remaining_buffer),
+              [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+              {me->finalizeChunkedReply(err, bytes_transferred);}
+          );
+        }
+        else
+        {
+          socket().async_write_some(
+              boost::asio::buffer(remaining_buffer),
+              [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+              {me->finalizeChunkedReply(err, bytes_transferred);}
+          );
+        }
       }
+
       // Implicit else here, this was the final chunk so stop scheduling async writes
     }
     else
     {
       sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
-      reportInfo("Error in finalizing chunked reply send to " + itsRequest->getClientIP() +
-                 ". Reason: " + e.message() + ". Code: " + Fmi::to_string(e.value()));
+      reportInfo("Error in finalizing chunked reply send to " + itsRequest->getClientIP() + ". Reason: " + e.message() + ". Code: " + Fmi::to_string(e.value()));
     }
   }
   catch (...)
   {
-    Fmi::Exception ex(
-        BCP, "Operation failed! AsyncConnection::finalizeChunkedReply aborted", nullptr);
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::finalizeChunkedReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::finalizeChunkedReply aborted" << std::endl;
   }
 }
+
+
 
 // This function is always called from within the thread pool
 void AsyncConnection::getNextChunk()
@@ -636,16 +700,25 @@ void AsyncConnection::getNextChunk()
         itsResponseString = contentstring;
 
         // Reset sent bytes counter, this is a new chunk
-
         itsSentBytes = 0;
 
         // Schedule next async write operation
-        itsSocket.async_write_some(boost::asio::buffer(itsResponseString),
-                                   [me=shared_from_this()]
-                                   (const boost::system::error_code& err, std::size_t bytes_transferred)
-                                   {
-                                     me->writeStreamReply(err, bytes_transferred);
-                                   });
+        if (itsEncryptionEnabled)
+        {
+          itsSocket.async_write_some(
+              boost::asio::buffer(itsResponseString),
+              [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+              {me->writeStreamReply(err, bytes_transferred);}
+          );
+        }
+        else
+        {
+          socket().async_write_some(
+              boost::asio::buffer(itsResponseString),
+              [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+              {me->writeStreamReply(err, bytes_transferred);}
+          );
+        }
       }
       else
       {
@@ -660,8 +733,7 @@ void AsyncConnection::getNextChunk()
       {
         // If the response is a gateway response (sent by frontend plugin) call the associated hooks
 
-        itsReactor.callBackendConnectionFinishedHooks(
-            itsResponse->itsOriginatingBackend, itsResponse->itsBackendPort, streamStatus);
+        itsReactor.callBackendConnectionFinishedHooks(itsResponse->itsOriginatingBackend, itsResponse->itsBackendPort, streamStatus);
       }
     }
   }
@@ -672,6 +744,8 @@ void AsyncConnection::getNextChunk()
     // std::cerr << "Operation failed! AsyncConnection::getNextChunk aborted" << std::endl;
   }
 }
+
+
 
 //	This function is always called from within the thread pool
 void AsyncConnection::getNextChunkedChunk()
@@ -696,12 +770,22 @@ void AsyncConnection::getNextChunkedChunk()
         itsSentBytes = 0;
 
         // Schedule the next asynchronous write
-        itsSocket.async_write_some(boost::asio::buffer(itsResponseString),
-                                   [me=shared_from_this()]
-                                   (const boost::system::error_code& err, std::size_t bytes_transferred)
-                                   {
-                                     me->writeChunkedReply(err, bytes_transferred);
-                                   });
+        if (itsEncryptionEnabled)
+        {
+          itsSocket.async_write_some(
+              boost::asio::buffer(itsResponseString),
+              [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+              {me->writeChunkedReply(err, bytes_transferred);}
+          );
+        }
+        else
+        {
+          socket().async_write_some(
+              boost::asio::buffer(itsResponseString),
+              [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+              {me->writeChunkedReply(err, bytes_transferred);}
+          );
+        }
       }
       else
       {
@@ -719,26 +803,36 @@ void AsyncConnection::getNextChunkedChunk()
 
       itsSentBytes = 0;
 
-      itsSocket.async_write_some(boost::asio::buffer(itsResponseString),
-                                 [me=shared_from_this()]
-                                 (const boost::system::error_code& err, std::size_t bytes_transferred)
-                                 {
-                                   me->finalizeChunkedReply(err, bytes_transferred);
-                                 });
+      if (itsEncryptionEnabled)
+      {
+        itsSocket.async_write_some(
+            boost::asio::buffer(itsResponseString),
+            [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+            {me->finalizeChunkedReply(err, bytes_transferred);}
+        );
+      }
+      else
+      {
+        socket().async_write_some(
+            boost::asio::buffer(itsResponseString),
+            [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+            {me->finalizeChunkedReply(err, bytes_transferred);}
+        );
+      }
     }
   }
   catch (...)
   {
-    Fmi::Exception ex(
-        BCP, "Operation failed! AsyncConnection::getNextChunkedChunk aborted", nullptr);
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::getNextChunkedChunk aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::getNextChunkedChunk aborted" << std::endl;
   }
 }
 
+
+
 // Does a single write from the current stream buffer
-void AsyncConnection::writeStreamReply(const boost::system::error_code& e,
-                                       std::size_t bytes_transferred)
+void AsyncConnection::writeStreamReply(const boost::system::error_code& e, std::size_t bytes_transferred)
 {
   try
   {
@@ -754,12 +848,22 @@ void AsyncConnection::writeStreamReply(const boost::system::error_code& e,
 
         // Start async write to socket
         auto remaining_buffer = boost::asio::buffer(itsResponseString) + itsSentBytes;
-        itsSocket.async_write_some(boost::asio::buffer(remaining_buffer),
-                                   [me=shared_from_this()]
-                                   (const boost::system::error_code& err, std::size_t bytes_transferred)
-                                   {
-                                     me->writeStreamReply(err, bytes_transferred);
-                                   });
+        if (itsEncryptionEnabled)
+        {
+          itsSocket.async_write_some(
+              boost::asio::buffer(remaining_buffer),
+              [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+              {me->writeStreamReply(err, bytes_transferred);}
+          );
+        }
+        else
+        {
+          socket().async_write_some(
+              boost::asio::buffer(remaining_buffer),
+              [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+              {me->writeStreamReply(err, bytes_transferred);}
+          );
+        }
       }
       else
       {
@@ -769,29 +873,26 @@ void AsyncConnection::writeStreamReply(const boost::system::error_code& e,
     else
     {
       sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
-      reportInfo("Error in stream reply send to " + itsRequest->getClientIP() +
-                 ". Reason: " + e.message());
+      reportInfo("Error in stream reply send to " + itsRequest->getClientIP() + ". Reason: " + e.message());
       if (itsResponse->isGatewayResponse)
       {
         // If the response is a gateway response (sent by frontend plugin) call the associated hooks
 
-        itsReactor.callBackendConnectionFinishedHooks(itsResponse->itsOriginatingBackend,
-                                                      itsResponse->itsBackendPort,
-                                                      itsResponse->getStreamingStatus());
+        itsReactor.callBackendConnectionFinishedHooks(itsResponse->itsOriginatingBackend, itsResponse->itsBackendPort, itsResponse->getStreamingStatus());
       }
     }
   }
   catch (...)
   {
-    Fmi::Exception ex(
-        BCP, "Operation failed! AsyncConnection::writeStreamReply aborted", nullptr);
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::writeStreamReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::writeStreamReply aborted" << std::endl;
   }
 }
 
-void AsyncConnection::writeRegularReply(const boost::system::error_code& e,
-                                        std::size_t bytes_transferred)
+
+
+void AsyncConnection::writeRegularReply(const boost::system::error_code& e, std::size_t bytes_transferred)
 {
   try
   {
@@ -807,12 +908,22 @@ void AsyncConnection::writeRegularReply(const boost::system::error_code& e,
 
         // Start async write to socket
         auto remaining_buffer = boost::asio::buffer(itsResponseString) + itsSentBytes;
-        itsSocket.async_write_some(boost::asio::buffer(remaining_buffer),
-                                   [me=shared_from_this()]
-                                   (const boost::system::error_code& err, std::size_t bytes_transferred)
-                                   {
-                                     me->writeRegularReply(err, bytes_transferred);
-                                   });
+        if (itsEncryptionEnabled)
+        {
+          itsSocket.async_write_some(
+              boost::asio::buffer(remaining_buffer),
+              [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+              {me->writeRegularReply(err, bytes_transferred);}
+          );
+        }
+        else
+        {
+          socket().async_write_some(
+              boost::asio::buffer(remaining_buffer),
+              [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+              {me->writeRegularReply(err, bytes_transferred);}
+          );
+        }
         return;
       }
 
@@ -822,18 +933,18 @@ void AsyncConnection::writeRegularReply(const boost::system::error_code& e,
     else
     {
       sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
-      reportInfo("Error in reply send to " + itsRequest->getClientIP() +
-                 ". Reason: " + e.message());
+      reportInfo("Error in reply send to " + itsRequest->getClientIP() + ". Reason: " + e.message());
     }
   }
   catch (...)
   {
-    Fmi::Exception ex(
-        BCP, "Operation failed! AsyncConnection::writeRegularReply aborted", nullptr);
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::writeRegularReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::writeRegularReply aborted" << std::endl;
   }
 }
+
+
 
 // Prepare unstreamed writes
 void AsyncConnection::startRegularReply()
@@ -848,9 +959,7 @@ void AsyncConnection::startRegularReply()
     }
 
     // Set Content-Length header, as it may change during compression
-    itsResponse->setHeader(
-        "Content-Length",
-        std::to_string(static_cast<long long unsigned int>(itsResponse->getContentLength())));
+    itsResponse->setHeader("Content-Length", std::to_string(static_cast<long long unsigned int>(itsResponse->getContentLength())));
 
     std::string headers, content;
 
@@ -871,21 +980,32 @@ void AsyncConnection::startRegularReply()
     itsResponseString = headers + content;
 
     // Start async write to socket
-    itsSocket.async_write_some(boost::asio::buffer(itsResponseString),
-                               [me=shared_from_this()]
-                               (const boost::system::error_code& err, std::size_t bytes_transferred)
-                               {
-                                 me->writeRegularReply(err, bytes_transferred);
-                               });
+    if (itsEncryptionEnabled)
+    {
+      itsSocket.async_write_some(
+          boost::asio::buffer(itsResponseString),
+          [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+          {me->writeRegularReply(err, bytes_transferred);}
+      );
+    }
+    else
+    {
+      socket().async_write_some(
+          boost::asio::buffer(itsResponseString),
+          [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+          {me->writeRegularReply(err, bytes_transferred);}
+      );
+    }
   }
   catch (...)
   {
-    Fmi::Exception ex(
-        BCP, "Operation failed! AsyncConnection::startRegularReply aborted", nullptr);
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::startRegularReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::startRegularReply aborted" << std::endl;
   }
 }
+
+
 
 // Sets common server-based headers
 void AsyncConnection::setServerHeaders()
@@ -894,15 +1014,12 @@ void AsyncConnection::setServerHeaders()
   {
     // Put additional server-based headers here
     itsResponse->setHeader("Server", "SmartMet Server (" __TIME__ " " __DATE__ ")");
-
     itsResponse->setHeader("Vary", "Accept-Encoding");
-
     itsResponse->setHeader("Date", makeDateString());
 
     if (itsResponse->getVersion() == "1.1")
     {
-      itsResponse->setHeader("Connection",
-                             "close");  // Current implementation is one-request-per-connection
+      itsResponse->setHeader("Connection", "close");  // Current implementation is one-request-per-connection
     }
   }
   catch (...)
@@ -911,6 +1028,8 @@ void AsyncConnection::setServerHeaders()
   }
 }
 
+
+
 void AsyncConnection::sendStockReply(const SmartMet::Spine::HTTP::Status theStatus)
 {
   try
@@ -918,30 +1037,38 @@ void AsyncConnection::sendStockReply(const SmartMet::Spine::HTTP::Status theStat
     boost::system::error_code err;
 
     itsResponse->setStatus(theStatus, true);
-    itsResponse->setHeader(
-        "Content-Length",
-        std::to_string(static_cast<long long unsigned int>(itsResponse->getContentLength())));
+    itsResponse->setHeader("Content-Length", std::to_string(static_cast<long long unsigned int>(itsResponse->getContentLength())));
     setServerHeaders();  // Set the rest of server headers
 
     auto headerbuffer = itsResponse->headersToBuffer();
     auto contentbuffer = itsResponse->contentToBuffer();
 
     // No error checking here at the moment
-    boost::asio::write(itsSocket, headerbuffer, err);
-    boost::asio::write(itsSocket, contentbuffer, err);
+    if (itsEncryptionEnabled)
+    {
+      boost::asio::write(itsSocket, headerbuffer, err);
+      boost::asio::write(itsSocket, contentbuffer, err);
+    }
+    else
+    {
+      boost::asio::write(socket(), headerbuffer, err);
+      boost::asio::write(socket(), contentbuffer, err);
+    }
 
     itsFinalStatus = err;
 
     // Shutdown immediately to avoid lingering CLOSE_WAIT sockets
     boost::system::error_code ignored_ec;
-    itsSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-    itsSocket.close(ignored_ec);
+    socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+    socket().close(ignored_ec);
   }
   catch (...)
   {
     std::cerr << "Operation failed! AsyncConnection::sendStockReply aborted" << std::endl;
   }
 }
+
+
 
 void AsyncConnection::scheduleChunkGetter()
 {
@@ -951,11 +1078,15 @@ void AsyncConnection::scheduleChunkGetter()
     // Put the chunk getter function in the appropriate pool
     if (itsQueryIsFast)
     {
-      scheduled = itsFastExecutor.schedule([me=shared_from_this()](){ me->getNextChunk(); });
+      scheduled = itsFastExecutor.schedule(
+          [me=shared_from_this()](){me->getNextChunk();}
+      );
     }
     else
     {
-      scheduled = itsSlowExecutor.schedule([me=shared_from_this()](){ me->getNextChunk(); });
+      scheduled = itsSlowExecutor.schedule(
+          [me=shared_from_this()](){me->getNextChunk();}
+      );
     }
 
     // Task queue was full, send busy response
@@ -967,8 +1098,7 @@ void AsyncConnection::scheduleChunkGetter()
   }
   catch (...)
   {
-    Fmi::Exception ex(
-        BCP, "Operation failed! AsyncConnection::scheduleChunkGetter aborted", nullptr);
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::scheduleChunkGetter aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::scheduleChunkGetter aborted" << std::endl;
   }
@@ -982,11 +1112,15 @@ void AsyncConnection::scheduleChunkedChunkGetter()
     // Put the chunk getter function in the appropriate pool
     if (itsQueryIsFast)
     {
-      scheduled = itsFastExecutor.schedule([me=shared_from_this()](){ me->getNextChunkedChunk(); });
+      scheduled = itsFastExecutor.schedule(
+          [me=shared_from_this()](){me->getNextChunkedChunk();}
+      );
     }
     else
     {
-      scheduled = itsSlowExecutor.schedule([me=shared_from_this()](){ me->getNextChunkedChunk(); });
+      scheduled = itsSlowExecutor.schedule(
+          [me=shared_from_this()](){me->getNextChunkedChunk();}
+      );
     }
 
     // Task queue was full, send busy response
@@ -998,23 +1132,23 @@ void AsyncConnection::scheduleChunkedChunkGetter()
   }
   catch (...)
   {
-    Fmi::Exception ex(
-        BCP, "Operation failed! AsyncConnection::scheduleChunkedChunkGetter aborted", nullptr);
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::scheduleChunkedChunkGetter aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::scheduleChunkedChunkGetter aborted" <<
     // std::endl;
   }
 }
 
-void AsyncConnection::notifyClientDisconnect(const boost::system::error_code& e,
-                                             std::size_t /* bytes_transferred */)
+
+
+void AsyncConnection::notifyClientDisconnect(const boost::system::error_code& e, std::size_t /* bytes_transferred */)
 {
   try
   {
     // If this function is called, either client sent something after the fully parsed request or
     // client disconnect
     // has been signaled
-    boost::lock_guard<boost::mutex> lock(itsDisconnectMutex);
+    boost::lock_guard < boost::mutex > lock(itsDisconnectMutex);
     if (e)
     {
       // Some error occurred, the client may have disconnected
@@ -1031,18 +1165,27 @@ void AsyncConnection::notifyClientDisconnect(const boost::system::error_code& e,
     else
     {
       // Client sent something, ignore it and go back to listen
-      itsSocket.async_read_some(boost::asio::buffer(itsSocketBuffer),
-                                [me=shared_from_this()]
-                                (const boost::system::error_code& err, std::size_t bytes_transferred)
-                                {
-                                  me->notifyClientDisconnect(err, bytes_transferred);
-                                });
+      if (itsEncryptionEnabled)
+      {
+        itsSocket.async_read_some(
+            boost::asio::buffer(itsSocketBuffer),
+            [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+            {me->notifyClientDisconnect(err, bytes_transferred);}
+        );
+      }
+      else
+      {
+        socket().async_read_some(
+            boost::asio::buffer(itsSocketBuffer),
+            [me=shared_from_this()](const boost::system::error_code& err, std::size_t bytes_transferred)
+            {me->notifyClientDisconnect(err, bytes_transferred);}
+        );
+      }
     }
   }
   catch (...)
   {
-    Fmi::Exception ex(
-        BCP, "Operation failed! AsyncConnection::notifyClientDisconnect aborted", nullptr);
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::notifyClientDisconnect aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::notifyClientDisconnect aborted" <<
     // std::endl;

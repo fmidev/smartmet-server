@@ -29,6 +29,7 @@ LIBS += -L$(libdir) \
 	-lboost_chrono \
 	-lboost_system \
 	-lfmt \
+	-lcrypto -lssl \
 	-lz -lpthread \
 	-ldw
 
