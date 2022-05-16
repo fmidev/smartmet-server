@@ -15,6 +15,7 @@ BuildRequires: make
 BuildRequires: boost169-devel
 BuildRequires: elfutils-devel
 BuildRequires: fmt-devel >= 7.1.3
+BuildRequires: openssl-devel
 BuildRequires: jemalloc-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 21.10.4
@@ -29,6 +30,7 @@ Requires: boost169-thread
 Requires: fmt >= 7.1.3
 Requires: glibc
 Requires: jemalloc
+Requires: openssl-libs
 Requires: smartmet-library-macgyver >= 21.10.4
 Requires: smartmet-library-spine >= 22.4.26
 Provides: smartmetd
