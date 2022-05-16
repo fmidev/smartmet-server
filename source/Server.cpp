@@ -12,6 +12,9 @@ namespace Server
 {
 Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& theReactor)
     : itsIoService(),
+      itsEncryptionEnabled(theOptions.encryptionEnabled),
+      itsEncryptionPassword(theOptions.encryptionPassword),
+      itsEncryptionContext(boost::asio::ssl::context::tlsv13),
       itsAcceptor(itsIoService),
       itsReactor(theReactor),
       itsSlowExecutor(theOptions.slowpool.minsize, theOptions.slowpool.maxrequeuesize),
@@ -25,10 +28,50 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
 {
   try
   {
+
 // Bind to the given port using given protocol
 #ifndef NDEBUG
     std::cout << "Attempting to bind to port " << theOptions.port << std::endl;
 #endif
+
+    if (itsEncryptionEnabled)
+    {
+      if (!theOptions.encryptionPasswordFile.empty())
+      {
+        FILE *file = fopen(theOptions.encryptionPasswordFile.c_str(),"r");
+        if (file == nullptr)
+        {
+          Fmi::Exception ex(BCP, "Cannot open the password file!");
+          ex.addParameter("password_file",theOptions.encryptionPasswordFile);
+          throw ex;
+        }
+
+        char st[100];
+        if (fgets(st,100,file) == nullptr)
+        {
+          Fmi::Exception ex(BCP, "Cannot read the password!");
+          ex.addParameter("password_file",theOptions.encryptionPasswordFile);
+          throw ex;
+        }
+
+        char *p = strstr(st,"\n");
+        if (p != nullptr)
+          *p = '\0';
+
+        itsEncryptionPassword = st;
+        std::cout << "[" << itsEncryptionPassword << "]\n";
+        fclose(file);
+      }
+
+      itsEncryptionContext.set_options(boost::asio::ssl::context::tlsv13);
+
+      itsEncryptionContext.set_password_callback(boost::bind(&Server::getPassword, this));
+      itsEncryptionContext.use_certificate_chain_file(theOptions.encryptionCertificateFile);
+      itsEncryptionContext.use_private_key_file(theOptions.encryptionPrivateKeyFile, boost::asio::ssl::context::pem);
+      //itsEncryptionContext.use_tmp_dh_file("dh512.pem");
+    }
+
+
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(),
                                             static_cast<unsigned short>(theOptions.port));
     itsAcceptor.open(endpoint.protocol());
@@ -56,6 +99,20 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
     throw Fmi::Exception::Trace(BCP, "Operation failed!");
   }
 }
+
+
+std::string Server::getPassword() const
+{
+  try
+  {
+    return itsEncryptionPassword;
+  }
+  catch (...)
+  {
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
+  }
+}
+
 
 bool Server::isShutdownRequested() const
 {

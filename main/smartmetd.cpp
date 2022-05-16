@@ -8,6 +8,7 @@
 #include <spine/Options.h>
 #include <spine/Reactor.h>
 #include <spine/SmartMet.h>
+#include <spine/Convenience.h>
 #include <sys/types.h>
 #include <sys/select.h>
 #include <atomic>
@@ -30,6 +31,21 @@ std::atomic<int> last_signal(0);
 // NFS problems, and SIGQUIT since we want to allow quitting via keyboard
 
 std::vector<int> core_signals{SIGILL, SIGABRT, SIGFPE, SIGSYS, SIGSEGV, SIGXCPU, SIGXFSZ};
+
+void crash_signal_handler(int sig)
+{
+  std::cout << "---------------------------------------------------------\n";
+  std::cout << SmartMet::Spine::log_time_str() << " THE SYSTEM IS GOING DOWN (signal=" << sig << ")\n";
+  std::cout << "---------------------------------------------------------\n";
+  auto requests = reactor->getActiveRequests();
+  for (auto it = requests.begin(); it != requests.end(); ++it)
+  {
+    std::cout << it->second.request.getURI() << "\n";
+    std::cout << "---------------------------------------------------------\n";
+  }
+  signal(sig, SIG_DFL);
+  raise(sig);
+}
 
 void signal_handler(int sig)
 {
@@ -99,6 +115,13 @@ int main(int argc, char* argv[])
             // We also want to record other common non-core dumping signals
             sigaction(SIGHUP, &action, nullptr);
             sigaction(SIGINT, &action, nullptr);
+
+            struct sigaction action2;             // NOLINT(cppcoreguidelines-pro-type-member-init)
+            action2.sa_handler = crash_signal_handler;  // NOLINT(cppcoreguidelines-pro-type-union-access)
+            sigemptyset(&action2.sa_mask);
+            action2.sa_flags = 0;
+            sigaction(SIGSEGV, &action2, nullptr);
+
         };
 
     std::unique_ptr<backward::SignalHandling> sh;

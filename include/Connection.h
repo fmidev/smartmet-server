@@ -15,6 +15,11 @@
 #include <macgyver/ThreadPool.h>
 #include <spine/Reactor.h>
 #include <spine/Thread.h>
+#include <boost/asio/ssl.hpp>
+
+
+typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> ssl_socket;
+
 
 namespace SmartMet
 {
@@ -28,6 +33,8 @@ class Connection
 {
  public:
   explicit Connection(Server* theServer,
+                      bool encryptionEnabled,
+                      boost::asio::ssl::context& encryptionContext,
                       bool canGzipResponse,
                       std::size_t compressLimit,
                       std::size_t maxRequestSize,
@@ -66,8 +73,11 @@ class Connection
   /// Handle to the server instance which spawned this connection
   Server* itsServer;
 
-  /// Socket for the connection.
-  boost::asio::ip::tcp::socket itsSocket;
+  /// SSL / TLS enabled
+  bool itsEncryptionEnabled;
+
+  /// Socket for the connection. When SSL is disabled, we just use the socket-part
+  boost::asio::ssl::stream<boost::asio::ip::tcp::socket> itsSocket;
 
   /// Its associated Io Service
   boost::asio::io_service& itsIoService;
