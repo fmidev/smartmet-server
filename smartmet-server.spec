@@ -19,7 +19,7 @@ BuildRequires: openssl-devel
 BuildRequires: jemalloc-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 21.10.4
-BuildRequires: smartmet-library-spine-devel >= 22.4.26
+BuildRequires: smartmet-library-spine-devel >= 22.5.16
 Requires: boost169-date-time
 Requires: boost169-filesystem
 Requires: boost169-iostreams
@@ -32,7 +32,7 @@ Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
 Requires: smartmet-library-macgyver >= 21.10.4
-Requires: smartmet-library-spine >= 22.4.26
+Requires: smartmet-library-spine >= 22.5.16
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
