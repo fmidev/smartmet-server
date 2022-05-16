@@ -9,7 +9,7 @@
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 #define SMARTMETD_SSL_METHOD boost::asio::ssl::context::tlsv13
 #else
-#define SMARTMETD_SSL_METHOD boost::asio::ssl::context::tlsv11
+#define SMARTMETD_SSL_METHOD boost::asio::ssl::context::tlsv12
 #endif
 
 namespace SmartMet
