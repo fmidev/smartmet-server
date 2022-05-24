@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 22.5.16
+Version: 22.5.24
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -18,8 +18,8 @@ BuildRequires: fmt-devel >= 7.1.3
 BuildRequires: openssl-devel
 BuildRequires: jemalloc-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 21.10.4
-BuildRequires: smartmet-library-spine-devel >= 22.5.16
+BuildRequires: smartmet-library-macgyver-devel >= 22.5.24
+BuildRequires: smartmet-library-spine-devel >= 22.5.24
 Requires: boost169-date-time
 Requires: boost169-filesystem
 Requires: boost169-iostreams
@@ -31,8 +31,8 @@ Requires: fmt >= 7.1.3
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 21.10.4
-Requires: smartmet-library-spine >= 22.5.16
+Requires: smartmet-library-macgyver >= 22.5.24
+Requires: smartmet-library-spine >= 22.5.24
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -84,6 +84,9 @@ fi
 
 
 %changelog
+* Tue May 24 2022 Mika Heiskanen <mika.heiskanen@fmi.fi> - 22.5.24-1.fmi
+- Repackaged due to NFmiArea ABI changes
+
 * Mon May 16 2022 Andris Pavēnis <andris.pavenis@fmi.fi> 22.5.16-1.fmi
 - Added HTTPS support
 
