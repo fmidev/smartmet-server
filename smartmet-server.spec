@@ -9,37 +9,47 @@ Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
 Source0: smartmet-server.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+%if 0%{?rhel} && 0%{rhel} < 9
+%define smartmet_boost boost169
+%else
+%define smartmet_boost boost
+%endif
+
+%define smartmet_fmt_min 8.1.1
+%define smartmet_fmt_max 8.2.0
+
 BuildRequires: rpm-build
 BuildRequires: gcc-c++
 BuildRequires: make
-BuildRequires: boost169-devel
+BuildRequires: %{smartmet_boost}-devel
 BuildRequires: elfutils-devel
 BuildRequires: fmt-devel >= 7.1.3
 BuildRequires: openssl-devel
 BuildRequires: jemalloc-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 22.5.24
-BuildRequires: smartmet-library-spine-devel >= 22.5.24
-Requires: boost169-date-time
-Requires: boost169-filesystem
-Requires: boost169-iostreams
-Requires: boost169-program-options
-Requires: boost169-regex
-Requires: boost169-system
-Requires: boost169-thread
+BuildRequires: smartmet-library-macgyver-devel >= 22.6.16
+BuildRequires: smartmet-library-spine-devel >= 22.6.16
+Requires: %{smartmet_boost}-date-time
+Requires: %{smartmet_boost}-filesystem
+Requires: %{smartmet_boost}-iostreams
+Requires: %{smartmet_boost}-program-options
+Requires: %{smartmet_boost}-regex
+Requires: %{smartmet_boost}-system
+Requires: %{smartmet_boost}-thread
 Requires: fmt >= 7.1.3
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 22.5.24
-Requires: smartmet-library-spine >= 22.5.24
+Requires: smartmet-library-macgyver >= 22.6.16
+Requires: smartmet-library-spine >= 22.6.16
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
 #TestRequires: /bin/bash
 #TestRequires: gcc-c++
 #TestRequires: make
-#TestRequires: smartmet-library-macgyver-devel >= 20.10.7
+#TestRequires: smartmet-library-macgyver-devel >= 22.6.16
 
 Summary: SmartMet server
 %description
