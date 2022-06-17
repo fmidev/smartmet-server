@@ -6,7 +6,7 @@
 #include "AsyncConnection.h"
 #include "AsyncServer.h"
 #include "Utility.h"
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/move/make_unique.hpp>
 #include <spine/Convenience.h>
 #include <macgyver/Exception.h>
