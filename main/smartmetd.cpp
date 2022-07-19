@@ -134,7 +134,20 @@ int main(int argc, char* argv[])
     server.reset(new SmartMet::Server::AsyncServer(options, *reactor));
 
     tasks.reset(new Fmi::AsyncTaskGroup);
-    tasks->on_task_error([] (const std::string&) { throw; });
+
+    tasks->on_task_error(
+        [] (const std::string&)
+        {
+           if (server)
+           {
+               server->shutdownServer();
+           }
+           else
+           {
+               throw;
+           }
+        });
+
     tasks->stop_on_error(true);
 
     tasks->add(
