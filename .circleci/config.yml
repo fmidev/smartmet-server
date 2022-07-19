@@ -51,9 +51,9 @@ jobs:
           command: |
             export PATH=$PATH:~/.local/bin
             aws s3 cp /dist s3://fmi-smartmet-cicd-beta/centos7/ --recursive
-  build-rhel8:
+  build-rhel9:
     docker:
-      - image: fmidev/smartmet-cibase-8:latest
+      - image: fmidev/smartmet-cibase-9:latest
     steps:
       - checkout
       - run:
@@ -65,9 +65,9 @@ jobs:
       - persist_to_workspace:
           root: /dist
           paths: ./*.rpm
-  test-rhel8:
+  test-rhel9:
     docker:
-      - image: fmidev/smartmet-cibase-8:latest
+      - image: fmidev/smartmet-cibase-9:latest
     steps:
       - checkout
       - attach_workspace:
@@ -84,7 +84,7 @@ jobs:
       - store_artifacts:
           path: /dist
           destination: dist/
-  upload-rhel8:
+  upload-rhel9:
     docker:
       - image: fmidev/smartmet-cibase-7:latest
     steps:
@@ -101,25 +101,25 @@ jobs:
           name: Sync artifacts to S3
           command: |
             export PATH=$PATH:~/.local/bin
-            aws s3 cp /dist s3://fmi-smartmet-cicd-beta/centos8/ --recursive
+            aws s3 cp /dist s3://fmi-smartmet-cicd-beta/centos9/ --recursive
 
 workflows:
   version: 2.1
   build-test:
     jobs:
       - build-rhel7
-      - build-rhel8
+      - build-rhel9
       - test-rhel7:
           requires:
             - build-rhel7
-      - test-rhel8:
+      - test-rhel9:
           requires:
-            - build-rhel8
+            - build-rhel9
       - upload-rhel7:
           context: fmi-global
           requires:
             - test-rhel7
-      - upload-rhel8:
+      - upload-rhel9:
           context: fmi-global
           requires:
-            - test-rhel8
+            - test-rhel9
