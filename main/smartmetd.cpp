@@ -191,7 +191,14 @@ int main(int argc, char* argv[])
         }
 
         int sig = last_signal;
-        if (sig != 0) {
+
+        if (reactor->isShutdownFinished()) {
+            tasks->stop();
+            server->shutdownServer();
+            tasks->wait();
+            return 0;
+        }
+        else if (sig != 0) {
             std::cout << "\n"
                       << ANSI_BG_RED << ANSI_BOLD_ON << ANSI_FG_WHITE << "Signal '"
                       << strsignal(sig) << "' (" << sig << ") received ";
