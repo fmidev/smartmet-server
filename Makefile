@@ -9,6 +9,9 @@ include $(shell echo $${PREFIX-/usr})/share/smartmet/devel/makefile.inc
 
 DEFINES = -DUNIX
 
+# Silence warnings aboue use of deprecated boost/bind.hpp (newer boost versions)
+DEFINES += -DBOOST_BIND_GLOBAL_PLACEHOLDERS
+
 CFLAGS = $(DEFINES) -O2 -g -DNDEBUG $(FLAGS)
 
 override LDFLAGS += -rdynamic
