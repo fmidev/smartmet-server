@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 22.8.5
+Version: 22.8.8
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -29,7 +29,7 @@ BuildRequires: openssl-devel
 BuildRequires: jemalloc-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 22.7.29
-BuildRequires: smartmet-library-spine-devel >= 22.8.5
+BuildRequires: smartmet-library-spine-devel >= 22.8.8
 Requires: %{smartmet_boost}-date-time
 Requires: %{smartmet_boost}-filesystem
 Requires: %{smartmet_boost}-iostreams
@@ -42,7 +42,7 @@ Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
 Requires: smartmet-library-macgyver >= 22.7.29
-Requires: smartmet-library-spine >= 22.8.5
+Requires: smartmet-library-spine >= 22.8.8
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -94,6 +94,9 @@ fi
 
 
 %changelog
+* Mon Aug  8 2022 Mika Heiskanen <mika.heiskanen@fmi.fi> - 22.8.8-1.fmi
+- New command line option --coredump_filter
+
 * Fri Aug  5 2022 Andris Pavēnis <andris.pavenis@fmi.fi> 22.8.5-1.fmi
 - Repackage due to SmartMet::Spine::Reactor ABI changes
 
