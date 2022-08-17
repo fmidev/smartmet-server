@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 22.8.8
+Version: 22.8.17
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -94,6 +94,9 @@ fi
 
 
 %changelog
+* Wed Aug 17 2022 Mika Heiskanen <mika.heiskanen@fmi.fi> - 22.8.17-1.fmi
+- Always use fast thread pool if slow pool is configured to size zero
+
 * Mon Aug  8 2022 Mika Heiskanen <mika.heiskanen@fmi.fi> - 22.8.8-1.fmi
 - New command line option --coredump_filter
 
