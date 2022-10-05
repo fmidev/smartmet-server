@@ -3,7 +3,7 @@
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
 Version: 22.10.5
-Release: 1%{?dist}.fmi
+Release: 2%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -93,6 +93,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Wed Oct  5 2022 Mika Heiskanen <mika.heiskanen@fmi.fi> - 22.10.5-2.fmi
+- Do not use boost::noncopyable
+
 * Wed Oct  5 2022 Mika Heiskanen <mika.heiskanen@fmi.fi> - 22.10.5-1.fmi
 - Fixed admin queries to work in high load situations
 

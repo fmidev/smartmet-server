@@ -9,18 +9,14 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-
+#include "AsyncConnection.h"
+#include "Server.h"
 #include <boost/asio.hpp>
-#include <boost/noncopyable.hpp>
-
 #include <spine/Options.h>
 #include <spine/Reactor.h>
 #include <spine/Thread.h>
-
-#include "AsyncConnection.h"
-#include "Server.h"
+#include <string>
+#include <vector>
 
 namespace SmartMet
 {

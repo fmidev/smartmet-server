@@ -7,17 +7,15 @@
 // ======================================================================
 
 #pragma once
+#include "Connection.h"
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <macgyver/ThreadPool.h>
 #include <spine/HTTP.h>
 #include <spine/HandlerView.h>
 #include <spine/Reactor.h>
-
-#include "Connection.h"
 
 namespace SmartMet
 {
@@ -32,12 +30,14 @@ class AsyncServer;
  * This connection type is used by the AsyncServer server implementation.
  */
 // ======================================================================
-class AsyncConnection : public Connection,
-                        virtual boost::noncopyable,
-                        public boost::enable_shared_from_this<AsyncConnection>
+class AsyncConnection : public Connection, public boost::enable_shared_from_this<AsyncConnection>
 {
  public:
   typedef boost::shared_ptr<AsyncConnection> ConnectionPtr;
+
+  AsyncConnection() = delete;
+  AsyncConnection(const AsyncConnection& other) = delete;
+  AsyncConnection& operator=(const AsyncConnection& other) = delete;
 
   // ======================================================================
   /*!
@@ -90,7 +90,7 @@ class AsyncConnection : public Connection,
    */
   // ======================================================================
 
-  //boost::asio::ip::tcp::socket& socket();
+  // boost::asio::ip::tcp::socket& socket();
 
   // ======================================================================
   /*!
@@ -104,7 +104,6 @@ class AsyncConnection : public Connection,
   void start();
 
  private:
-
   void handleHandshake(const boost::system::error_code& error);
 
   // ======================================================================

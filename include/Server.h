@@ -10,10 +10,8 @@
 
 #pragma once
 
-#include <boost/asio.hpp>
-#include <boost/noncopyable.hpp>
-
 #include "Connection.h"
+#include <boost/asio.hpp>
 #include <spine/Options.h>
 #include <spine/Reactor.h>
 
@@ -30,9 +28,12 @@ namespace Server
  * with network communication and processing facilities.
  */
 // ======================================================================
-class Server : private boost::noncopyable
+class Server
 {
  public:
+  Server() = delete;
+  Server(const Server& other) = delete;
+  Server& operator=(const Server& other) = delete;
   Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& theReactor);
 
   // ======================================================================
