@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 22.8.19
+Version: 22.10.5
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -28,8 +28,8 @@ BuildRequires: fmt-devel >= 7.1.3
 BuildRequires: openssl-devel
 BuildRequires: jemalloc-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 22.7.29
-BuildRequires: smartmet-library-spine-devel >= 22.8.19
+BuildRequires: smartmet-library-macgyver-devel >= 22.8.23
+BuildRequires: smartmet-library-spine-devel >= 22.9.5
 Requires: %{smartmet_boost}-date-time
 Requires: %{smartmet_boost}-filesystem
 Requires: %{smartmet_boost}-iostreams
@@ -41,15 +41,15 @@ Requires: fmt >= 7.1.3
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 22.7.29
-Requires: smartmet-library-spine >= 22.8.19
+Requires: smartmet-library-macgyver >= 22.8.23
+Requires: smartmet-library-spine >= 22.9.5
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
 #TestRequires: /bin/bash
 #TestRequires: gcc-c++
 #TestRequires: make
-#TestRequires: smartmet-library-macgyver-devel >= 22.7.29
+#TestRequires: smartmet-library-macgyver-devel >= 22.8.23
 
 Summary: SmartMet server
 %description
@@ -92,8 +92,10 @@ if [ $1 -eq 0 ]; then
    systemctl disable smartmet-server
 fi
 
-
 %changelog
+* Wed Oct  5 2022 Mika Heiskanen <mika.heiskanen@fmi.fi> - 22.10.5-1.fmi
+- Fixed admin queries to work in high load situations
+
 * Fri Aug 19 2022 Mika Heiskanen <mika.heiskanen@fmi.fi> - 22.8.19-1.fmi
 - Repackaged since Options struct defaults changed
 

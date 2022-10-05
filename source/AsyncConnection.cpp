@@ -142,23 +142,6 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
       return;
     }
 
-    if (itsReactor.isLoadHigh())
-    {
-      bool is_admin_request = (itsRequest && (itsRequest->getResource() == "admin" ||
-                                              itsRequest->getResource() == "/admin"));
-
-      if (!is_admin_request)
-      {
-        std::cout << Spine::log_time_str() << " Too many active requests, reporting high load"
-                  << std::endl;
-        sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
-        return;
-      }
-
-      std::cout << Spine::log_time_str() << " Letting admin request pass despite high load"
-                << std::endl;
-    }
-
     // Initialize the connection status.
     itsFinalStatus = e;
 
@@ -234,6 +217,21 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
 
 // DEBUGGIN OUTPUT************************************
 #endif
+
+        // Handle high load situations
+        if (itsReactor.isLoadHigh())
+        {
+          bool is_admin_request = (itsRequest && (itsRequest->getResource() == "admin" ||
+                                                  itsRequest->getResource() == "/admin"));
+
+          if (!is_admin_request)
+          {
+            std::cout << Spine::log_time_str() << " Too many active requests, reporting high load"
+                      << std::endl;
+            sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
+            return;
+          }
+        }
 
         // Determine where to put the handler function
         auto handlerView = itsReactor.getHandlerView(*itsRequest);
