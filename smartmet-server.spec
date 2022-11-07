@@ -2,8 +2,8 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 22.10.5
-Release: 2%{?dist}.fmi
+Version: 22.11.7
+Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -28,8 +28,8 @@ BuildRequires: fmt-devel >= 7.1.3
 BuildRequires: openssl-devel
 BuildRequires: jemalloc-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 22.8.23
-BuildRequires: smartmet-library-spine-devel >= 22.9.5
+BuildRequires: smartmet-library-macgyver-devel >= 22.10.20
+BuildRequires: smartmet-library-spine-devel >= 22.10.26
 Requires: %{smartmet_boost}-date-time
 Requires: %{smartmet_boost}-filesystem
 Requires: %{smartmet_boost}-iostreams
@@ -41,15 +41,15 @@ Requires: fmt >= 7.1.3
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 22.8.23
-Requires: smartmet-library-spine >= 22.9.5
+Requires: smartmet-library-macgyver >= 22.10.20
+Requires: smartmet-library-spine >= 22.10.26
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
 #TestRequires: /bin/bash
 #TestRequires: gcc-c++
 #TestRequires: make
-#TestRequires: smartmet-library-macgyver-devel >= 22.8.23
+#TestRequires: smartmet-library-macgyver-devel >= 22.10.20
 
 Summary: SmartMet server
 %description
@@ -93,6 +93,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Mon Nov  7 2022 Mika Heiskanen <mika.heiskanen@fmi.fi> - 22.11.7-1.fmi
+- Added option gzip=1 to force compression except for PNG, WEBP and PDF.
+
 * Wed Oct  5 2022 Mika Heiskanen <mika.heiskanen@fmi.fi> - 22.10.5-2.fmi
 - Do not use boost::noncopyable
 

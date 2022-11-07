@@ -78,7 +78,8 @@ bool response_is_compressable(const SmartMet::Spine::HTTP::Request& request,
 {
   try
   {
-    std::vector<std::string> non_compressable_mimes = {"image/png", "application/pdf"};
+    std::vector<std::string> non_compressable_mimes = {
+        "image/png", "image/webp", "application/pdf"};
 
     auto content_header = response.getHeader("Content-Type");
     if (content_header)
@@ -89,6 +90,10 @@ bool response_is_compressable(const SmartMet::Spine::HTTP::Request& request,
           return false;
       }
     }
+
+    auto gzip = request.getParameter("gzip");
+    if (gzip && *gzip == "1")
+      return true;
 
     auto header = request.getHeader("Accept-Encoding");
     if (!header)
