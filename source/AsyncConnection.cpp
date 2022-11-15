@@ -218,6 +218,19 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
 // DEBUGGIN OUTPUT************************************
 #endif
 
+        // Check whether we have 'OPTIONS' request
+        if (itsRequest->getMethodString() == "OPTIONS") {
+            if (itsRequest->getResource() == "*") {
+                *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
+                return;
+            } else {
+                // FIXME: pass through for real impplementation when required.
+                //        Use stock response unconditionally for now
+                *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
+                return;
+            }
+        }
+
         // Handle high load situations
         if (itsReactor.isLoadHigh())
         {
