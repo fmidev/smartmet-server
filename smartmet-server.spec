@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 22.11.7
+Version: 22.11.25
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -93,6 +93,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Fri Nov 25 2022 Andris Pavēnis <andris.pavenis@fmi.fi> 22.11.25-1.fmi
+- Initial OPTIONS request support
+
 * Mon Nov  7 2022 Mika Heiskanen <mika.heiskanen@fmi.fi> - 22.11.7-1.fmi
 - Added option gzip=1 to force compression except for PNG, WEBP and PDF.
 
