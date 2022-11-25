@@ -222,12 +222,12 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         if (itsRequest->getMethodString() == "OPTIONS") {
             if (itsRequest->getResource() == "*") {
                 *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
-                return;
+                sendSimpleReply();
             } else {
                 // FIXME: pass through for real impplementation when required.
                 //        Use stock response unconditionally for now
                 *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
-                return;
+                sendSimpleReply();
             }
         }
 
@@ -1030,6 +1030,21 @@ void AsyncConnection::sendStockReply(const SmartMet::Spine::HTTP::Status theStat
         "Content-Length",
         std::to_string(static_cast<long long unsigned int>(itsResponse->getContentLength())));
     setServerHeaders();  // Set the rest of server headers
+
+    sendSimpleReply();
+
+  }
+  catch (...)
+  {
+    std::cerr << "Operation failed! AsyncConnection::sendStockReply aborted" << std::endl;
+  }
+}
+
+void AsyncConnection::sendSimpleReply()
+{
+  try
+  {
+    boost::system::error_code err;
 
     auto headerbuffer = itsResponse->headersToBuffer();
     auto contentbuffer = itsResponse->contentToBuffer();

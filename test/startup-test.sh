@@ -27,7 +27,9 @@ function waitloop {
     done
     echo "Server started, shutting it down ..."
     # Detected started string, wait a bit
-    sleep 2s
+    sleep 1s
+    curl -i -X OPTIONS --request-target '*' --max-time 1 --verbose http://127.0.0.1:8080 >options.out 2>&1
+    sleep 1s
     # Kill server
     kill $childpid
     echo "Waiting for server to stop ..."
@@ -53,7 +55,10 @@ echo "Checking for output correctness"
 grep "Launched.*server" test.out
 grep "SmartMet.*stopping" test.out
 
-rm -f test.out
+# Check OPTIONS request result
+grep '^HTTP/1.0 204 ' options.out || exit 1
+
+rm -f test.out options.out
 echo
 # Normal ecit/shutdown
 exit $ret

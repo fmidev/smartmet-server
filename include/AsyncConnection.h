@@ -148,6 +148,14 @@ class AsyncConnection : public Connection, public boost::enable_shared_from_this
 
   // ======================================================================
   /*!
+   * \brief Function to send simple prepared simple reply to the client
+   */
+  // ======================================================================
+
+  void sendSimpleReply();
+
+  // ======================================================================
+  /*!
    * \brief Function to handle timeout timer asynchronously
    *
    * This will be called if timeout fires.
