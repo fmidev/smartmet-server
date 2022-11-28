@@ -33,7 +33,7 @@ class AsyncServer;
 class AsyncConnection : public Connection, public boost::enable_shared_from_this<AsyncConnection>
 {
  public:
-  typedef boost::shared_ptr<AsyncConnection> ConnectionPtr;
+  using ConnectionPtr = boost::shared_ptr<AsyncConnection>;
 
   AsyncConnection() = delete;
   AsyncConnection(const AsyncConnection& other) = delete;
@@ -80,7 +80,7 @@ class AsyncConnection : public Connection, public boost::enable_shared_from_this
    */
   // ======================================================================
 
-  ~AsyncConnection();
+  ~AsyncConnection() override;
 
   // ======================================================================
   /*!
@@ -101,7 +101,7 @@ class AsyncConnection : public Connection, public boost::enable_shared_from_this
    */
   // ======================================================================
 
-  void start();
+  void start() override;
 
  private:
   void handleHandshake(const boost::system::error_code& error);
@@ -144,7 +144,7 @@ class AsyncConnection : public Connection, public boost::enable_shared_from_this
    */
   // ======================================================================
 
-  void sendStockReply(const SmartMet::Spine::HTTP::Status theStatus);
+  void sendStockReply(SmartMet::Spine::HTTP::Status theStatus);
 
   // ======================================================================
   /*!

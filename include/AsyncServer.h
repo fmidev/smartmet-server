@@ -57,10 +57,10 @@ class AsyncServer : public Server
    */
   // ======================================================================
 
-  void run();
+  void run() override;
 
  protected:
-  void shutdown();
+  void shutdown() override;
 
  private:
   // ======================================================================

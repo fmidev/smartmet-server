@@ -10,22 +10,20 @@
 #pragma once
 
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 #include <boost/move/unique_ptr.hpp>
 #include <boost/thread.hpp>
 #include <macgyver/ThreadPool.h>
 #include <spine/Reactor.h>
 #include <spine/Thread.h>
-#include <boost/asio/ssl.hpp>
 
-
-typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> ssl_socket;
-
+using ssl_socket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
 
 namespace SmartMet
 {
 namespace Server
 {
-typedef Fmi::ThreadPool::ThreadPool<Fmi::ThreadPool::FifoScheduler> ThreadPoolType;
+using ThreadPoolType = Fmi::ThreadPool::ThreadPool<Fmi::ThreadPool::FifoScheduler>;
 
 class Server;
 
@@ -33,8 +31,8 @@ class Connection
 {
  public:
   explicit Connection(Server* theServer,
-                      bool encryptionEnabled,
-                      boost::asio::ssl::context& encryptionContext,
+                      bool sslEnabled,
+                      boost::asio::ssl::context& sslContext,
                       bool canGzipResponse,
                       std::size_t compressLimit,
                       std::size_t maxRequestSize,

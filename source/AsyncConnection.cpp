@@ -18,8 +18,8 @@ namespace SmartMet
 namespace Server
 {
 AsyncConnection::AsyncConnection(AsyncServer* serverInstance,
-                                 bool encryptionEnabled,
-                                 boost::asio::ssl::context& encryptionContext,
+                                 bool sslEnabled,
+                                 boost::asio::ssl::context& sslContext,
                                  bool canGzipResponse,
                                  std::size_t compressLimit,
                                  std::size_t maxRequestSize,
@@ -30,8 +30,8 @@ AsyncConnection::AsyncConnection(AsyncServer* serverInstance,
                                  ThreadPoolType& slowExecutor,
                                  ThreadPoolType& fastExecutor)
     : Connection(serverInstance,
-                 encryptionEnabled,
-                 encryptionContext,
+                 sslEnabled,
+                 sslContext,
                  canGzipResponse,
                  compressLimit,
                  maxRequestSize,
@@ -219,16 +219,20 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
 #endif
 
         // Check whether we have 'OPTIONS' request
-        if (itsRequest->getMethodString() == "OPTIONS") {
-            if (itsRequest->getResource() == "*") {
-                *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
-                sendSimpleReply();
-            } else {
-                // FIXME: pass through for real impplementation when required.
-                //        Use stock response unconditionally for now
-                *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
-                sendSimpleReply();
-            }
+        if (itsRequest->getMethodString() == "OPTIONS")
+        {
+          if (itsRequest->getResource() == "*")
+          {
+            *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
+            sendSimpleReply();
+          }
+          else
+          {
+            // FIXME: pass through for real impplementation when required.
+            //        Use stock response unconditionally for now
+            *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
+            sendSimpleReply();
+          }
         }
 
         // Handle high load situations
@@ -955,7 +959,8 @@ void AsyncConnection::startRegularReply()
         "Content-Length",
         std::to_string(static_cast<long long unsigned int>(itsResponse->getContentLength())));
 
-    std::string headers, content;
+    std::string headers;
+    std::string content;
 
     try
     {
@@ -1023,8 +1028,6 @@ void AsyncConnection::sendStockReply(const SmartMet::Spine::HTTP::Status theStat
 {
   try
   {
-    boost::system::error_code err;
-
     itsResponse->setStatus(theStatus, true);
     itsResponse->setHeader(
         "Content-Length",
@@ -1032,7 +1035,6 @@ void AsyncConnection::sendStockReply(const SmartMet::Spine::HTTP::Status theStat
     setServerHeaders();  // Set the rest of server headers
 
     sendSimpleReply();
-
   }
   catch (...)
   {
