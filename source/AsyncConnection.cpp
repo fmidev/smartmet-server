@@ -221,15 +221,14 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         // Check whether we have 'OPTIONS' request
         if (itsRequest->getMethodString() == "OPTIONS")
         {
-          if (itsRequest->getResource() == "*")
+          const std::string resource = itsRequest->getResource();
+          if (resource == "*")
           {
             *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
             sendSimpleReply();
           }
-          else
-          {
-            // FIXME: pass through for real impplementation when required.
-            //        Use stock response unconditionally for now
+          else if (not itsReactor.shouldPassOptionsRequest(resource)) {
+            // Use stock response when plugin provides no own handling
             *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
             sendSimpleReply();
           }
