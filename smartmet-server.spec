@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 22.11.28
+Version: 22.12.1
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -93,6 +93,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Thu Dec  1 2022 Andris Pavēnis <andris.pavenis@fmi.fi> 22.12.1-1.fmi
+- Support passing of HTTP OPTIONS request to plugins when requested by plugin
+
 * Mon Nov 28 2022 Mika Heiskanen <mika.heiskanen@fmi.fi> - 22.11.28-1.fmi
 - Silenced compiler warnings
 
