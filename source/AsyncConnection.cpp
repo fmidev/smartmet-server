@@ -226,13 +226,6 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
             *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
             sendSimpleReply();
           }
-          else
-          {
-            // FIXME: pass through for real impplementation when required.
-            //        Use stock response unconditionally for now
-            *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
-            sendSimpleReply();
-          }
         }
 
         // Handle high load situations
