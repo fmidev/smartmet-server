@@ -10,6 +10,9 @@ URL: https://github.com/fmidev/smartmet-server
 Source0: smartmet-server.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
+%define smartmetd_user smartmet-server
+%define smartmetd_group smartmet-server
+
 %if 0%{?rhel} && 0%{rhel} < 9
 %define smartmet_boost boost169
 %else
@@ -46,6 +49,9 @@ Requires: smartmet-library-spine >= 22.11.25
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
+
+Requires(pre): shadow-utils
+
 #TestRequires: /bin/bash
 #TestRequires: gcc-c++
 #TestRequires: make
@@ -68,9 +74,16 @@ make %{_smp_mflags}
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+%pre
+getent group %{smartmetd_group} >/dev/null || groupadd -r %{smartmetd_group}
+getent passwd %{smartmetd_user} >/dev/null || \
+    useradd -r -g %{smartmetd_group} -d / -s /sbin/nologin \
+        -c "SmartMet Server" %{smartmetd_user}
+        exit 0
+
 %files
 %defattr(0755,root,root,0755)
-%{_sbindir}/smartmetd
+%caps(cap_net_bind_service=+eip) %{_sbindir}/smartmetd
 %defattr(0644,root,root,0755)
 %config(noreplace) %{_sysconfdir}/logrotate.d/smartmet-server
 %config(noreplace) %{_sysconfdir}/smartmet/smartmetd.env
