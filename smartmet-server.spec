@@ -70,6 +70,8 @@ make %{_smp_mflags}
 
 %install
 %makeinstall
+install -d %{buildroot}%{_localstatedir}/log/smartmet
+install -d %{buildroot}%{_localstatedir}/smartmet
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -89,6 +91,8 @@ getent passwd %{smartmetd_user} >/dev/null || \
 %config(noreplace) %{_sysconfdir}/smartmet/smartmetd.env
 %{_unitdir}/smartmet-server.service
 %{_sysconfdir}/smartmet
+%attr(755,%{smartmetd_user},%{smartmetd_group}) %{_localstatedir}/log/smartmet
+%attr(755,%{smartmetd_user},%{smartmetd_group}) %{_localstatedir}/smartmet
 
 %post
 mkdir -p /var/log/smartmet
