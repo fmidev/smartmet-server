@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 22.12.1
+Version: 22.12.5
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -92,6 +92,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Mon Dec  5 2022 Andris Pavēnis <andris.pavenis@fmi.fi> 22.12.5-1.fmi
+- Pass OPTIONS requests to plugins (except OPTIONS *)
+
 * Thu Dec  1 2022 Andris Pavēnis <andris.pavenis@fmi.fi> 22.12.1-1.fmi
 - Support passing of HTTP OPTIONS request to plugins when requested by plugin
 
