@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 22.12.5
+Version: 22.12.8
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -119,6 +119,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Thu Dec  8 2022 Andris Pavēnis <andris.pavenis@fmi.fi> 22.12.8-1.fmi
+- Change group:owner of /var/smartmet and /var/log/smartmet if required
+
 * Mon Dec  5 2022 Andris Pavēnis <andris.pavenis@fmi.fi> 22.12.5-1.fmi
 - Pass OPTIONS requests to plugins (except OPTIONS *)
 
