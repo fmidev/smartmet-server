@@ -69,6 +69,7 @@ make %{_smp_mflags}
 
 %install
 %makeinstall
+# Note: directory /brainstorm/cache currently needed for frontend os not created here
 install -d %{buildroot}%{_localstatedir}/log/smartmet
 install -d %{buildroot}%{_localstatedir}/smartmet
 
@@ -79,8 +80,17 @@ rm -rf $RPM_BUILD_ROOT
 getent group %{smartmetd_group} >/dev/null || groupadd -r %{smartmetd_group}
 getent passwd %{smartmetd_user} >/dev/null || \
     useradd -r -g %{smartmetd_group} -d / -s /sbin/nologin \
-        -c "SmartMet Server" %{smartmetd_user}
-        exit 0
+            -c "SmartMet Server" %{smartmetd_user}
+# Ensure that directories have right group and owner (if they already exists)
+for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm/cache; do
+    if test -d $dir ; then
+        if test -o $dir != "smartmet-server" ; then
+            echo "### Changing group:owner of $dir to %{smartmetd_group}:%{smartmetd_user}"
+            chown -R %{smartmetd_group}:%{smartmetd_user} dir
+        fi
+    fi
+done
+exit 0
 
 %files
 %defattr(0755,root,root,0755)
