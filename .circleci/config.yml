@@ -3,6 +3,9 @@ jobs:
   build-rhel8:
     docker:
       - image: fmidev/smartmet-cibase-8:latest
+    resource_class: xlarge
+    environment:
+      RPM_BUILD_NCPUS: 8
     steps:
       - checkout
       - run:
@@ -17,6 +20,9 @@ jobs:
   test-rhel8:
     docker:
       - image: fmidev/smartmet-cibase-8:latest
+    resource_class: xlarge
+    environment:
+      RPM_BUILD_NCPUS: 8
     steps:
       - checkout
       - attach_workspace:
@@ -51,75 +57,15 @@ jobs:
           command: |
             export PATH=$PATH:~/.local/bin
             aws s3 cp /dist s3://fmi-smartmet-cicd-beta/centos8/ --recursive
-  build-rhel9:
-    docker:
-      - image: fmidev/smartmet-cibase-9:latest
-    steps:
-      - checkout
-      - run:
-          name: Install build dependencies
-          command: ci-build deps
-      - run:
-          name: Build RPM
-          command: ci-build rpm
-      - persist_to_workspace:
-          root: /dist
-          paths: ./*.rpm
-  test-rhel9:
-    docker:
-      - image: fmidev/smartmet-cibase-9:latest
-    steps:
-      - checkout
-      - attach_workspace:
-          at: /dist
-      - run:
-          name: Installation test
-          command: ci-build dummy ; sudo yum install -y /dist/*.rpm
-      - run:
-          name: Test prepare
-          command: ci-build testprep
-      - run:
-          name: Test
-          command: ci-build test
-      - store_artifacts:
-          path: /dist
-          destination: dist/
-  upload-rhel9:
-    docker:
-      - image: fmidev/smartmet-cibase-8:latest
-    steps:
-      - attach_workspace:
-          at: /dist
-      - run:
-          name: Installing AWS CLI
-          working_directory: /
-          command: |
-            sudo yum -y install dnf
-            sudo dnf -y install python3-pip
-            pip3 install awscli --upgrade --user
-      - run:
-          name: Sync artifacts to S3
-          command: |
-            export PATH=$PATH:~/.local/bin
-            aws s3 cp /dist s3://fmi-smartmet-cicd-beta/centos9/ --recursive
-
 workflows:
   version: 2.1
   build-test:
     jobs:
       - build-rhel8
-      - build-rhel9
       - test-rhel8:
           requires:
             - build-rhel8
-      - test-rhel9:
-          requires:
-            - build-rhel9
       - upload-rhel8:
           context: fmi-global
           requires:
             - test-rhel8
-      - upload-rhel9:
-          context: fmi-global
-          requires:
-            - test-rhel9
