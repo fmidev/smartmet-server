@@ -30,6 +30,9 @@ TimeoutStartSec=0
 TimeoutStopSec=30s
 
 LimitNOFILE=999999999
+
+User=smartmet-server
+Group=smartmet-server
  
 [Install]
 
