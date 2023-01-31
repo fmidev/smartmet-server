@@ -77,7 +77,7 @@ rm -rf $RPM_BUILD_ROOT
 if getent passwd %{smartmetd_user} >/dev/null; then
     smartmetd_group=$(/bin/id -g -n %{smartmetd_user})
 else
-    smartmetd_group=%{smartmetd_server}
+    smartmetd_group=%{smartmetd_user}
     getent group ${smartmetd_group} >/dev/null || groupadd -r ${smartmetd_group}
     useradd -r -g ${smartmetd_group} -d / -s /sbin/nologin \
             -c "SmartMet Server" %{smartmetd_user}
