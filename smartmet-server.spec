@@ -11,7 +11,6 @@ Source0: smartmet-server.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %define smartmetd_user smartmet-server
-%define smartmetd_group smartmet-server
 
 %if 0%{?rhel} && 0%{rhel} < 9
 %define smartmet_boost boost169
@@ -70,27 +69,19 @@ make %{_smp_mflags}
 %install
 %makeinstall
 # Note: directory /brainstorm/cache currently needed for frontend os not created here
-install -d %{buildroot}%{_localstatedir}/log/smartmet
-install -d %{buildroot}%{_localstatedir}/smartmet
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %pre
-getent group %{smartmetd_group} >/dev/null || groupadd -r %{smartmetd_group}
-getent passwd %{smartmetd_user} >/dev/null || \
+if getent passwd %{smartmetd_user} >/dev/null; then
+    smartmetd_group=$(/bin/id -g -n %{smartmetd_user})
+else
+    smartmetd_group=%{smartmetd_server}
+    getent group %{smartmetd_group} >/dev/null || groupadd -r ${smartmetd_group}
     useradd -r -g %{smartmetd_group} -d / -s /sbin/nologin \
             -c "SmartMet Server" %{smartmetd_user}
-# Ensure that directories have right group and owner (if they already exists)
-for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm/cache; do
-    if test -d $dir ; then
-        if test -o $dir != "smartmet-server" ; then
-            echo "### Changing group:owner of $dir to %{smartmetd_group}:%{smartmetd_user}"
-            chown -R %{smartmetd_group}:%{smartmetd_user} dir
-        fi
-    fi
-done
-exit 0
+fi
 
 %files
 %defattr(0755,root,root,0755)
@@ -100,17 +91,27 @@ exit 0
 %config(noreplace) %{_sysconfdir}/smartmet/smartmetd.env
 %{_unitdir}/smartmet-server.service
 %{_sysconfdir}/smartmet
-%attr(755,%{smartmetd_user},%{smartmetd_group}) %{_localstatedir}/log/smartmet
-%attr(755,%{smartmetd_user},%{smartmetd_group}) %{_localstatedir}/smartmet
 
 %post
+
 mkdir -p /var/log/smartmet
+mkdir -p /var/smartmet
+
+# Ensure that directories have right group and owner
+smartmetd_group=$(/bin/id -g -n %{smartmetd_user})
+for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm/cache; do
+    if test -d $dir ; then
+        if test "$(/bin/stat --format=%G:%U $dir)" != "${smartmetd_group}:%{smartmetd_user}" ; then
+            echo "### Changing group:owner of $dir to ${smartmetd_group}:%{smartmetd_user}"
+            chown -R %{smartmetd_user}:${smartmetd_group} $dir
+        fi
+    fi
+done
 
 if [ $1 -eq 1 ]; then
    systemctl daemon-reload
    systemctl enable smartmet-server
 fi
-
 
 %preun
 if [ $1 -eq 0 ]; then
