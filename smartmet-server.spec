@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 23.1.30
+Version: 23.1.31
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -120,6 +120,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Tue Jan 31 2023 Andris Pavēnis <andris.pavenis@fmi.fi> 23.1.31-1.fmi
+- Use existing user 'smartmet-server' group when available
+
 * Mon Jan 30 2023 Andris Pavēnis <andris.pavenis@fmi.fi> 23.1.30-1.fmi
 - Run smartmet-server as non-root user
 
