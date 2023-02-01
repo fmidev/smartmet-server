@@ -8,7 +8,7 @@ After=docker.service
 After=smartmet-data.mount
 
 # Requires=docker.service
- 
+
 [Service]
 
 # Not a real daemon
@@ -32,8 +32,7 @@ TimeoutStopSec=30s
 LimitNOFILE=999999999
 
 User=smartmet-server
-Group=smartmet-server
- 
+
 [Install]
 
 WantedBy=multi-user.target
