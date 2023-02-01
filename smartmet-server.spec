@@ -103,7 +103,7 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
     if test -d $dir ; then
         if test "$(/bin/stat --format=%G:%U $dir)" != "${smartmetd_group}:%{smartmetd_user}" ; then
             echo "### Changing group:owner of $dir to ${smartmetd_group}:%{smartmetd_user}"
-            chown -R %{smartmetd_user}:${smartmetd_group} $dir
+            chown -Rv %{smartmetd_user}:${smartmetd_group} $dir
         fi
     fi
 done
