@@ -120,12 +120,6 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
-* Tue Jan 31 2023 Andris Pavēnis <andris.pavenis@fmi.fi> 23.1.31-1.fmi
-- Use existing user 'smartmet-server' group when available
-
-* Mon Jan 30 2023 Andris Pavēnis <andris.pavenis@fmi.fi> 23.1.30-1.fmi
-- Run smartmet-server as non-root user
-
 * Tue Jan 10 2023 Mika Heiskanen <mika.heiskanen@fmi.fi> - 23.1.10-1.fmi
 - Updated stack trace generation via Google's Backward header
 
