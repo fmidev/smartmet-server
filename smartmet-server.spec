@@ -3,7 +3,7 @@
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
 Version: 23.2.1
-Release: 1%{?dist}.fmi
+Release: 2%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -120,6 +120,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Wed Feb  1 2023 Andris Pavēnis <andris.pavenis@fmi.fi> 23.2.1-2.fmi
+- Run smartmet-server as non-root user (iteration 2)
+
 * Wed Feb  1 2023 Andris Pavēnis <andris.pavenis@fmi.fi> 23.2.1-1.fmi
 - Run smartmet-server as non-root user
 
