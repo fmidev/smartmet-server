@@ -2,8 +2,8 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 23.2.1
-Release: 2%{?dist}.fmi
+Version: 23.3.6
+Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -30,8 +30,8 @@ BuildRequires: fmt-devel >= 7.1.3
 BuildRequires: openssl-devel
 BuildRequires: jemalloc-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 22.12.16
-BuildRequires: smartmet-library-spine-devel >= 22.12.2
+BuildRequires: smartmet-library-macgyver-devel >= 23.3.3
+BuildRequires: smartmet-library-spine-devel >= 23.2.27
 Requires: %{smartmet_boost}-date-time
 Requires: %{smartmet_boost}-filesystem
 Requires: %{smartmet_boost}-iostreams
@@ -43,8 +43,8 @@ Requires: fmt >= 7.1.3
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 22.12.16
-Requires: smartmet-library-spine >= 22.12.2
+Requires: smartmet-library-macgyver >= 23.3.3
+Requires: smartmet-library-spine >= 23.2.27
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -54,7 +54,7 @@ Requires(pre): shadow-utils
 #TestRequires: /bin/bash
 #TestRequires: gcc-c++
 #TestRequires: make
-#TestRequires: smartmet-library-macgyver-devel >= 22.12.16
+#TestRequires: smartmet-library-macgyver-devel >= 23.3.3
 
 %description
 SmartMet server
@@ -120,6 +120,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Mon Mar  6 2023 Mika Heiskanen <mika.heiskanen@fmi.fi> - 23.3.6-1.fmi
+- Silenced CodeChecker warnings
+
 * Wed Feb  1 2023 Andris Pavēnis <andris.pavenis@fmi.fi> 23.2.1-2.fmi
 - Run smartmet-server as non-root user (iteration 2)
 

@@ -91,9 +91,9 @@ void AsyncConnection::start()
     if (itsEncryptionEnabled)
     {
       // Begin the handshake process
-      itsSocket.async_handshake(
-          boost::asio::ssl::stream_base::server,
-          boost::bind(&AsyncConnection::handleHandshake, this, boost::asio::placeholders::error));
+      itsSocket.async_handshake(boost::asio::ssl::stream_base::server,
+                                [me = shared_from_this()](const boost::system::error_code& err)
+                                { me->handleHandshake(err); });
     }
     else
     {

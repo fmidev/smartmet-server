@@ -33,7 +33,9 @@ class Server
  public:
   Server() = delete;
   Server(const Server& other) = delete;
+  Server(Server&& other) = delete;
   Server& operator=(const Server& other) = delete;
+  Server& operator=(Server&& other) = delete;
   Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& theReactor);
 
   // ======================================================================

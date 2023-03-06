@@ -45,8 +45,8 @@ void crash_signal_handler(int sig)
     std::cout << request.second.request.getURI() << "\n";
     std::cout << "---------------------------------------------------------\n";
   }
-  signal(sig, SIG_DFL);
-  raise(sig);
+  static_cast<void>(signal(sig, SIG_DFL));
+  static_cast<void>(raise(sig));
 }
 
 void signal_handler(int sig)
@@ -89,10 +89,10 @@ int main(int argc, char* argv[])
 
     SmartMet::Spine::Options options;
     if (!options.parse(argc, argv))
-      exit(1);
+      exit(1);  // NOLINT - no threads yet
 
     // Use the system locale or autocomplete may not work properly (iconv requirement)
-    std::setlocale(LC_ALL, "");
+    static_cast<void>(std::setlocale(LC_ALL, ""));  // NOLINT - no threads yet
 
     // Set new_handler
     set_new_handler(options.new_handler);
@@ -180,9 +180,13 @@ int main(int argc, char* argv[])
       }
       else if (errno != EINTR)
       {
-        std::cout << ANSI_BG_RED << ANSI_BOLD_ON << ANSI_FG_WHITE
-                  << "Unexpected error code from select(): " << strerror(errno) << ANSI_FG_DEFAULT
-                  << ANSI_BOLD_OFF << ANSI_BG_DEFAULT << std::endl;
+        std::array<char, 1024> msg;
+        if (strerror_r(errno, msg.data(), 1024) == nullptr)
+        {
+          std::cout << ANSI_BG_RED << ANSI_BOLD_ON << ANSI_FG_WHITE
+                    << "Unexpected error code from select(): " << msg.data() << ANSI_FG_DEFAULT
+                    << ANSI_BOLD_OFF << ANSI_BG_DEFAULT << std::endl;
+        }
       }
 
       int sig = last_signal;

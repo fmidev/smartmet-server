@@ -27,34 +27,26 @@ Connection::Connection(Server* theServer,
                        ThreadPoolType& fastExecutor)
     : itsServer(theServer),
       itsEncryptionEnabled(encryptionEnabled),
-      itsSocket(io_service,sslContext),
+      itsSocket(io_service, sslContext),
       itsIoService(io_service),
       itsSlowExecutor(slowExecutor),
       itsFastExecutor(fastExecutor),
       itsReactor(theReactor),
-      itsSocketBuffer(),
       itsRequest(new SmartMet::Spine::HTTP::Request),
       itsResponse(new SmartMet::Spine::HTTP::Response),
-      itsReceivedBytes(0),
       itsCanGzipResponse(canGzipResponse),
       itsCompressLimit(compressLimit),
       itsMaxRequestSize(maxRequestSize),
       itsTimeout(timeout),
-      hasTimedOut(false),
-      itsQueryIsFast(false),
       itsDumpRequests(dumpRequests),
       itsFinalStatus(0, boost::system::system_category())
 {
 }
 
-
-
 boost::asio::ip::tcp::socket& Connection::socket()
 {
   return (boost::asio::ip::tcp::socket&)itsSocket.lowest_layer();
 }
-
-
 
 Connection::~Connection()
 {

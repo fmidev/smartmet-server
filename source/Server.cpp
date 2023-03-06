@@ -1,9 +1,7 @@
 #include "Server.h"
-
-#include <macgyver/Exception.h>
-
 #include <jemalloc/jemalloc.h>
-
+#include <macgyver/Exception.h>
+#include <array>
 #include <cmath>
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
@@ -17,8 +15,7 @@ namespace SmartMet
 namespace Server
 {
 Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& theReactor)
-    : itsIoService(),
-      itsEncryptionEnabled(theOptions.encryptionEnabled),
+    : itsEncryptionEnabled(theOptions.encryptionEnabled),
       itsEncryptionPassword(theOptions.encryptionPassword),
       itsEncryptionContext(SMARTMETD_SSL_METHOD),
       itsAcceptor(itsIoService),
@@ -34,7 +31,6 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
 {
   try
   {
-
 // Bind to the given port using given protocol
 #ifndef NDEBUG
     std::cout << "Attempting to bind to port " << theOptions.port << std::endl;
@@ -44,39 +40,39 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
     {
       if (!theOptions.encryptionPasswordFile.empty())
       {
-        FILE *file = fopen(theOptions.encryptionPasswordFile.c_str(),"r");
+        FILE* file = fopen(theOptions.encryptionPasswordFile.c_str(), "r");
         if (file == nullptr)
         {
           Fmi::Exception ex(BCP, "Cannot open the password file!");
-          ex.addParameter("password_file",theOptions.encryptionPasswordFile);
+          ex.addParameter("password_file", theOptions.encryptionPasswordFile);
           throw ex;
         }
 
-        char st[100];
-        if (fgets(st,100,file) == nullptr)
+        std::array<char, 100> st;
+        if (fgets(st.data(), 100, file) == nullptr)
         {
           Fmi::Exception ex(BCP, "Cannot read the password!");
-          ex.addParameter("password_file",theOptions.encryptionPasswordFile);
+          ex.addParameter("password_file", theOptions.encryptionPasswordFile);
           throw ex;
         }
 
-        char *p = strstr(st,"\n");
+        char* p = strstr(st.data(), "\n");
         if (p != nullptr)
           *p = '\0';
 
-        itsEncryptionPassword = st;
+        itsEncryptionPassword = st.data();
         std::cout << "[" << itsEncryptionPassword << "]\n";
-        fclose(file);
+        static_cast<void>(fclose(file));
       }
 
       itsEncryptionContext.set_options(boost::asio::ssl::context::tlsv13);
 
       itsEncryptionContext.set_password_callback(boost::bind(&Server::getPassword, this));
       itsEncryptionContext.use_certificate_chain_file(theOptions.encryptionCertificateFile);
-      itsEncryptionContext.use_private_key_file(theOptions.encryptionPrivateKeyFile, boost::asio::ssl::context::pem);
-      //itsEncryptionContext.use_tmp_dh_file("dh512.pem");
+      itsEncryptionContext.use_private_key_file(theOptions.encryptionPrivateKeyFile,
+                                                boost::asio::ssl::context::pem);
+      // itsEncryptionContext.use_tmp_dh_file("dh512.pem");
     }
-
 
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(),
                                             static_cast<unsigned short>(theOptions.port));
@@ -106,7 +102,6 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
   }
 }
 
-
 std::string Server::getPassword() const
 {
   try
@@ -118,7 +113,6 @@ std::string Server::getPassword() const
     throw Fmi::Exception::Trace(BCP, "Operation failed!");
   }
 }
-
 
 bool Server::isShutdownRequested() const
 {

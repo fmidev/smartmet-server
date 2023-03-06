@@ -88,7 +88,7 @@ class AsyncServer : public Server
   SmartMet::Spine::MutexType itsMutex;
 
   // Current number of connections
-  std::size_t itsConnections;
+  std::size_t itsConnections = 0;
 };
 
 }  // namespace Server

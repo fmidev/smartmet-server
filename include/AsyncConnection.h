@@ -37,7 +37,9 @@ class AsyncConnection : public Connection, public boost::enable_shared_from_this
 
   AsyncConnection() = delete;
   AsyncConnection(const AsyncConnection& other) = delete;
+  AsyncConnection(AsyncConnection&& other) = delete;
   AsyncConnection& operator=(const AsyncConnection& other) = delete;
+  AsyncConnection& operator=(AsyncConnection&& other) = delete;
 
   // ======================================================================
   /*!

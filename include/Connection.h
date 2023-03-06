@@ -31,7 +31,7 @@ class Connection
 {
  public:
   explicit Connection(Server* theServer,
-                      bool sslEnabled,
+                      bool encryptionEnabled,
                       boost::asio::ssl::context& sslContext,
                       bool canGzipResponse,
                       std::size_t compressLimit,
@@ -42,6 +42,12 @@ class Connection
                       SmartMet::Spine::Reactor& theReactor,
                       ThreadPoolType& slowExecutor,
                       ThreadPoolType& fastExecutor);
+
+  Connection() = delete;
+  Connection(const Connection& other) = delete;
+  Connection(Connection&& other) = delete;
+  Connection& operator=(const Connection& other) = delete;
+  Connection& operator=(Connection&& other) = delete;
 
   // ======================================================================
   /*!
@@ -69,10 +75,10 @@ class Connection
 
  protected:
   /// Handle to the server instance which spawned this connection
-  Server* itsServer;
+  Server* itsServer = nullptr;
 
   /// SSL / TLS enabled
-  bool itsEncryptionEnabled;
+  bool itsEncryptionEnabled = false;
 
   /// Socket for the connection. When SSL is disabled, we just use the socket-part
   boost::asio::ssl::stream<boost::asio::ip::tcp::socket> itsSocket;
@@ -105,34 +111,34 @@ class Connection
   std::unique_ptr<SmartMet::Spine::HTTP::Response> itsResponse;
 
   /// Number of received bytes in the buffer
-  std::size_t itsReceivedBytes;
+  std::size_t itsReceivedBytes = 0;
 
   /// Response string to be written to socket
   std::string itsResponseString;
 
   /// Flag to say if we can (attempt to) gzip response
-  bool itsCanGzipResponse;
+  bool itsCanGzipResponse = false;
 
   /// Response compression limit
-  std::size_t itsCompressLimit;
+  std::size_t itsCompressLimit = 0;
 
   // Maximum request size (0=unlimited)
   std::size_t itsMaxRequestSize;
 
   /// Connection timeout in seconds
-  long itsTimeout;
+  long itsTimeout = 0;
 
   /// Timeout flag
-  bool hasTimedOut;
+  bool hasTimedOut = false;
 
   /// Mutex for this connection
   SmartMet::Spine::MutexType itsMutex;
 
   // Flag to signal if query the connection is handling is fast or slow
-  bool itsQueryIsFast;
+  bool itsQueryIsFast = false;
 
   // Flag to see if requests should be dumped to stdout
-  bool itsDumpRequests;
+  bool itsDumpRequests = false;
 
   // The current status of the client connection
   boost::system::error_code itsFinalStatus;
