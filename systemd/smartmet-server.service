@@ -29,6 +29,9 @@ TimeoutStartSec=0
 # Wait for 30s for the server to stop before sending SIGTERM and another 30s before SIGKILL
 TimeoutStopSec=30s
 
+# Disable swapping
+MemorySwapMax=0M
+
 LimitNOFILE=999999999
 
 User=smartmet-server
