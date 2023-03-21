@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 23.3.6
+Version: 23.3.21
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -31,7 +31,7 @@ BuildRequires: openssl-devel
 BuildRequires: jemalloc-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 23.3.3
-BuildRequires: smartmet-library-spine-devel >= 23.2.27
+BuildRequires: smartmet-library-spine-devel >= 23.3.14
 Requires: %{smartmet_boost}-date-time
 Requires: %{smartmet_boost}-filesystem
 Requires: %{smartmet_boost}-iostreams
@@ -44,7 +44,7 @@ Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
 Requires: smartmet-library-macgyver >= 23.3.3
-Requires: smartmet-library-spine >= 23.2.27
+Requires: smartmet-library-spine >= 23.3.14
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -120,6 +120,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Tue Mar 21 2023 Mika Heiskanen <mika.heiskanen@fmi.fi> - 23.3.21-1.fmi
+- Disable swapping in systemd settings
+
 * Mon Mar  6 2023 Mika Heiskanen <mika.heiskanen@fmi.fi> - 23.3.6-1.fmi
 - Silenced CodeChecker warnings
 
