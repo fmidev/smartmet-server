@@ -6,8 +6,10 @@
 
 #include "Connection.h"
 #include "Server.h"
-
+#include <fmt/format.h>
 #include <macgyver/Exception.h>
+#include <macgyver/StringConversion.h>
+#include <spine/HostInfo.h>
 
 namespace SmartMet
 {
@@ -60,6 +62,41 @@ Connection::~Connection()
     std::cout << "Fast pool queue size after connection: " << itsFastExecutor.getQueueSize()
               << std::endl;
 #endif
+  }
+}
+
+void Connection::reportError(const std::string& message) const
+{
+  try
+  {
+    auto msg = fmt::format("{} Connection error: {}\n  - IP: {}\n  -HostName: {}\n  - URI: {}\n",
+                           Fmi::to_iso_string(boost::posix_time::second_clock::local_time()),
+                           message,
+                           itsRequest->getClientIP(),
+                           Spine::HostInfo::getHostName(itsRequest->getClientIP()),
+                           itsRequest->getURI());
+    std::cerr << msg << std::flush;
+  }
+  catch (...)
+  {
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
+  }
+}
+
+void Connection::reportInfo(const std::string& message) const
+{
+  try
+  {
+    auto msg = fmt::format("{} Server info: {}\n  - IP: {}\n  -HostName: {}\n  - URI: {}\n",
+                           Fmi::to_iso_string(boost::posix_time::second_clock::local_time()),
+                           message,
+                           itsRequest->getClientIP(),
+                           Spine::HostInfo::getHostName(itsRequest->getClientIP()),
+                           itsRequest->getURI());
+  }
+  catch (...)
+  {
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
   }
 }
 

@@ -19,10 +19,6 @@ bool response_is_compressable(const SmartMet::Spine::HTTP::Request& request,
 
 void gzip_response(SmartMet::Spine::HTTP::Response& response);
 
-void reportError(const std::string& message);
-
-void reportInfo(const std::string& message);
-
 std::string makeDateString();
 
 std::string parseXForwardedFor(const std::string& input);

@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 23.4.27
+Version: 23.5.19
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -30,8 +30,8 @@ BuildRequires: fmt-devel >= 7.1.3
 BuildRequires: openssl-devel
 BuildRequires: jemalloc-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 23.3.3
-BuildRequires: smartmet-library-spine-devel >= 23.3.14
+BuildRequires: smartmet-library-macgyver-devel >= 23.4.27
+BuildRequires: smartmet-library-spine-devel >= 23.4.27
 Requires: %{smartmet_boost}-date-time
 Requires: %{smartmet_boost}-filesystem
 Requires: %{smartmet_boost}-iostreams
@@ -43,8 +43,8 @@ Requires: fmt >= 7.1.3
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 23.3.3
-Requires: smartmet-library-spine >= 23.3.14
+Requires: smartmet-library-macgyver >= 23.4.27
+Requires: smartmet-library-spine >= 23.4.27
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -54,7 +54,7 @@ Requires(pre): shadow-utils
 #TestRequires: /bin/bash
 #TestRequires: gcc-c++
 #TestRequires: make
-#TestRequires: smartmet-library-macgyver-devel >= 23.3.3
+#TestRequires: smartmet-library-macgyver-devel >= 23.4.27
 
 %description
 SmartMet server

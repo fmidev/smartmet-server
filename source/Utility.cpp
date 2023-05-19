@@ -141,35 +141,6 @@ void gzip_response(SmartMet::Spine::HTTP::Response& response)
   }
 }
 
-void reportError(const std::string& message)
-{
-  try
-  {
-    std::ostringstream os;
-    os << boost::posix_time::second_clock::local_time()
-       << " Incoming connection error: " << message;
-    std::cerr << os.str() << std::endl;
-  }
-  catch (...)
-  {
-    throw Fmi::Exception::Trace(BCP, "Operation failed!");
-  }
-}
-
-void reportInfo(const std::string& message)
-{
-  try
-  {
-    std::ostringstream os;
-    os << boost::posix_time::second_clock::local_time() << " Server info: " << message;
-    std::cerr << os.str() << std::endl;
-  }
-  catch (...)
-  {
-    throw Fmi::Exception::Trace(BCP, "Operation failed!");
-  }
-}
-
 std::string parseXForwardedFor(const std::string& input)
 {
   try

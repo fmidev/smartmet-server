@@ -73,6 +73,9 @@ class Connection
 
   boost::asio::ip::tcp::socket& socket();
 
+  void reportError(const std::string& message) const;
+  void reportInfo(const std::string& message) const;
+
  protected:
   /// Handle to the server instance which spawned this connection
   Server* itsServer = nullptr;
