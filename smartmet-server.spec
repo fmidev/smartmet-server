@@ -55,6 +55,7 @@ Requires(pre): shadow-utils
 #TestRequires: gcc-c++
 #TestRequires: make
 #TestRequires: smartmet-library-macgyver-devel >= 23.4.27
+#TestRequires: curl >= 7.42.0
 
 %description
 SmartMet server
