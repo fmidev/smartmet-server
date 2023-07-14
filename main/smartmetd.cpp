@@ -81,6 +81,30 @@ void set_new_handler(const std::string& name)
     throw Fmi::Exception(BCP, "Unknown new_handler").addParameter("name", name);
 }
 
+// Setting the coredump_filter may fail if the server is run by systemd as a different user,
+// since then /proc/self/coredump_filter will not be writable as it is owned by root.
+// In that case one should the systemd CoredumpFilter setting which takes symbolic values.
+// See systemd/smartmet-server.service for examples.
+
+void set_coredump_filter(const boost::optional<unsigned int>& value)
+{
+  if (!value)
+    return;
+
+  std::ofstream out("/proc/self/coredump_filter");
+  if (out)
+    out << *value;
+  out.close();
+
+  if (out.fail())
+  {
+    std::cerr
+        << SmartMet::Spine::log_time_str() << ANSI_BG_RED << ANSI_BOLD_ON << ANSI_FG_WHITE
+        << " Warning: Failed to to set coredump_filter by writing to /proc/self/coredump_filter"
+        << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT << std::endl;
+  }
+}
+
 int main(int argc, char* argv[])
 {
   try
@@ -90,6 +114,8 @@ int main(int argc, char* argv[])
     SmartMet::Spine::Options options;
     if (!options.parse(argc, argv))
       exit(1);  // NOLINT - no threads yet
+
+    set_coredump_filter(options.coredump_filter);
 
     // Use the system locale or autocomplete may not work properly (iconv requirement)
     static_cast<void>(std::setlocale(LC_ALL, ""));  // NOLINT - no threads yet
