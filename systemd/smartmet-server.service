@@ -20,7 +20,8 @@ ExecStart=/usr/sbin/smartmetd --configfile $CONFIGFILE
 LimitCORE=infinity
 # LimitCore=0
 
-CoredumpFilter=default
+# RHEL7/RHEL8 do not yet support the CoredumpFilter setting
+# CoredumpFilter=default
 # CoredumpFilter=private-anonymous
 
 # Do not retry too fast if there are some I/O or similar issues
