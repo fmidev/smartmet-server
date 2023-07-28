@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 23.7.18
+Version: 23.7.28
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -121,6 +121,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Fri Jul 28 2023 Andris Pavēnis <andris.pavenis@fmi.fi> 23.7.28-1.fmi
+- Repackage due to bulk ABI changes in macgyver/newbase/spine
+
 * Tue Jul 18 2023 Mika Heiskanen <mika.heiskanen@fmi.fi> - 23.7.18-1.fmi
 - RHEL7/RHEL8 systemd does not support CoredumpFilter, commented out the setting
 
