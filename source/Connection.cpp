@@ -93,6 +93,7 @@ void Connection::reportInfo(const std::string& message) const
                            itsRequest->getClientIP(),
                            Spine::HostInfo::getHostName(itsRequest->getClientIP()),
                            itsRequest->getURI());
+    std::cerr << msg << std::flush;
   }
   catch (...)
   {
