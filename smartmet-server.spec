@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 23.7.28
+Version: 23.8.30
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -30,8 +30,8 @@ BuildRequires: fmt-devel >= 7.1.3
 BuildRequires: openssl-devel
 BuildRequires: jemalloc-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 23.7.28
-BuildRequires: smartmet-library-spine-devel >= 23.7.28
+BuildRequires: smartmet-library-macgyver-devel >= 23.8.21
+BuildRequires: smartmet-library-spine-devel >= 23.8.28
 Requires: %{smartmet_boost}-date-time
 Requires: %{smartmet_boost}-filesystem
 Requires: %{smartmet_boost}-iostreams
@@ -43,8 +43,8 @@ Requires: fmt >= 7.1.3
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 23.7.28
-Requires: smartmet-library-spine >= 23.7.28
+Requires: smartmet-library-macgyver >= 23.8.21
+Requires: smartmet-library-spine >= 23.8.28
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -54,7 +54,7 @@ Requires(pre): shadow-utils
 #TestRequires: /bin/bash
 #TestRequires: gcc-c++
 #TestRequires: make
-#TestRequires: smartmet-library-macgyver-devel >= 23.7.28
+#TestRequires: smartmet-library-macgyver-devel >= 23.8.21
 #TestRequires: curl >= 7.42.0
 
 %description
@@ -121,6 +121,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Wed Aug 30 2023 Mika Heiskanen <mika.heiskanen@fmi.fi> - 23.8.30-1.fmi
+- Fixed reportInfo() to actually print something
+
 * Fri Jul 28 2023 Andris Pavēnis <andris.pavenis@fmi.fi> 23.7.28-1.fmi
 - Repackage due to bulk ABI changes in macgyver/newbase/spine
 
