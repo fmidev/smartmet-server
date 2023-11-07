@@ -2,7 +2,7 @@
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <macgyver/DateTime.h>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <macgyver/ThreadPool.h>
@@ -80,7 +80,7 @@ struct Request
 
 struct Result
 {
-  Result(bp::ptime resTime, string URI, bp::time_duration duration, string status, string response)
+  Result(Fmi::DateTime resTime, string URI, Fmi::TimeDuration duration, string status, string response)
       : resTime(resTime), URI(URI), duration(duration), status(status), response(response)
   {
   }
@@ -93,11 +93,11 @@ struct Result
     return stream;
   }
 
-  bp::ptime resTime;
+  Fmi::DateTime resTime;
 
   string URI;
 
-  bp::time_duration duration;
+  Fmi::TimeDuration duration;
 
   string status;
 
@@ -292,13 +292,13 @@ class Tester
 
         average_duration /= reqs;
 
-        std::cerr << bp::second_clock::local_time() << " Completed " << reqs
+        std::cerr << Fmi::SecondClock::local_time() << " Completed " << reqs
                   << " requests with average response time of " << average_duration << " ms."
                   << std::endl;
       }
       else
       {
-        std::cerr << bp::second_clock::local_time() << " No completed requests in this time slice"
+        std::cerr << Fmi::SecondClock::local_time() << " No completed requests in this time slice"
                   << std::endl;
       }
 
@@ -319,7 +319,7 @@ class Tester
     string reqString = "GET " + theReq.URI + " HTTP/1.0\r\n\r\n";
 
     // Send request
-    auto before = bp::microsec_clock::universal_time();
+    auto before = Fmi::MicrosecClock::universal_time();
     boost::system::error_code err;
     boost::asio::write(socket, boost::asio::buffer(reqString), err);
 
@@ -343,7 +343,7 @@ class Tester
       return;
     }
 
-    auto after = bp::microsec_clock::universal_time();
+    auto after = Fmi::MicrosecClock::universal_time();
     // This request is done
 
     boost::lock_guard<boost::mutex> lock(itsResultMutex);
