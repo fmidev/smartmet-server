@@ -56,6 +56,7 @@ class AsyncConnection : public Connection, public boost::enable_shared_from_this
    * @param io_service The IO Service supplied by the server for network and
    * timer handling
    * @param serverReactor The reactor supplied by the server for content handling
+   * @param adminExecutor Thread pool to handle requests marked as 'admin'
    * @param slowExecutor Thread pool to handle requests marked as 'slow'
    * @param fastExecutor Thread pool to handle requests marked as 'fast'
    */
@@ -71,6 +72,7 @@ class AsyncConnection : public Connection, public boost::enable_shared_from_this
                            bool dumpRequests,
                            boost::asio::io_service& io_service,
                            SmartMet::Spine::Reactor& theReactor,
+                           ThreadPoolType& adminExecutor,
                            ThreadPoolType& slowExecutor,
                            ThreadPoolType& fastExecutor);
 

@@ -20,6 +20,7 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
       itsEncryptionContext(SMARTMETD_SSL_METHOD),
       itsAcceptor(itsIoService),
       itsReactor(theReactor),
+      itsAdminExecutor(theOptions.adminpool.minsize, theOptions.adminpool.maxrequeuesize),
       itsSlowExecutor(theOptions.slowpool.minsize, theOptions.slowpool.maxrequeuesize),
       itsFastExecutor(theOptions.fastpool.minsize, theOptions.fastpool.maxrequeuesize),
       itsCanGzip(theOptions.compress),

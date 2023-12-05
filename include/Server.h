@@ -71,6 +71,9 @@ class Server
   /// This contains HTTP request handling functionality
   SmartMet::Spine::Reactor& itsReactor;
 
+  /// The Admin Thread Pool Executor for asynchronous processing of admin requests
+  ThreadPoolType itsAdminExecutor;
+
   /// The Slow Thread Pool Executor for asynchronous processing of slow requests
   ThreadPoolType itsSlowExecutor;
 

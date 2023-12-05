@@ -26,16 +26,22 @@ accesslogdir = "/var/log/smartmet/";
 
 port            = 80;
 
+adminpool:
+{
+  maxthreads = 5;
+  maxrequeuesize = 10;
+};
+
 slowpool:
 {
-  maxthreads = 15;
-  maxrequeuesize = 1000;
+  maxthreads = "50%";
+  maxrequeuesize = 100;
 };
 
 fastpool:
 {
-  maxthreads = 15;
-  maxrequeuesize = 1000;
+  maxthreads = "100%";
+  maxrequeuesize = 100;
 };
 
 
