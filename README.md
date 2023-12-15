@@ -9,6 +9,7 @@ The server can read input data from various sources:
 The server provides several output interfaces:
 * WMS 1.3.0
 * WFS 2.0
+* EDR 1.0
 * Several custom interface
 and several output formats:
 * JSON
