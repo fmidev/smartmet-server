@@ -65,6 +65,7 @@ SmartMet Server consists of following components:
 											  https://github.com/fmidev/smartmet-plugin-frontend<br>
 											  https://github.com/fmidev/smartmet-plugin-wfs<br>
 											  https://github.com/fmidev/smartmet-plugin-wms<br>
+											  https://github.com/fmidev/smartmet-plugin-edr<br>
 											  https://github.com/fmidev/smartmet-plugin-autocomplete<br>
 											  https://github.com/fmidev/smartmet-plugin-backend<br>
 											  https://github.com/fmidev/smartmet-plugin-download<br>
