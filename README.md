@@ -9,6 +9,7 @@ The server can read input data from various sources:
 The server provides several output interfaces:
 * WMS 1.3.0
 * WFS 2.0
+* EDR 1.0
 * Several custom interface
 and several output formats:
 * JSON
@@ -44,8 +45,9 @@ SmartMet Server consists of following components:
 											  https://github.com/fmidev/smartmet-library-gis<br>
 											  https://github.com/fmidev/smartmet-library-giza<br>
 											  https://github.com/fmidev/smartmet-library-locus<br>
-											  https://github.com/fmidev/smartmet-library-regression<br>
-											  https://github.com/fmidev/smartmet-library-imagine</td>
+											  https://github.com/fmidev/smartmet-library-grid-content<br>
+											  https://github.com/fmidev/smartmet-library-grid-files<br>
+											  https://github.com/fmidev/smartmet-library-calculator</td>
 </tr
 <tr valign="top">
 <td>Server          </td><td>The server daemon itself                          </td><td> https://github.com/fmidev/smartmet-server  </td>
@@ -56,7 +58,10 @@ SmartMet Server consists of following components:
 											 https://github.com/fmidev/smartmet-engine-querydata<br>
 											 https://github.com/fmidev/smartmet-engine-observation<br>
 											 https://github.com/fmidev/smartmet-engine-contour<br>
-											 https://github.com/fmidev/smartmet-engine-gis </td>
+											 https://github.com/fmidev/smartmet-engine-gis<br>
+											 https://github.com/fmidev/smartmet-engine-authentication<br>
+											 https://github.com/fmidev/smartmet-engine-geonames
+											  </td>
 </tr>
 <tr valign="top">
 <td>Plugins         </td><td>Plugins providing interfaces to clients           </td><td> https://github.com/fmidev/smartmet-plugin-timeseries<br>
@@ -64,10 +69,17 @@ SmartMet Server consists of following components:
 											  https://github.com/fmidev/smartmet-plugin-frontend<br>
 											  https://github.com/fmidev/smartmet-plugin-wfs<br>
 											  https://github.com/fmidev/smartmet-plugin-wms<br>
+											  https://github.com/fmidev/smartmet-plugin-cross_section<br>
+											  https://github.com/fmidev/smartmet-plugin-timeseries<br>
+											  https://github.com/fmidev/smartmet-plugin-edr<br>
 											  https://github.com/fmidev/smartmet-plugin-autocomplete<br>
 											  https://github.com/fmidev/smartmet-plugin-backend<br>
 											  https://github.com/fmidev/smartmet-plugin-download<br>
-											  https://github.com/fmidev/smartmet-plugin-admin </td>
+											  https://github.com/fmidev/smartmet-plugin-admin<br>
+											  https://github.com/fmidev/smartmet-plugin-grid-admin<br>
+											  https://github.com/fmidev/smartmet-plugin-grid-gui<br>
+											  https://github.com/fmidev/smartmet-plugin-textgen
+											   </td>
 </tr>
 </table>
 

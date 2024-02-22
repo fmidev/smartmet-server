@@ -89,8 +89,6 @@ fi
 %caps(cap_net_bind_service=+eip) %{_sbindir}/smartmetd
 %defattr(0644,root,root,0755)
 %config(noreplace) %{_sysconfdir}/logrotate.d/smartmet-server
-%config(noreplace) %{_sysconfdir}/smartmet/smartmetd.env
-%{_unitdir}/smartmet-server.service
 %{_sysconfdir}/smartmet
 
 %post
@@ -123,6 +121,9 @@ fi
 %changelog
 * Thu Feb 22 2024 Mika Heiskanen <mika.heiskanen@fmi.fi> - 24.2.22-1.fmi
 - Do not use admin pool for frontends
+
+* Mon Jan 29 2024 Mika Heiskanen <mheiskan@rhel8.dev.fmi.fi> - 24.1.29-1.fmi
+- Moved systemd files to backend/frontend plugins
 
 * Tue Dec  5 2023 Mika Heiskanen <mika.heiskanen@fmi.fi> - 23.12.5-1.fmi
 - Added a separate thread pool for admin queries
