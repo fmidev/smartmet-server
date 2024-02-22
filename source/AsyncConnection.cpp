@@ -239,8 +239,8 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
           return;
         }
 
-        itsAdminQuery =
-            (handlerView->isAdminQuery(*itsRequest) && itsAdminExecutor.getPoolSize() > 0);
+        itsAdminQuery = (!handlerView->isCatchNoMatch() && handlerView->isAdminQuery(*itsRequest) &&
+                         itsAdminExecutor.getPoolSize() > 0);
 
         // Handle high load situations
         if (!itsAdminQuery && itsReactor.isLoadHigh())
