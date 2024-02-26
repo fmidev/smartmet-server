@@ -70,7 +70,7 @@ void Connection::reportError(const std::string& message) const
   try
   {
     auto msg = fmt::format("{} Connection error: {}\n  - IP: {}\n  -HostName: {}\n  - URI: {}\n",
-                           Fmi::to_iso_string(boost::posix_time::second_clock::local_time()),
+                           Fmi::to_iso_string(Fmi::SecondClock::local_time()),
                            message,
                            itsRequest->getClientIP(),
                            Spine::HostInfo::getHostName(itsRequest->getClientIP()),
@@ -88,7 +88,7 @@ void Connection::reportInfo(const std::string& message) const
   try
   {
     auto msg = fmt::format("{} Server info: {}\n  - IP: {}\n  -HostName: {}\n  - URI: {}\n",
-                           Fmi::to_iso_string(boost::posix_time::second_clock::local_time()),
+                           Fmi::to_iso_string(Fmi::SecondClock::local_time()),
                            message,
                            itsRequest->getClientIP(),
                            Spine::HostInfo::getHostName(itsRequest->getClientIP()),
