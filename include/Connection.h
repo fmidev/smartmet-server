@@ -40,6 +40,7 @@ class Connection
                       bool dumpRequests,
                       boost::asio::io_service& io_service,
                       SmartMet::Spine::Reactor& theReactor,
+                      ThreadPoolType& adminExecutor,
                       ThreadPoolType& slowExecutor,
                       ThreadPoolType& fastExecutor);
 
@@ -88,6 +89,9 @@ class Connection
 
   /// Its associated Io Service
   boost::asio::io_service& itsIoService;
+
+  /// Admin thread pool
+  ThreadPoolType& itsAdminExecutor;
 
   /// Slow thread pool
   ThreadPoolType& itsSlowExecutor;
@@ -139,6 +143,9 @@ class Connection
 
   // Flag to signal if query the connection is handling is fast or slow
   bool itsQueryIsFast = false;
+
+  // Flag to signal if the query the connection is handling is an admin query
+  bool itsAdminQuery = false;
 
   // Flag to see if requests should be dumped to stdout
   bool itsDumpRequests = false;

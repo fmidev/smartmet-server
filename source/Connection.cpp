@@ -25,12 +25,14 @@ Connection::Connection(Server* theServer,
                        bool dumpRequests,
                        boost::asio::io_service& io_service,
                        SmartMet::Spine::Reactor& theReactor,
+                       ThreadPoolType& adminExecutor,
                        ThreadPoolType& slowExecutor,
                        ThreadPoolType& fastExecutor)
     : itsServer(theServer),
       itsEncryptionEnabled(encryptionEnabled),
       itsSocket(io_service, sslContext),
       itsIoService(io_service),
+      itsAdminExecutor(adminExecutor),
       itsSlowExecutor(slowExecutor),
       itsFastExecutor(fastExecutor),
       itsReactor(theReactor),
@@ -56,12 +58,6 @@ Connection::~Connection()
   {
     // Call the client connection finished - hooks
     itsReactor.callClientConnectionFinishedHooks(itsRequest->getClientIP(), itsFinalStatus);
-#ifndef NDEBUG
-    std::cout << "Slow pool queue size after connection: " << itsSlowExecutor.getQueueSize()
-              << std::endl;
-    std::cout << "Fast pool queue size after connection: " << itsFastExecutor.getQueueSize()
-              << std::endl;
-#endif
   }
 }
 
@@ -93,6 +89,7 @@ void Connection::reportInfo(const std::string& message) const
                            itsRequest->getClientIP(),
                            Spine::HostInfo::getHostName(itsRequest->getClientIP()),
                            itsRequest->getURI());
+    std::cerr << msg << std::flush;
   }
   catch (...)
   {

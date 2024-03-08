@@ -1,5 +1,5 @@
 #include "Utility.h"
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <macgyver/DateTime.h>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
@@ -30,7 +30,7 @@ std::string makeDateString()
 {
   try
   {
-    auto u_time = boost::posix_time::second_clock::universal_time();
+    auto u_time = Fmi::SecondClock::universal_time();
     auto date = u_time.date();
     auto time = u_time.time_of_day();
 

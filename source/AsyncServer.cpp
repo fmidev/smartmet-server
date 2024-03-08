@@ -39,6 +39,9 @@ void AsyncServer::run()
       workerThreads.add_thread(new boost::thread([this]() { this->itsIoService.run(); }));
     }
 
+    // Start the Admin Thread Pool Executor
+    itsAdminExecutor.start();
+
     // Start the Slow Thread Pool Executor
     itsSlowExecutor.start();
 
@@ -67,8 +70,10 @@ void AsyncServer::shutdown()
     itsIoService.stop();
 
     // Shutdown the thread pools
+    itsAdminExecutor.setGracefulShutdown(true);
     itsSlowExecutor.setGracefulShutdown(true);
     itsFastExecutor.setGracefulShutdown(true);
+    itsAdminExecutor.shutdown();
     itsSlowExecutor.shutdown();
     itsFastExecutor.shutdown();
 
@@ -101,13 +106,12 @@ void AsyncServer::startAccept()
                                                            itsDumpRequests,
                                                            itsIoService,
                                                            itsReactor,
+                                                           itsAdminExecutor,
                                                            itsSlowExecutor,
                                                            itsFastExecutor);
-    itsAcceptor.async_accept(
-        itsNewConnection->socket(),
-        [this]
-        (const boost::system::error_code& err)
-        { this->handleAccept(err); });
+    itsAcceptor.async_accept(itsNewConnection->socket(),
+                             [this](const boost::system::error_code& err)
+                             { this->handleAccept(err); });
   }
   catch (...)
   {

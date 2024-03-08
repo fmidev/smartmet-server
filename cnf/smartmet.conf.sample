@@ -19,18 +19,22 @@ encryption:
 };
 
 
-
+adminpool:
+{
+  maxthreads = 5;
+  maxrequeuesize = 0;
+};
 
 slowpool:
 {
-  maxthreads = 15;
-  maxrequeuesize = 1000;
+  maxthreads = "50%";
+  maxrequeuesize = 100;
 };
 
 fastpool:
 {
-  maxthreads = 15;
-  maxrequeuesize = 1000;
+  maxthreads = "100%";
+  maxrequeuesize = 100;
 };
 
 
@@ -79,10 +83,6 @@ engines:
 	{
 	        configfile      = "/etc/smartmet/engines/querydata.conf";
 	};
-	salami:
-	{
-	        configfile      = "/etc/smartmet/engines/salami.conf";
-	};
 };
 
 plugins:
@@ -117,10 +117,6 @@ plugins:
 	{
 	        configfile      = "/etc/smartmet/plugins/download.conf";
 	};
-	flash:
-	{
-	        configfile      = "/etc/smartmet/plugins/flash.conf";
-	};
 	meta:
 	{
 	        configfile      = "/etc/smartmet/plugins/meta.conf";
@@ -128,10 +124,6 @@ plugins:
 	observation:
 	{
 	        configfile      = "/etc/smartmet/plugins/observation.conf";
-	};
-	salami:
-	{
-	        configfile      = "/etc/smartmet/plugins/salami.conf";
 	};
 	textgen:
 	{

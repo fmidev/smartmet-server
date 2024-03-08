@@ -27,6 +27,7 @@ AsyncConnection::AsyncConnection(AsyncServer* serverInstance,
                                  bool dumpRequests,
                                  boost::asio::io_service& io_service,
                                  SmartMet::Spine::Reactor& theReactor,
+                                 ThreadPoolType& adminExecutor,
                                  ThreadPoolType& slowExecutor,
                                  ThreadPoolType& fastExecutor)
     : Connection(serverInstance,
@@ -39,6 +40,7 @@ AsyncConnection::AsyncConnection(AsyncServer* serverInstance,
                  dumpRequests,
                  io_service,
                  theReactor,
+                 adminExecutor,
                  slowExecutor,
                  fastExecutor),
       itsSentBytes(0),
@@ -228,21 +230,6 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
           }
         }
 
-        // Handle high load situations
-        if (itsReactor.isLoadHigh())
-        {
-          bool is_admin_request = (itsRequest && (itsRequest->getResource() == "admin" ||
-                                                  itsRequest->getResource() == "/admin"));
-
-          if (!is_admin_request)
-          {
-            std::cout << Spine::log_time_str() << " Too many active requests, reporting high load"
-                      << std::endl;
-            sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
-            return;
-          }
-        }
-
         // Determine where to put the handler function
         auto handlerView = itsReactor.getHandlerView(*itsRequest);
         if (!handlerView)
@@ -252,14 +239,27 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
           return;
         }
 
+        itsAdminQuery = (!handlerView->isCatchNoMatch() && handlerView->isAdminQuery(*itsRequest) &&
+                         itsAdminExecutor.getPoolSize() > 0);
+
+        // Handle high load situations
+        if (!itsAdminQuery && itsReactor.isLoadHigh())
+        {
+          std::cout << Spine::log_time_str() << " Too many active requests, reporting high load"
+                    << std::endl;
+          sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
+          return;
+        }
+
         bool scheduled = false;
 
         // Handle frontends and backends separately
 
         if (handlerView->isCatchNoMatch())
         {
-          // frontend
+          // frontend always uses the fast executor
           itsQueryIsFast = true;
+          itsAdminQuery = false;
           scheduled = itsFastExecutor.schedule([me = shared_from_this(), handlerView]()
                                                { me->handleCompletedRead(*handlerView); });
 
@@ -278,7 +278,12 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
           itsQueryIsFast =
               (itsSlowExecutor.getPoolSize() == 0 || handlerView->queryIsFast(*itsRequest));
 
-          if (itsQueryIsFast)
+          if (itsAdminQuery)
+          {
+            scheduled = itsAdminExecutor.schedule([me = shared_from_this(), handlerView]()
+                                                  { me->handleCompletedRead(*handlerView); });
+          }
+          else if (itsQueryIsFast)
           {
             scheduled = itsFastExecutor.schedule([me = shared_from_this(), handlerView]()
                                                  { me->handleCompletedRead(*handlerView); });
@@ -1076,7 +1081,11 @@ void AsyncConnection::scheduleChunkGetter()
     bool scheduled = false;
     // Put the chunk getter function in the appropriate pool
 
-    if (itsQueryIsFast)
+    if (itsAdminQuery)
+    {
+      scheduled = itsAdminExecutor.schedule([me = shared_from_this()]() { me->getNextChunk(); });
+    }
+    else if (itsQueryIsFast)
     {
       scheduled = itsFastExecutor.schedule([me = shared_from_this()]() { me->getNextChunk(); });
     }
@@ -1107,7 +1116,12 @@ void AsyncConnection::scheduleChunkedChunkGetter()
   {
     bool scheduled = false;
     // Put the chunk getter function in the appropriate pool
-    if (itsQueryIsFast)
+    if (itsAdminQuery)
+    {
+      scheduled =
+          itsAdminExecutor.schedule([me = shared_from_this()]() { me->getNextChunkedChunk(); });
+    }
+    else if (itsQueryIsFast)
     {
       scheduled =
           itsFastExecutor.schedule([me = shared_from_this()]() { me->getNextChunkedChunk(); });

@@ -107,9 +107,6 @@ install:
 	@mkdir -p $(sysconfdir)/smartmet
 	@mkdir -p $(sysconfdir)/logrotate.d
 	$(INSTALL_DATA) etc/smartmet-server-access-log-rotate $(sysconfdir)/logrotate.d/smartmet-server
-	$(INSTALL_DATA) etc/smartmetd.env $(sysconfdir)/smartmet/smartmetd.env
-	@mkdir -p $(libdir)/../lib/systemd/system
-	$(INSTALL_DATA) systemd/smartmet-server.service $(libdir)/../lib/systemd/system/
 
 
 test:
