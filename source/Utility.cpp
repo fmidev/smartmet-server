@@ -34,7 +34,7 @@ std::string makeDateString()
     auto date = u_time.date();
     auto time = u_time.time_of_day();
 
-    int weekday = date.day_of_week();
+    int weekday = date.day_of_week().iso_encoding();
     int day = date.day();
     int month = date.month();
     int year = date.year();
