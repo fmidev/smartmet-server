@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 24.2.22
+Version: 24.5.6
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -119,6 +119,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Mon May  6 2024 Andris Pavēnis <andris.pavenis@fmi.fi> 24.5.6-1.fmi
+- Use Date library (https://github.com/HowardHinnant/date) instead of boost date_time
+
 * Thu Feb 22 2024 Mika Heiskanen <mika.heiskanen@fmi.fi> - 24.2.22-1.fmi
 - Do not use admin pool for frontends
 
