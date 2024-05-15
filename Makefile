@@ -25,7 +25,6 @@ LIBS += -L$(libdir) \
 	-ldl \
 	-lboost_filesystem \
 	-lboost_regex \
-	-lboost_date_time \
 	-lboost_iostreams \
 	-lboost_program_options \
 	-lboost_thread \

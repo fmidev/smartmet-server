@@ -30,6 +30,8 @@ class Server;
 class Connection
 {
  public:
+  using DeadlineTimer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
+
   explicit Connection(Server* theServer,
                       bool encryptionEnabled,
                       boost::asio::ssl::context& sslContext,
@@ -103,7 +105,7 @@ class Connection
   SmartMet::Spine::Reactor& itsReactor;
 
   /// Connection timeout timer
-  boost::movelib::unique_ptr<boost::asio::deadline_timer> itsTimeoutTimer;
+  boost::movelib::unique_ptr<DeadlineTimer> itsTimeoutTimer;
 
   /// Socket reads into this buffer
   boost::array<char, 8192> itsSocketBuffer;
