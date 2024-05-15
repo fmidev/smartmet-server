@@ -21,8 +21,6 @@ namespace fs = boost::filesystem;
 
 namespace ip = boost::asio::ip;
 
-namespace bp = boost::posix_time;
-
 namespace po = boost::program_options;
 
 pair<string, string> parseStatus(const boost::iterator_range<char*>& message)
@@ -88,7 +86,7 @@ struct Result
   friend ostream& operator<<(ostream& stream, const Result& theRes)
   {
     stream << theRes.resTime << "###" << theRes.URI << "###"
-           << bp::to_simple_string(theRes.duration) << "###" << theRes.status << "###"
+           << theRes.duration.to_simple_string() << "###" << theRes.status << "###"
            << theRes.response;
     return stream;
   }
@@ -140,7 +138,7 @@ class Tester
     itsSignals.add(SIGALRM);
     itsSignals.async_wait(boost::bind(&Tester::handleSignal, this, _1, _2));
 
-    itsTimer.reset(new boost::asio::deadline_timer(itsIO));
+    itsTimer.reset(new boost::asio::basic_waitable_timer<std::chrono::system_clock> (itsIO));
 
     itsThread.reset(
         new boost::thread(boost::bind(&boost::asio::io_service::run, boost::ref(itsIO))));
@@ -157,7 +155,7 @@ class Tester
 
   void run()
   {
-    itsTimer->expires_from_now(bp::seconds(5));
+    itsTimer->expires_from_now(std::chrono::seconds(5));
 
     itsTimer->async_wait(boost::bind(&Tester::printProgress, this, _1));
 
@@ -227,7 +225,7 @@ class Tester
 
   std::unique_ptr<boost::thread> itsThread;
 
-  std::unique_ptr<boost::asio::deadline_timer> itsTimer;
+  std::unique_ptr<boost::asio::basic_waitable_timer<std::chrono::system_clock> > itsTimer;
 
   vector<Request> itsRequests;
 
@@ -302,7 +300,7 @@ class Tester
                   << std::endl;
       }
 
-      itsTimer->expires_from_now(bp::seconds(5));
+      itsTimer->expires_from_now(std::chrono::seconds(5));
       itsTimer->async_wait(boost::bind(&Tester::printProgress, this, _1));
     }
   }
