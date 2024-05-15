@@ -32,7 +32,6 @@ BuildRequires: jemalloc-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 24.5.6
 BuildRequires: smartmet-library-spine-devel >= 24.5.6
-Requires: %{smartmet_boost}-date-time
 Requires: %{smartmet_boost}-filesystem
 Requires: %{smartmet_boost}-iostreams
 Requires: %{smartmet_boost}-program-options
