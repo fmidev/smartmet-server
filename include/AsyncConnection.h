@@ -34,7 +34,6 @@ class AsyncConnection : public Connection, public boost::enable_shared_from_this
 {
  public:
   using ConnectionPtr = boost::shared_ptr<AsyncConnection>;
-  using DeadlineTimer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
 
   AsyncConnection() = delete;
   AsyncConnection(const AsyncConnection& other) = delete;
