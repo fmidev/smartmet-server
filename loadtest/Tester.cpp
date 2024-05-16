@@ -138,7 +138,7 @@ class Tester
     itsSignals.add(SIGALRM);
     itsSignals.async_wait(boost::bind(&Tester::handleSignal, this, _1, _2));
 
-    itsTimer.reset(new boost::asio::basic_waitable_timer<std::chrono::system_clock> (itsIO));
+    itsTimer.reset(new boost::asio::basic_waitable_timer<std::chrono::steady_clock> (itsIO));
 
     itsThread.reset(
         new boost::thread(boost::bind(&boost::asio::io_service::run, boost::ref(itsIO))));
@@ -225,7 +225,7 @@ class Tester
 
   std::unique_ptr<boost::thread> itsThread;
 
-  std::unique_ptr<boost::asio::basic_waitable_timer<std::chrono::system_clock> > itsTimer;
+  std::unique_ptr<boost::asio::basic_waitable_timer<std::chrono::steady_clock> > itsTimer;
 
   vector<Request> itsRequests;
 
