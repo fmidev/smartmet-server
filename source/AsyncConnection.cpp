@@ -84,7 +84,7 @@ void AsyncConnection::start()
   {
     // Start the timeout timer
 
-    itsTimeoutTimer = boost::movelib::make_unique<DeadlineTimer>(
+    itsTimeoutTimer = std::make_unique<DeadlineTimer>(
         itsIoService, std::chrono::seconds(itsTimeout));
 
     itsTimeoutTimer->async_wait([me = shared_from_this()](const boost::system::error_code& err)

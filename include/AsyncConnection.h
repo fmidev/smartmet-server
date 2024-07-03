@@ -11,7 +11,7 @@
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <macgyver/ThreadPool.h>
 #include <spine/HTTP.h>
 #include <spine/HandlerView.h>
@@ -33,7 +33,7 @@ class AsyncServer;
 class AsyncConnection : public Connection, public boost::enable_shared_from_this<AsyncConnection>
 {
  public:
-  using ConnectionPtr = boost::shared_ptr<AsyncConnection>;
+  using ConnectionPtr = std::shared_ptr<AsyncConnection>;
 
   AsyncConnection() = delete;
   AsyncConnection(const AsyncConnection& other) = delete;
