@@ -10,7 +10,6 @@
 #include "Connection.h"
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #include <memory>
 #include <macgyver/ThreadPool.h>
 #include <spine/HTTP.h>
@@ -30,10 +29,33 @@ class AsyncServer;
  * This connection type is used by the AsyncServer server implementation.
  */
 // ======================================================================
-class AsyncConnection : public Connection, public boost::enable_shared_from_this<AsyncConnection>
+class AsyncConnection : public Connection, public std::enable_shared_from_this<AsyncConnection>
 {
  public:
   using ConnectionPtr = std::shared_ptr<AsyncConnection>;
+
+ private:
+  // Implemented according to https://en.cppreference.com/w/cpp/memory/enable_shared_from_this (variant Best)
+  // This dummy private structure is to disable acccess to constructor, but to still allow
+  // it's use in static factory method
+  struct Private{ explicit Private() = default; };
+
+ public:
+
+  explicit AsyncConnection(Private,
+                           AsyncServer* serverInstance,
+                           bool sslEnabled,
+                           boost::asio::ssl::context& sslContext,
+                           bool canGzipResponse,
+                           std::size_t compressLimit,
+                           std::size_t maxRequestSize,
+                           long timeout,
+                           bool dumpRequests,
+                           boost::asio::io_service& io_service,
+                           SmartMet::Spine::Reactor& theReactor,
+                           ThreadPoolType& adminExecutor,
+                           ThreadPoolType& slowExecutor,
+                           ThreadPoolType& fastExecutor);
 
   AsyncConnection() = delete;
   AsyncConnection(const AsyncConnection& other) = delete;
@@ -62,7 +84,7 @@ class AsyncConnection : public Connection, public boost::enable_shared_from_this
    */
   // ======================================================================
 
-  explicit AsyncConnection(AsyncServer* serverInstance,
+  static ConnectionPtr create(AsyncServer* serverInstance,
                            bool sslEnabled,
                            boost::asio::ssl::context& sslContext,
                            bool canGzipResponse,
@@ -75,6 +97,8 @@ class AsyncConnection : public Connection, public boost::enable_shared_from_this
                            ThreadPoolType& adminExecutor,
                            ThreadPoolType& slowExecutor,
                            ThreadPoolType& fastExecutor);
+
+  inline ConnectionPtr get_ptr() { return shared_from_this(); }
 
   // ======================================================================
   /*!
