@@ -23,7 +23,6 @@ LIBS += -L$(libdir) \
 	-lsmartmet-macgyver \
 	$(CONFIGPP_LIBS) \
 	-ldl \
-	-lboost_filesystem \
 	-lboost_regex \
 	-lboost_iostreams \
 	-lboost_program_options \
