@@ -3,7 +3,7 @@
 #include <boost/asio.hpp>
 #include <boost/bind/bind.hpp>
 #include <macgyver/DateTime.h>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <boost/program_options.hpp>
 #include <macgyver/ThreadPool.h>
 #include <spine/HTTP.h>
@@ -17,7 +17,7 @@ typedef Fmi::ThreadPool::ThreadPool<> pool;
 
 using namespace std;
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace ip = boost::asio::ip;
 
