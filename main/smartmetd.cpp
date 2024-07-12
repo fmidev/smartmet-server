@@ -86,7 +86,7 @@ void set_new_handler(const std::string& name)
 // In that case one should the systemd CoredumpFilter setting which takes symbolic values.
 // See systemd/smartmet-server.service for examples.
 
-void set_coredump_filter(const boost::optional<unsigned int>& value)
+void set_coredump_filter(const std::optional<unsigned int>& value)
 {
   if (!value)
     return;

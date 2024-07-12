@@ -23,7 +23,6 @@ LIBS += -L$(libdir) \
 	-lsmartmet-macgyver \
 	$(CONFIGPP_LIBS) \
 	-ldl \
-	-lboost_filesystem \
 	-lboost_regex \
 	-lboost_iostreams \
 	-lboost_program_options \
@@ -123,6 +122,6 @@ rpm: clean $(SPEC).spec
 .SUFFIXES: $(SUFFIXES) .cpp
 
 obj/%.o : %.cpp
-	$(CXX) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+	$(CXX) $(CFLAGS) $(INCLUDES) -c -MD -MF $(patsubst obj/%.o, obj/%.d, $@) -MT $@ -o $@ $<
 
 -include obj/*.d
