@@ -108,7 +108,7 @@ class Connection
   std::unique_ptr<DeadlineTimer> itsTimeoutTimer;
 
   /// Socket reads into this buffer
-  boost::array<char, 8192> itsSocketBuffer;
+  std::array<char, 8192> itsSocketBuffer;
 
   /// Entire received data.
   std::string itsBuffer;

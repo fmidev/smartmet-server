@@ -8,7 +8,7 @@
 
 #pragma once
 #include "Connection.h"
-#include <boost/array.hpp>
+#include <array>
 #include <boost/asio.hpp>
 #include <memory>
 #include <macgyver/ThreadPool.h>

@@ -1,5 +1,5 @@
 #include <boost/algorithm/string.hpp>
-#include <boost/array.hpp>
+#include <array>
 #include <boost/asio.hpp>
 #include <boost/bind/bind.hpp>
 #include <macgyver/DateTime.h>
@@ -198,7 +198,7 @@ class Tester
     boost::asio::write(socket, boost::asio::buffer(reqString));
 
     // Read at least something
-    boost::array<char, 512> retArray;
+    std::array<char, 512> retArray;
     std::size_t size = 0;
     string tmp;
     string response;
@@ -322,7 +322,7 @@ class Tester
     boost::asio::write(socket, boost::asio::buffer(reqString), err);
 
     // Read at least something
-    boost::array<char, 512> retArray;
+    std::array<char, 512> retArray;
     std::size_t size = 0;
     string errorCode;
     string response;
@@ -363,7 +363,7 @@ void testRequest(Request theReq)
 
   boost::asio::write(socket, boost::asio::buffer(reqString));
 
-  boost::array<char, 512> retArray;
+  std::array<char, 512> retArray;
 
   // Read until retArray is full
   auto size =
