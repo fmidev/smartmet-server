@@ -18,7 +18,7 @@ override LDFLAGS += -rdynamic
 override LDFLAGS_DEBUG += -rdynamic
 override LDFLAGS_PROFILE += -rdynamic
 
-LIBS += -L$(libdir) \
+LIBS += $(PREFIX_LDFLAGS) \
 	-lsmartmet-spine \
 	-lsmartmet-macgyver \
 	$(CONFIGPP_LIBS) \
@@ -108,7 +108,7 @@ install:
 
 
 test:
-	cd test && make test
+	$(MAKE) -C test $@
 
 objdir:
 	@mkdir -p $(objdir)
