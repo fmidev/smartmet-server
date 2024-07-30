@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 24.7.22
+Version: 24.7.30
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -117,6 +117,9 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Tue Jul 30 2024 Andris Pavēnis <andris.pavenis@fmi.fi> 24.7.30-1.fmi
+- Repackage due smartmet-library-macgyver changes
+
 * Mon Jul 22 2024 Andris Pavēnis <andris.pavenis@fmi.fi> 24.7.22-1.fmi
 - Replace BOOST_FOREACH and boost::array
 
