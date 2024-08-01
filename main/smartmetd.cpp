@@ -4,6 +4,7 @@
 #include <macgyver/AnsiEscapeCodes.h>
 #include <macgyver/AsyncTaskGroup.h>
 #include <macgyver/Exception.h>
+#include <macgyver/StaticCleanup.h>
 #include <spine/Convenience.h>
 #include <spine/HTTP.h>
 #include <spine/Options.h>
@@ -109,6 +110,9 @@ int main(int argc, char* argv[])
 {
   try
   {
+    // Ensure that the registrated static object cleanup is done before the exit
+    Fmi::StaticCleanup::AtExit cleanup;
+
     // Parse options
 
     SmartMet::Spine::Options options;
