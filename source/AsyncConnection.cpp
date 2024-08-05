@@ -17,7 +17,8 @@ namespace SmartMet
 {
 namespace Server
 {
-AsyncConnection::AsyncConnection(AsyncServer* serverInstance,
+AsyncConnection::AsyncConnection(Private,
+                                 AsyncServer* serverInstance,
                                  bool sslEnabled,
                                  boost::asio::ssl::context& sslContext,
                                  bool canGzipResponse,
@@ -46,6 +47,38 @@ AsyncConnection::AsyncConnection(AsyncServer* serverInstance,
       itsSentBytes(0),
       itsPrematurelyDisconnected(false)
 {
+}
+
+AsyncConnection::ConnectionPtr
+AsyncConnection::create(AsyncServer* serverInstance,
+                           bool sslEnabled,
+                           boost::asio::ssl::context& sslContext,
+                           bool canGzipResponse,
+                           std::size_t compressLimit,
+                           std::size_t maxRequestSize,
+                           long timeout,
+                           bool dumpRequests,
+                           boost::asio::io_service& io_service,
+                           SmartMet::Spine::Reactor& theReactor,
+                           ThreadPoolType& adminExecutor,
+                           ThreadPoolType& slowExecutor,
+                           ThreadPoolType& fastExecutor)
+{
+  return std::make_shared<AsyncConnection>(
+      Private(),
+      serverInstance,
+      sslEnabled,
+      sslContext,
+      canGzipResponse,
+      compressLimit,
+      maxRequestSize,
+      timeout,
+      dumpRequests,
+      io_service,
+      theReactor,
+      adminExecutor,
+      slowExecutor,
+      fastExecutor);
 }
 
 // Initiate graceful Connection closure after the reply is written (connection is destructing)
@@ -84,7 +117,7 @@ void AsyncConnection::start()
   {
     // Start the timeout timer
 
-    itsTimeoutTimer = boost::movelib::make_unique<DeadlineTimer>(
+    itsTimeoutTimer = std::make_unique<DeadlineTimer>(
         itsIoService, std::chrono::seconds(itsTimeout));
 
     itsTimeoutTimer->async_wait([me = shared_from_this()](const boost::system::error_code& err)

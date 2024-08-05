@@ -6,7 +6,6 @@ TEST = $(PROG:%=%.test)
 LIBS := \
 	-lsmartmet-macgyver \
 	-lboost_system \
-	-lboost_filesystem \
 	-lboost_thread \
 	-lrt \
 	-lboost_program_options \

@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 24.5.16
+Version: 24.7.30
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -30,9 +30,8 @@ BuildRequires: fmt-devel >= 7.1.3
 BuildRequires: openssl-devel
 BuildRequires: jemalloc-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 24.5.6
-BuildRequires: smartmet-library-spine-devel >= 24.5.6
-Requires: %{smartmet_boost}-filesystem
+BuildRequires: smartmet-library-macgyver-devel >= 24.7.31
+BuildRequires: smartmet-library-spine-devel >= 24.7.12
 Requires: %{smartmet_boost}-iostreams
 Requires: %{smartmet_boost}-program-options
 Requires: %{smartmet_boost}-regex
@@ -42,8 +41,8 @@ Requires: fmt >= 7.1.3
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 24.5.6
-Requires: smartmet-library-spine >= 24.5.6
+Requires: smartmet-library-macgyver >= 24.7.31
+Requires: smartmet-library-spine >= 24.7.12
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -53,7 +52,7 @@ Requires(pre): shadow-utils
 #TestRequires: /bin/bash
 #TestRequires: gcc-c++
 #TestRequires: make
-#TestRequires: smartmet-library-macgyver-devel >= 24.5.6
+#TestRequires: smartmet-library-macgyver-devel >= 24.7.31
 #TestRequires: curl >= 7.42.0
 
 %description
@@ -118,6 +117,15 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Tue Jul 30 2024 Andris Pavēnis <andris.pavenis@fmi.fi> 24.7.30-1.fmi
+- Repackage due smartmet-library-macgyver changes
+
+* Mon Jul 22 2024 Andris Pavēnis <andris.pavenis@fmi.fi> 24.7.22-1.fmi
+- Replace BOOST_FOREACH and boost::array
+
+* Fri Jul 12 2024 Andris Pavēnis <andris.pavenis@fmi.fi> 24.7.12-1.fmi
+- Replace many boost library types with C++ standard library ones
+
 * Thu May 16 2024 Andris Pavēnis <andris.pavenis@fmi.fi> 24.5.16-1.fmi
 - Clean up boost date-time uses
 

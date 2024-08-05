@@ -11,11 +11,11 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
-#include <boost/move/unique_ptr.hpp>
 #include <boost/thread.hpp>
 #include <macgyver/ThreadPool.h>
 #include <spine/Reactor.h>
 #include <spine/Thread.h>
+#include <memory>
 
 using ssl_socket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
 
@@ -105,10 +105,10 @@ class Connection
   SmartMet::Spine::Reactor& itsReactor;
 
   /// Connection timeout timer
-  boost::movelib::unique_ptr<DeadlineTimer> itsTimeoutTimer;
+  std::unique_ptr<DeadlineTimer> itsTimeoutTimer;
 
   /// Socket reads into this buffer
-  boost::array<char, 8192> itsSocketBuffer;
+  std::array<char, 8192> itsSocketBuffer;
 
   /// Entire received data.
   std::string itsBuffer;

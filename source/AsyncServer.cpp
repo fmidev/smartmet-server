@@ -96,19 +96,19 @@ void AsyncServer::startAccept()
     // Make a new connection object and let it wait for an incoming connection
     // This should not need locking, since we accept connections from a single socket (handleAccepts
     // are implicity serialized)
-    itsNewConnection = boost::make_shared<AsyncConnection>(this,
-                                                           itsEncryptionEnabled,
-                                                           itsEncryptionContext,
-                                                           itsCanGzip,
-                                                           itsCompressLimit,
-                                                           itsMaxRequestSize,
-                                                           itsTimeout,
-                                                           itsDumpRequests,
-                                                           itsIoService,
-                                                           itsReactor,
-                                                           itsAdminExecutor,
-                                                           itsSlowExecutor,
-                                                           itsFastExecutor);
+    itsNewConnection = AsyncConnection::create( this,
+                                                itsEncryptionEnabled,
+                                                itsEncryptionContext,
+                                                itsCanGzip,
+                                                itsCompressLimit,
+                                                itsMaxRequestSize,
+                                                itsTimeout,
+                                                itsDumpRequests,
+                                                itsIoService,
+                                                itsReactor,
+                                                itsAdminExecutor,
+                                                itsSlowExecutor,
+                                                itsFastExecutor);
     itsAcceptor.async_accept(itsNewConnection->socket(),
                              [this](const boost::system::error_code& err)
                              { this->handleAccept(err); });

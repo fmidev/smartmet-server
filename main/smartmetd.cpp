@@ -4,6 +4,7 @@
 #include <macgyver/AnsiEscapeCodes.h>
 #include <macgyver/AsyncTaskGroup.h>
 #include <macgyver/Exception.h>
+#include <macgyver/StaticCleanup.h>
 #include <spine/Convenience.h>
 #include <spine/HTTP.h>
 #include <spine/Options.h>
@@ -86,7 +87,7 @@ void set_new_handler(const std::string& name)
 // In that case one should the systemd CoredumpFilter setting which takes symbolic values.
 // See systemd/smartmet-server.service for examples.
 
-void set_coredump_filter(const boost::optional<unsigned int>& value)
+void set_coredump_filter(const std::optional<unsigned int>& value)
 {
   if (!value)
     return;
@@ -109,6 +110,9 @@ int main(int argc, char* argv[])
 {
   try
   {
+    // Ensure that the registrated static object cleanup is done before the exit
+    Fmi::StaticCleanup::AtExit cleanup;
+
     // Parse options
 
     SmartMet::Spine::Options options;

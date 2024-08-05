@@ -18,12 +18,11 @@ override LDFLAGS += -rdynamic
 override LDFLAGS_DEBUG += -rdynamic
 override LDFLAGS_PROFILE += -rdynamic
 
-LIBS += -L$(libdir) \
+LIBS += $(PREFIX_LDFLAGS) \
 	-lsmartmet-spine \
 	-lsmartmet-macgyver \
 	$(CONFIGPP_LIBS) \
 	-ldl \
-	-lboost_filesystem \
 	-lboost_regex \
 	-lboost_iostreams \
 	-lboost_program_options \
@@ -109,7 +108,7 @@ install:
 
 
 test:
-	cd test && make test
+	$(MAKE) -C test $@
 
 objdir:
 	@mkdir -p $(objdir)
@@ -123,6 +122,6 @@ rpm: clean $(SPEC).spec
 .SUFFIXES: $(SUFFIXES) .cpp
 
 obj/%.o : %.cpp
-	$(CXX) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+	$(CXX) $(CFLAGS) $(INCLUDES) -c -MD -MF $(patsubst obj/%.o, obj/%.d, $@) -MT $@ -o $@ $<
 
 -include obj/*.d
