@@ -30,8 +30,8 @@ BuildRequires: fmt-devel >= %{smartmet_fmt_min}, fmt-devel < %{smartmet_fmt_max}
 BuildRequires: openssl-devel
 BuildRequires: jemalloc-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 24.8.7
-BuildRequires: smartmet-library-spine-devel >= 24.8.7
+BuildRequires: smartmet-library-macgyver-devel >= 24.10.28
+BuildRequires: smartmet-library-spine-devel >= 24.11.8
 Requires: %{smartmet_boost}-iostreams
 Requires: %{smartmet_boost}-program-options
 Requires: %{smartmet_boost}-regex
@@ -41,8 +41,8 @@ Requires: fmt-libs >= %{smartmet_fmt_min}, fmt-libs < %{smartmet_fmt_max}
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 24.8.7
-Requires: smartmet-library-spine >= 24.8.7
+Requires: smartmet-library-macgyver >= 24.10.28
+Requires: smartmet-library-spine >= 24.11.8
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -52,7 +52,7 @@ Requires(pre): shadow-utils
 #TestRequires: /bin/bash
 #TestRequires: gcc-c++
 #TestRequires: make
-#TestRequires: smartmet-library-macgyver-devel >= 24.8.7
+#TestRequires: smartmet-library-macgyver-devel >= 24.10.28
 #TestRequires: curl >= 7.42.0
 
 %description
