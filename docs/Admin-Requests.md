@@ -67,7 +67,7 @@ backend servers.
 
 Below is a sample screenshot of the WWW-interface:
 
-![Metadata catalog](docs/images/metadata-api.png)
+![Metadata catalog](images/metadata-api.png)
 
 # Admin request support
 
@@ -229,7 +229,7 @@ Keep in mind  that the actual frontend given by data.fmi.fi is unpredictable. Th
 
 Below is a screenshot of a response in the Metadata Catalog:
 
-![Available querydata](docs/images/available-querydata.png)
+![Available querydata](images/available-querydata.png)
 
 
 ## GeoEngine reload
@@ -259,7 +259,7 @@ The server keeps statistics on server requests which can be queried with
 
 Below is a sample response as visualized by the Metadata Catalog:
 
-![Service statistics](docs/images/service-statistics.png)
+![Service statistics](images/service-statistics.png)
 
 
 ## Cache statistics
@@ -273,7 +273,7 @@ Each engine and plugin used by the server may keep internal caches whose sizes m
 
 Below is a sample response as visualized by the Metadata Catalog:
 
-![Cache statistics](docs/images/cache-statistics.png)
+![Cache statistics](images/cache-statistics.png)
 
 ## Active requests
    
@@ -285,7 +285,7 @@ The server keeps track of active requests which have not been completed yet. Thi
 
 Below is a sample response as visualized by the Metadata Catalog:
 
-![Active requests](docs/images/active-requests.png)
+![Active requests](images/active-requests.png)
 
 ## Querydata producers
 
@@ -299,7 +299,7 @@ The querydata producers configured to the server can be listed with
 
 Below is a sample response as visualized by the Metadata Catalog. The screen capture does not show all the columns, which show all the configuration parameters for the listed producer.
 
-![Querydata producers](docs/images/querydata-producers.png)
+![Querydata producers](images/querydata-producers.png)
 
 ## GRID producers
 
@@ -313,7 +313,7 @@ The available grid data producers can be listed with
 
 Below is a sample response as visualized by the Metadata Catalog:
 
-![Grid producers](docs/images/grid-producers.png)
+![Grid producers](images/grid-producers.png)
 
 
 ## GRID generations
@@ -328,7 +328,7 @@ Different model runs which may consist of multiple grid data files are called ge
 
 Below is a sample response as visualized by the Metadata Catalog:
 
-![Grid generations](docs/images/grid-generations.png)
+![Grid generations](images/grid-generations.png)
 
 ## GRID querydata generations
 
@@ -344,7 +344,7 @@ In GRID mode the server can also bypass the QueryData engine, as the Grid Engine
 
 Below is a sample response as visualized by the Metadata Catalog:
 
-![Grid querydata generations](docs/images/grid-querydata-generations.png)
+![Grid querydata generations](images/grid-querydata-generations.png)
 
 
 ## Observation producers
@@ -359,7 +359,7 @@ The available observation producers can be queried with
 
 Below is a sample response as visualized by the Metadata Catalog:
 
-![Observation producers](docs/images/observation-producers.png)
+![Observation producers](images/observation-producers.png)
 
 
 ## Parameters
@@ -374,7 +374,7 @@ The known querydata parameters can be queried with
 
 Below is a sample response as visualized by the Metadata Catalog. The interface has been used to search for producers which provice the `IceConcentration` parameter.
 
-![Querydata parameters](docs/images/querydata-parameters.png)
+![Querydata parameters](images/querydata-parameters.png)
 
 ## GRID parameters
 
@@ -388,7 +388,7 @@ The known Grid parameters can be queried with
 
 Below is a sample response as visualized by the Metadata Catalog. The interface has been used to search for producers which provice the `Temperature` parameter.
 
-![Grid parameters](docs/images/grid-parameters.png)
+![Grid parameters](images/grid-parameters.png)
 
 
 ## Observation parameters
@@ -403,7 +403,7 @@ The known observation parameters can be queried with
 
 Below is a sample response as visualized by the Metadata Catalog. The interface has been used to search for producers which provice the `Temperature` parameter.
 
-![Observation parameters](docs/images/observation-parameters.png)
+![Observation parameters](images/observation-parameters.png)
 
 ## Stations
 
@@ -426,7 +426,7 @@ The known stations can be queried with
 
 Below is a sample response as visualized by the Metadata Catalog. The interface has been used to search for highest stations in Espoo.
 
-![Stations](docs/images/stations.png)
+![Stations](images/stations.png)
 
 ## Logging
 
@@ -486,4 +486,4 @@ The requests suitable for the Metadata Catalog can be requested with
 
 Below is a sample response as visualized by a browser using the default `debug` format:
 
-![Admin requests](docs/images/admin-requests.png)
+![Admin requests](images/admin-requests.png)
