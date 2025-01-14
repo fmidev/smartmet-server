@@ -7,4 +7,3 @@ test: $(SMARTMETD) startup-test.sh
 
 clean:
 	rm -f test.out test.status
-	rm -rf log
