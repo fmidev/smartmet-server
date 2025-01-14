@@ -38,7 +38,8 @@ function waitloop {
 }
 
 touch test.out # Avoid missing file warnings when grepping
-timeout $waittime "$smartmetd" -d -v -c ./minimal.conf >test.out 2>&1 &
+mkdir -p log
+timeout $waittime "$smartmetd" -d -v -c ./minimal.conf -a $(pwd)/log >test.out 2>&1 &
 childpid=$!
 
 waitloop
