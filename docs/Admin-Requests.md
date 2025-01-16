@@ -3,6 +3,7 @@ Table of Contents
 
   * [SmartMet Server](#SmartMet Server)
   * [Introduction](#introduction)
+    * [List of requests](#list-of-requests)
     * [Cluster information](#cluster-information)
     * [Service information](#service-information)
     * [Services](#services)
@@ -25,7 +26,6 @@ Table of Contents
     * [Last requests](#last-requests)
     * [Pausing](#pausing)
     * [Reloading station information](#reloading-station-information)
-    * [Listing](#listing)
 
 # SmartMet Server
 
@@ -36,18 +36,32 @@ been in operational use by the Finnish Meteorological Institute FMI.
 
 # Introduction
 
-SmartMet server provides status and administration services. It can provide the cluster information regarding the frontend and backend servers. Admin plugin can give the information about the services that can be provided by  a particular backend server and also the names of the backend servers which provide a particular service etc.
+SmartMet server provides status and administration services. It can provide the cluster information regarding the frontend and backend servers.
 
-Since the front ends delegate the requests to a random background
-machine, the plugin is usually called for a dedicated machine as given
-in the examples below. In the examples Server1 and Server2 are the
-servers for which the information is sought. The admin plugin queries
-described in this section should not be directly accessed by users.
+All status and administration services are available through URI **/admin** (for example https://opendata.fmi.fi/admin?what=<task>, possibly with additional parameters)
+Part of these services are public and are available also through URI **/info** (for example https://opendata.fmi.fi/info?what=<task>)
 
-    http://opendata.fmi.fi/admin?what=<task>
-    http://opendata.fmi.fi/admin?what=<task>
+Frontend server can also forward /info request to the specified backend server. Similar **/admin** request forwarding is not supported.
+Additionally access to /admin requests may be restricted by IP address filter. URI /info is used below in examples for public requests. They all are available also through /admin
 
-Many of the responses are returned in tabular JSON form. The documentation includes some images of the responses visualized by the [SmartMet Server Metadata Catalog](https://github.com/fmidev/smartmetserver-metadata-catalog) available from GitHub (reconfiguring the list of known servers is easily done).
+One can get list of backend servers by one of frontend server **/info** or **/admin** request backends. For example
+    https://opendata.fmi.fi/info?what=backends
+
+Entry from the response can be used to query specified backend server.
+
+An example (get list of info requests provided by one of backend servers):
+    https://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=list
+
+
+Generic format of backend info request access through frontend is
+    https://<fronetend_server>/<backend_server>/info?what=<task>
+
+Replace here and below **<frontend_server>** with the name of the frontend server (for example **opendata.fmi.fi**) and **<backend_server>** with name of backend server
+
+
+Frontend does not receive information about backend server admin requests and result one must send them directly to required backend
+
+Many of the responses are returned in table form by default. The documentation includes some images of the responses visualized by the [SmartMet Server Metadata Catalog](https://github.com/fmidev/smartmetserver-metadata-catalog) available from GitHub (reconfiguring the list of known servers is easily done).
 
 Access to these requests requires related configuration settings in SmartMet Server configuration (section <b>admin</b>). Example
 of this section:
@@ -60,30 +74,49 @@ admin:
 };
 </pre>
 
-Part of requests requires user name and password and are not available if user name and/or password are not provided.
+Currently URI for info requests is hardcoded (**/info**)
 
-Frontend server does not have information about admin requests of backend servers and as result cannot forward admin requests to these
-backend servers.
+Part of admin requests requires user name and password and are not available if user name and/or password are not provided.
 
 Below is a sample screenshot of the WWW-interface:
 
 ![Metadata catalog](images/metadata-api.png)
 
-# Admin request support
+## List of requests
 
-SmartMet Server components that can provide administration or related information requests registers callbacks for such requests.
-Some examples:
+One can get list of available requests using request **list**
+* List of all info requests available from frontend opendata.fmi.fi: http://smartmet.fmi.fi/info?what=list.
+Note that response only includes that does not have 
+restricted access
+* List of all admin requests available from frontend opendata.fmi.fi: http://smartmet.fmi.fi/admin?what=list.
+Note that response includes all requests. Access to this service may be restricted in the future
+* List of all info requests available from on of backends of opendata.fmi.fi: https://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=list
+* Viewing admin requests of backend through frontend server is not supported
 
-* Cluster information
-* Known backends 
-* Service access information
-* Available querydata and GRIB data
-* GeoEngine reload
-* Cache statistics of engines and plugins
 
-Only admin requests of actually used components are availabla. For example requests provided by observation engine are only available when observation engine is loaded and enabled.
+## Backends
 
-One must additionally specify configuration settings for access to admin requrests
+In the SmartMet server environment,  the frontends know what services the backends provide. One can request for either the full list of backends or just those that provide a  given service. The output includes the names of the backends plus the IP address including the port. The output format can be selected.
+
+The request to get the information regarding all backend servers:
+
+ http://opendata.fmi.fi/admin?what=backends&format=debug
+
+The result of this request can be in the following format:
+
+    | Backend Server name | IP address | Port |
+    |--------|------------|------------|------|
+
+The backends with autocomplete service:
+
+    http://opendata.fmi.fi/admin?what=backends&service=autocomplete&format=debug
+
+
+The result of this request can be in the following format:
+
+    | Backend Server name | IP address | Port |
+    |--------|------------|------------|------|
+
 
 ## Cluster information
 
@@ -91,7 +124,7 @@ The cluster status information can be requested both from the frontends and the 
 
 The request to get the broadcast cluster status information at the frontend:
 
-    http://opendata.fmi.fi/admin?what=clusterinfo
+    https://opendata.fmi.fi/info?what=clusterinfo
 
 The result of this request consists of the server information and the services known by the frontend server FServer
 
@@ -105,7 +138,7 @@ The result of this request consists of the server information and the services k
 
 The request to get the backend status information for backend server BServer:
 
-     http://opendata.fmi.fi/BServer/admin?what=clusterinfo
+     https://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=clusterinfo
 
 The result of this request consists of the server information and the services currently provided by this backend server
 
@@ -135,15 +168,13 @@ The result of this request consists of the server information and the services c
         /wfs/fin
         /wms
 
-Note that the first request for cluster status is not handled by the admin plugin, since the admin plugins are installed only in backend machines. The first request is handled by the frontend plugin.
-
 ## Service information
 
 The service status information can be requested the backends.
 
 The request to get the backend status information for backend server BServer:
 
- http://opendata.fmi.fi/BServer/admin?what=serviceinfo
+ https://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=serviceinfo
 
 The result of this request consists of the services currently provided by this server
 
@@ -168,62 +199,46 @@ The result of this request consists of the services currently provided by this s
         /wfs/fin
         /wms
 
-## Services
+## Service stats
 
 SmartMet server optionally logs statistics for successfully handled requests. Access to this functionality is available through the query in which one has to specify the name of the server:
 
-    http://brainstormgw.fmi.fi/Server1/admin?what=services
+Request is admin?what=servicestats
+Backend service stats are not available through frontend
 
 This functionality is disabled by default, to enable it run the following query:
 
-    http://opendata.fmi.fi/Server1/admin?what=services&logging=enable
+    http://<server>/admin?what=services&logging=enable
+
+Requests **servicestats** is not available through **/info**
 
 Similarly, statistics collection can be disabled by replacing "enable" with "disable". Currently, requests older than one week are not considered.
 
-## Backends
-
-In the SmartMet server environment,  the frontends know what services the backends provide. One can request for either the full list of backends or just those that provide a  given service. The output includes the names of the backends plus the IP address including the port. The output format can be selected.
-
-The request to get the information regarding all backend servers:
-
- http://opendata.fmi.fi/admin?what=backends&format=debug
-
-The result of this request can be in the following format:
-
-    | Backend Server name | IP address | Port |
-    |--------|------------|------------|------|
-
-The backends with autocomplete service:
-
-    http://opendata.fmi.fi/admin?what=backends&service=autocomplete&format=debug
-
-
-The result of this request can be in the following format:
-
-    | Backend Server name | IP address | Port |
-    |--------|------------|------------|------|
-
-
 ## QEngine
 
-QEngine maintains the QueryData in memory. The admin-queries can be used to obtain the information about the currently loaded QueryData. For backends the current list of loaded files in server Server1 can be obtained as follows:
+QEngine maintains the QueryData in memory. The admin-queries can be used to obtain the information about the currently loaded QueryData.
+For backends the current list of loaded files in server Server1 can be obtained as follows (replace ):
 
-    http://brainstormgw.fmi.fi/Server1/admin?what=qengine 
+    https://<frontend_server>/<backend_server>/info?what=qengine
+
+Real example:
+
+    https://opendata.fmi.fi/open2.smartmet.fmi.fi/info?what=qengine
 
 Projection output defaults to newbase form. If WKT form is needed, supply additional &projformat=wkt.
 
 Usually one is interested in what data is currently loaded in ALL backends which are visible to the given frontend. For this, a similar query can be performed to a frontend-server:
 
-    http://opendata.fmi.fi/admin?what=qengine
+    https://opendata.fmi.fi/info?what=qengine
 
 This output shows the files which are currently available in all backends providing the timeseries - service. One can refine the search to include only files (producers) which provide given parameters:
 
-    http://opendata.fmi.fi/admin?what=qengine&param=Pressure,Icing
+    https://opendata.fmi.fi/info?what=qengine&param=Pressure,Icing
 
 
 Newbase id numbers are also supported, the search above is identical to:
 
-    http://opendata.fmi.fi/admin?what=qengine&type=id&param=480,1
+    https://opendata.fmi.fi/info?what=qengine&type=id&param=480,1
 
 Keep in mind  that the actual frontend given by opendata.fmi.fi is unpredictable. This is not an issue as long as all frontends serve the same backends.
 
@@ -238,13 +253,12 @@ GeoEngine can reload the geonames database in a separate thread, and quickly swa
 
 Note that the reload request will  use one thread from the server until the swap has been completed. If you are running a debug server with only one thread, you will not be able to do any requests while the reload is in progress.
 
-    http://opendata.fmi.fi/Server1/admin?what=reload
+    http://<backend_server>/admin?what=reload
 
 Possible responses from the server are:
 
-    1. GeoEngine is not available
-    2. GeoEngine reload refused, one is already in progress
-    3. GeoEngine reloaded in N seconds
+    1. GeoEngine reload refused, one is already in progress
+    2. GeoEngine reloaded in N seconds
 
 It is also possible than an error occurs during the reload, for example if the MySQL server has gone down. In that case the old data structures remain active and no data is lost.
 
@@ -252,7 +266,7 @@ It is also possible than an error occurs during the reload, for example if the M
 
 The server keeps statistics on server requests which can be queried with
 
-    http://opendata.fmi.fi/Server1/admin?what=servicestats
+    http://<backend_server>/admin?what=servicestats
 
 * The querystring option `plugin` can be used to limit the response to a single plugin.
 * The querystring option `format` can be used to change the output format from the default `json`.
@@ -266,7 +280,7 @@ Below is a sample response as visualized by the Metadata Catalog:
 
 Each engine and plugin used by the server may keep internal caches whose sizes may require tuning for best performance. The statistics can be queried with
 
-    http://opendata.fmi.fi/Server1/admin?what=cachestats
+    http://<backend_server>/admin?what=cachestats
 
 * The querystring option `format` can be used to change the output format from the default `html`
 * The querystring option `timeformat` can be used to change the time formatting from the  default `sql`
@@ -276,10 +290,10 @@ Below is a sample response as visualized by the Metadata Catalog:
 ![Cache statistics](images/cache-statistics.png)
 
 ## Active requests
-   
+
 The server keeps track of active requests which have not been completed yet. This is occasionally useful for tracking down large requests which are hogging server resources. The active requests can be queried with
 
-    http://opendata.fmi.fi/Server1/admin?what=activerequests
+    http://<backend_server>/admin?what=activerequests
 
 * The querystring option `format` can be used to change the output format from the default `json`
 
@@ -291,7 +305,10 @@ Below is a sample response as visualized by the Metadata Catalog:
 
 The querydata producers configured to the server can be listed with
 
-    http://opendata.fmi.fi/Server1/admin?what=producers
+    https://<frontend_server>/<backend_server>/info?what=producers
+
+An example:
+    https://opendata.fmi.fi/open3.smartmet.fmi.fi/info?what=producers
 
 * The querystring option `format` can be used to change the output format from the default `debug`
 * The querystring option `producer` can be used to limit the output to a single producer name
@@ -305,7 +322,7 @@ Below is a sample response as visualized by the Metadata Catalog. The screen cap
 
 The available grid data producers can be listed with
 
-    http://opendata.fmi.fi/Server1/admin?what=gridproducers
+    https://<frontend_server>/<backend_server>/info?what=gridproducers
 
 * The querystring option `format` can be used to change the output format from the default `debug`
 * The querystring option `producer` can be used to limit the output to a single producer name
@@ -320,7 +337,7 @@ Below is a sample response as visualized by the Metadata Catalog:
 
 Different model runs which may consist of multiple grid data files are called generations. The data for a particular generation can usually be requested by specifying the `origintime` querystring option. The information can be requested with
 
-    http://opendata.fmi.fi/Server1/admin?what=gridgenerations
+    https://<frontend_server>/<backend_server>/info?what=gridgenerations
 
 * The querystring option `format` can be used to change the output format from the default `debug`
 * The querystring option `producer` can be used to limit the output to a single producer name
@@ -334,7 +351,7 @@ Below is a sample response as visualized by the Metadata Catalog:
 
 In GRID mode the server can also bypass the QueryData engine, as the Grid Engine can also process querydata files. The information on the available querydata generations can be requested with
 
-    http://opendata.fmi.fi/Server1/admin?what=gridgenerationsqd
+    http://<frontend_server>/<backend_server>/info?what=gridgenerationsqd
 
 `sqd` is the common suffix used for binary querydata files at `FMI`.
 
@@ -351,7 +368,11 @@ Below is a sample response as visualized by the Metadata Catalog:
 
 The available observation producers can be queried with
 
-    http://opendata.fmi.fi/Server1/admin?what=obsproducers
+    https://<frontend_server>/<backend_server>/info?what=obsproducers
+
+An example:
+
+    https://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=obsproducers
 
 * The querystring option `format` can be used to change the output format from the default `debug`
 * The querystring option `producer` can be used to limit the output to a single producer name
@@ -366,7 +387,10 @@ Below is a sample response as visualized by the Metadata Catalog:
 
 The known querydata parameters can be queried with
 
-    http://opendata.fmi.fi/Server1/admin?what=parameters
+    https://<frontend_server>/<backend_server>/info?what=parameters
+
+An example:
+    http://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=parameters
 
 * The querystring option `format` can be used to change the output format from the default `debug`
 * The querystring option `producer` can be used to limit the output to a single producer name
@@ -380,7 +404,7 @@ Below is a sample response as visualized by the Metadata Catalog. The interface 
 
 The known Grid parameters can be queried with
 
-    http://opendata.fmi.fi/Server1/admin?what=gridparameters
+    https://<frontend_server>/<backend_server>/info?what=gridparameters
 
 * The querystring option `format` can be used to change the output format from the default `debug`
 * The querystring option `producer` can be used to limit the output to a single producer name
@@ -395,8 +419,12 @@ Below is a sample response as visualized by the Metadata Catalog. The interface 
 
 The known observation parameters can be queried with
 
-    http://opendata.fmi.fi/Server1/admin?what=obsparameters
-    
+    https://<frontend_server>/<backend_server>/info?what=obsparameters
+
+An example
+
+    https://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=obsparameters
+
 * The querystring option `format` can be used to change the output format from the default `debug`
 * The querystring option `producer` can be used to limit the output to a single producer name
 * The querystring option `timeformat` can be used to change the time formatting from the default `sql`
@@ -409,8 +437,12 @@ Below is a sample response as visualized by the Metadata Catalog. The interface 
 
 The known stations can be queried with
 
-    http://opendata.fmi.fi/Server1/admin?what=stations
-    
+    https://<frontend_server>/<backend_server>/info?what=stations
+
+An example
+
+    http://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=stations
+
 * The querystring option `format` can be used to change the output format from the default `debug`
 * The querystring option `timeformat` can be used to change the time formatting from the default `sql`
 * The querystring option `fmisid` can be used to limit the search based on the FMI station number
@@ -432,12 +464,12 @@ Below is a sample response as visualized by the Metadata Catalog. The interface 
 
 Logging requests to memory can be enabled and disabled using queries
 
-    http://opendata.fmi.fi/Server1/admin?what=setlogging?status=enable
-    http://opendata.fmi.fi/Server1/admin?what=setlogging?status=disable
+    http://<backend_server>/admin?what=setlogging?status=enable
+    http://<backend_server>/admin?what=setlogging?status=disable
 
 The current status can be queried with
 
-    http://opendata.fmi.fi/Server1/admin?what=getlogging
+    http://<backend_server>/admin?what=getlogging
 
 * The querystring option `format` can be used to change the output format from the default `json`
 
@@ -447,7 +479,7 @@ The response value is either `Enabled` or `Disabled`.
 
 The requests logged to memory can be queried with
 
-    http://opendata.fmi.fi/Server1/admin?what=lastrequests
+    http://<backend_server>/admin?what=lastrequests
 
 * The querystring option `format` can be used to change the output format from the default `json`
 * The querystring option `minutes` can be used to modify how many minutes of last request are returned, the default value is one.
@@ -457,11 +489,11 @@ The requests logged to memory can be queried with
 
 A backend can be requested to pause serving the frontends using
 
-    http://opendata.fmi.fi/Server1/admin?what=pause
+    http://<backend_server>/admin?what=pause
 
 By default the server will pause until the request
 
-    http://opendata.fmi.fi/Server1/admin?what=continue
+    http://<backend_server>/Server1/admin?what=continue
 
 is used.
 
@@ -472,18 +504,6 @@ is used.
 
 The request
 
-    http://opendata.fmi.fi/Server1/admin?what=reloadstations
+    http://<backend_server>/admin?what=reloadstations
 
 can be used to request the Observation Engine to reload all station info cached into memory from the backend observation metadata database.
-
-## Listing
-
-The requests suitable for the Metadata Catalog can be requested with
-
-    http://opendata.fmi.fi/Server1/admin?what=list
-
-* The querystring option `format` can be used to change the output format from the default `debug`
-
-Below is a sample response as visualized by a browser using the default `debug` format:
-
-![Admin requests](images/admin-requests.png)
