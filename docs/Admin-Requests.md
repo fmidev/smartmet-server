@@ -21,6 +21,8 @@ Table of Contents
     * [Parameters](#parameters)
     * [GRID parameters](#grid-parameters)
     * [Observation parameters](#observation-parameters)
+    * [Location parameters](#location-parameters)
+    * [Time parameters](#time-parameters)
     * [Stations](#stations)
     * [Logging](#logging)
     * [Last requests](#last-requests)
@@ -38,11 +40,10 @@ been in operational use by the Finnish Meteorological Institute FMI.
 
 SmartMet server provides status and administration services. It can provide the cluster information regarding the frontend and backend servers.
 
-All status and administration services are available through URI **/admin** (for example https://opendata.fmi.fi/admin?what=<task>, possibly with additional parameters)
-Part of these services are public and are available also through URI **/info** (for example https://opendata.fmi.fi/info?what=<task>)
+All status and administration services are available through URI **/admin** (for example https://opendata.fmi.fi/admin?what=*task*, possibly with additional parameters)
+Part of these services are public and are available also through URI **/info** (for example https://opendata.fmi.fi/info?what=*task*)
 
-Frontend server can also forward /info request to the specified backend server. Similar **/admin** request forwarding is not supported.
-Additionally access to /admin requests may be restricted by IP address filter. URI /info is used below in examples for public requests. They all are available also through /admin
+Frontend server can also forward **/info** request to the specified backend server. Similar **/admin** request forwarding is not supported. Additionally access to /admin requests may be restricted by IP address filter. URI **/info** is used below in examples for public requests. They all are available also through /admin
 
 One can get list of backend servers by one of frontend server **/info** or **/admin** request backends. For example
     https://opendata.fmi.fi/info?what=backends
@@ -54,7 +55,7 @@ An example (get list of info requests provided by one of backend servers):
 
 
 Generic format of backend info request access through frontend is
-    https://<fronetend_server>/<backend_server>/info?what=<task>
+    https://<fronetend_server>/<backend_server>/info?what=*task*
 
 Replace here and below **<frontend_server>** with the name of the frontend server (for example **opendata.fmi.fi**) and **<backend_server>** with name of backend server
 
@@ -85,12 +86,13 @@ Below is a sample screenshot of the WWW-interface:
 ## List of requests
 
 One can get list of available requests using request **list**
-* List of all info requests available from frontend opendata.fmi.fi: http://smartmet.fmi.fi/info?what=list.
-Note that response only includes that does not have 
-restricted access
-* List of all admin requests available from frontend opendata.fmi.fi: http://smartmet.fmi.fi/admin?what=list.
-Note that response includes all requests. Access to this service may be restricted in the future
-* List of all info requests available from on of backends of opendata.fmi.fi: https://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=list
+* List of all info requests available from frontend `opendata.fmi.fi`: https://opendata.fmi.fi/info?what=list.
+  Note that response only includes that does not have restricted access
+* List of all admin requests available from frontend `opendata.fmi.fi`: http://smartmet.fmi.fi/admin?what=list.
+  Note that response includes all requests. Access to this service may be
+  restricted in the future
+* List of all info requests available from one of the backends of `opendata.fmi.fi`:
+  https://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=list
 * Viewing admin requests of backend through frontend server is not supported
 
 
@@ -100,7 +102,7 @@ In the SmartMet server environment,  the frontends know what services the backen
 
 The request to get the information regarding all backend servers:
 
- http://opendata.fmi.fi/admin?what=backends&format=debug
+http://opendata.fmi.fi/admin?what=backends&format=debug
 
 The result of this request can be in the following format:
 
@@ -109,7 +111,7 @@ The result of this request can be in the following format:
 
 The backends with autocomplete service:
 
-    http://opendata.fmi.fi/admin?what=backends&service=autocomplete&format=debug
+http://opendata.fmi.fi/admin?what=backends&service=autocomplete&format=debug
 
 
 The result of this request can be in the following format:
@@ -124,12 +126,13 @@ The cluster status information can be requested both from the frontends and the 
 
 The request to get the broadcast cluster status information at the frontend:
 
-    https://opendata.fmi.fi/info?what=clusterinfo
+https://opendata.fmi.fi/info?what=clusterinfo
 
-The result of this request consists of the server information and the services known by the frontend server FServer
+The result of this request consists of the server information and the services known by the frontend
+server *FServer*
 
     <b>Broadcast Cluster Information </b>
-    This server is a FRONTEND 
+    This server is a FRONTEND
     * Host: FServer
     * Comment: SmartMet server in FServer
     * HTTP interface: Host IP:port
@@ -138,7 +141,7 @@ The result of this request consists of the server information and the services k
 
 The request to get the backend status information for backend server BServer:
 
-     https://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=clusterinfo
+    https://FServer/BServer/info?what=clusterinfo`
 
 The result of this request consists of the server information and the services currently provided by this backend server
 
@@ -432,6 +435,35 @@ An example
 Below is a sample response as visualized by the Metadata Catalog. The interface has been used to search for producers which provice the `Temperature` parameter.
 
 ![Observation parameters](images/observation-parameters.png)
+
+## Location paremeters
+
+Parameters that depend on site location only can be queried with
+
+    https://<frontend_server>/<backend_server>/info?what=locationparameters
+
+An example
+
+    https://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=locationparameters
+
+Only these parameters, that can be taken directly from [SmartMet::Spine::Location](https://github.com/fmidev/smartmet-library-spine/blob/master/spine/Location.h) and
+does not require additional information are included
+
+![Location parameters](images/location-parameters.png)
+
+## Time parameters
+
+Parameters that are related to time can be queried with
+
+    https://<frontend_server>/<backend_server>/info?what=timeparameters
+
+An example
+
+    https://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=timeparameters
+
+![Time parameters](images/time-parameters.png)
+
+
 
 ## Stations
 
