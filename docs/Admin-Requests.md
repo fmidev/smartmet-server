@@ -138,7 +138,7 @@ An example
 
     https://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=clusterinfo
 
-    ![Its output](images/backend-clusterinfo.png)
+![Its output](images/backend-clusterinfo.png)
 
 
 ## Service information
@@ -283,6 +283,9 @@ The available grid data producers can be listed with
 * The querystring option `producer` can be used to limit the output to a single producer name
 * The querystring option `timeformat` can be used to change the time formatting from the default `sql`
 
+This information is only available when SmartMet server uses grid engine (smartmet-engine-grid). It is not
+currently used for https://opendata.fmi.fi
+
 Below is a sample response as visualized by the Metadata Catalog:
 
 ![Grid producers](images/grid-producers.png)
@@ -297,6 +300,9 @@ Different model runs which may consist of multiple grid data files are called ge
 * The querystring option `format` can be used to change the output format from the default `debug`
 * The querystring option `producer` can be used to limit the output to a single producer name
 * The querystring option `timeformat` can be used to change the time formatting from the default `sql`
+
+This information is only available when SmartMet server uses grid engine (smartmet-engine-grid). It is not
+currently used for https://opendata.fmi.fi
 
 Below is a sample response as visualized by the Metadata Catalog:
 
@@ -313,6 +319,9 @@ In GRID mode the server can also bypass the QueryData engine, as the Grid Engine
 * The querystring option `format` can be used to change the output format from the default `debug`
 * The querystring option `producer` can be used to limit the output to a single producer name
 * The querystring option `timeformat` can be used to change the time formatting from the default `sql`
+
+This information is only available when SmartMet server uses grid engine (smartmet-engine-grid). It is not
+currently used for https://opendata.fmi.fi
 
 Below is a sample response as visualized by the Metadata Catalog:
 
@@ -364,6 +373,9 @@ The known Grid parameters can be queried with
 * The querystring option `format` can be used to change the output format from the default `debug`
 * The querystring option `producer` can be used to limit the output to a single producer name
 * The querystring option `timeformat` can be used to change the time formatting from the default `sql`
+
+This information is only available when SmartMet server uses grid engine (smartmet-engine-grid). It is not
+currently used for https://opendata.fmi.fi
 
 Below is a sample response as visualized by the Metadata Catalog. The interface has been used to search for producers which provice the `Temperature` parameter.
 
