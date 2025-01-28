@@ -77,7 +77,7 @@ admin:
 
 Currently URI for info requests is hardcoded (**/info**)
 
-Part of admin requests requires user name and password and are not available if user name and/or password are not provided.
+Part of admin requests requires user name and password and are not available if user name and/or password are not provided in configuration.
 
 Below is a sample screenshot of the WWW-interface:
 
@@ -93,6 +93,7 @@ One can get list of available requests using request **list**
   restricted in the future
 * List of all info requests available from one of the backends of `opendata.fmi.fi`:
   https://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=list
+  One can use **/info** request **backends** to get list ov available backends.
 * Viewing admin requests of backend through frontend server is not supported
 
 
@@ -102,22 +103,18 @@ In the SmartMet server environment,  the frontends know what services the backen
 
 The request to get the information regarding all backend servers:
 
-http://opendata.fmi.fi/admin?what=backends&format=debug
+http://opendata.fmi.fi/info?what=backends&format=debug
 
-The result of this request can be in the following format:
+The result of this request can be in the following format (in case of use of **/admin** additionally IP addresses and ports are also returned,
+for **/info** only backend server names):
 
-    | Backend Server name | IP address | Port |
-    |--------|------------|------------|------|
+![Example of **/info?what=backends** output](images/info-backends.png)
 
 The backends with autocomplete service:
 
-http://opendata.fmi.fi/admin?what=backends&service=autocomplete&format=debug
+http://opendata.fmi.fi/info?what=backends&service=autocomplete&format=debug
 
 
-The result of this request can be in the following format:
-
-    | Backend Server name | IP address | Port |
-    |--------|------------|------------|------|
 
 
 ## Cluster information
@@ -128,79 +125,34 @@ The request to get the broadcast cluster status information at the frontend:
 
 https://opendata.fmi.fi/info?what=clusterinfo
 
-The result of this request consists of the server information and the services known by the frontend
-server *FServer*
+In case of accessing cluster information through **/admin** more information is returned
 
-    <b>Broadcast Cluster Information </b>
-    This server is a FRONTEND
-    * Host: FServer
-    * Comment: SmartMet server in FServer
-    * HTTP interface: Host IP:port
-    * Throttle Limit: 0
-    * Broadcast Interface: Broadcast IP address
+The result of this request consists of the server information and the services known by the frontend
+![Frontend cluser info](images/frontend-clusterinfo.png)
 
 The request to get the backend status information for backend server BServer:
 
-    https://FServer/BServer/info?what=clusterinfo`
+    https://FServer/BServer/info?what=clusterinfo
 
-The result of this request consists of the server information and the services currently provided by this backend server
+An example
 
-    *Broadcast Cluster Information*
-    This server is a BACKEND
-    * Host: BServer
-    * Comment: BServer is a SmartMet server backend
-    * HTTP interface: Host IP:port
-    * Throttle Limit: 0
-    * Broadcast Interface: Broadcast IP address
+    https://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=clusterinfo
 
-    Services currently provided by this backend server
-        /
-        /admin
-        /autocomplete
-        /avi
-        /csection
-        /dali
-        /download
-        /favicon.ico
-        /meta
-        /textgen
-        /timeseries
-        /trajectory
-        /wfs
-        /wfs/eng
-        /wfs/fin
-        /wms
+    ![Its output](images/backend-clusterinfo.png)
+
 
 ## Service information
 
 The service status information can be requested the backends.
 
-The request to get the backend status information for backend server BServer:
+The request to get the backend status information for backend server:
 
  https://opendata.fmi.fi/open1.smartmet.fmi.fi/info?what=serviceinfo
 
 The result of this request consists of the services currently provided by this server
 
-    Services currently provided by this server
-        /
-        /admin
-        /autocomplete
-        /avi
-        /csection
-        /dali
-        /download
-        /favicon.ico
-        /flashplugin
-        /meta
-        /observe
-        /salami
-        /textgen
-        /timeseries
-        /trajectory
-        /wfs
-        /wfs/eng
-        /wfs/fin
-        /wms
+![Backend service information example](images/backend-serviceinfo.png)
+
 
 ## Service stats
 
@@ -211,7 +163,7 @@ Backend service stats are not available through frontend
 
 This functionality is disabled by default, to enable it run the following query:
 
-    http://<server>/admin?what=services&logging=enable
+    http://<server>/admin?what=servicestats&logging=enable
 
 Requests **servicestats** is not available through **/info**
 
@@ -243,7 +195,7 @@ Newbase id numbers are also supported, the search above is identical to:
 
     https://opendata.fmi.fi/info?what=qengine&type=id&param=480,1
 
-Keep in mind  that the actual frontend given by opendata.fmi.fi is unpredictable. This is not an issue as long as all frontends serve the same backends.
+Keep in mind  that the actual responding backend and frontend given by opendata.fmi.fi is unpredictable. This is not an issue as long as all frontends serve the same backends.
 
 Below is a screenshot of a response in the Metadata Catalog:
 
@@ -272,7 +224,7 @@ The server keeps statistics on server requests which can be queried with
     http://<backend_server>/admin?what=servicestats
 
 * The querystring option `plugin` can be used to limit the response to a single plugin.
-* The querystring option `format` can be used to change the output format from the default `json`.
+* The querystring option `format` can be used to change the output format from the default `debug`.
 
 Below is a sample response as visualized by the Metadata Catalog:
 
