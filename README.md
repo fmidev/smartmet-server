@@ -110,4 +110,3 @@ Other resources which may be useful:
 * [Main server configuration file](docs/Main-Configuration-File-Tutorial-(Docker).md)
 * [Troubleshooting](docs/Troubleshooting-SmartMet-Server-Installation-(Docker).md)
 * [Test environment](docs/SmartMet-Server-Test-Environment.md)
-* [SmartMet Server admin and information requests](docs/Admin-Requests.md)
