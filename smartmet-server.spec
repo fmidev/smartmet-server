@@ -105,17 +105,6 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
     fi
 done
 
-if [ $1 -eq 1 ]; then
-   systemctl daemon-reload
-   systemctl enable smartmet-server
-fi
-
-%preun
-if [ $1 -eq 0 ]; then
-   systemctl stop smartmet-server
-   systemctl disable smartmet-server
-fi
-
 %changelog
 * Wed Nov 27 2024 Andris Pavēnis <andris.pavenis@fmi.fi> 24.11.27-1.fmi
 - Repackage due to smartmet-library-macgyver changes
