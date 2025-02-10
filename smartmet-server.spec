@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 24.11.27
+Version: 25.2.4
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -106,6 +106,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Tue Feb  4 2025 Andris Pavēnis <andris.pavenis@fmi.fi> 25.2.4-1.fmi
+- Do not try to enable/disable non-existing (removed) smartmet-server.service
+
 * Wed Nov 27 2024 Andris Pavēnis <andris.pavenis@fmi.fi> 24.11.27-1.fmi
 - Repackage due to smartmet-library-macgyver changes
 
