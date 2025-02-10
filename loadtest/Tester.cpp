@@ -141,7 +141,7 @@ class Tester
     itsTimer.reset(new boost::asio::basic_waitable_timer<std::chrono::steady_clock> (itsIO));
 
     itsThread.reset(
-        new boost::thread(boost::bind(&boost::asio::io_service::run, boost::ref(itsIO))));
+        new boost::thread(boost::bind(&boost::asio::io_context::run, boost::ref(itsIO))));
   }
 
   ~Tester()
@@ -217,7 +217,7 @@ class Tester
 
   pool* itsThreadPool;
 
-  boost::asio::io_service itsIO;
+  boost::asio::io_context itsIO;
 
   boost::asio::signal_set itsSignals;
 
@@ -351,7 +351,7 @@ class Tester
 
 void testRequest(Request theReq)
 {
-  boost::asio::io_service itsIO;
+  boost::asio::io_context itsIO;
   ip::tcp::resolver resolver(itsIO);
   ip::tcp::resolver::query query(theReq.hostName, to_string((long long unsigned int)theReq.port));
   auto end_iterator = resolver.resolve(query);

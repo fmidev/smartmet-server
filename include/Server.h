@@ -58,7 +58,7 @@ class Server
   virtual std::string getPassword() const;
 
   /// The io_service used to perform asynchronous operations.
-  boost::asio::io_service itsIoService;
+  boost::asio::io_context itsIoService;
 
   bool itsEncryptionEnabled;
   std::string itsEncryptionPassword;

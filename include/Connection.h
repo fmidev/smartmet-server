@@ -40,7 +40,7 @@ class Connection
                       std::size_t maxRequestSize,
                       long timeout,
                       bool dumpRequests,
-                      boost::asio::io_service& io_service,
+                      boost::asio::io_context& io_service,
                       SmartMet::Spine::Reactor& theReactor,
                       ThreadPoolType& adminExecutor,
                       ThreadPoolType& slowExecutor,
@@ -90,7 +90,7 @@ class Connection
   boost::asio::ssl::stream<boost::asio::ip::tcp::socket> itsSocket;
 
   /// Its associated Io Service
-  boost::asio::io_service& itsIoService;
+  boost::asio::io_context& itsIoService;
 
   /// Admin thread pool
   ThreadPoolType& itsAdminExecutor;
