@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 25.2.4
+Version: 25.2.18
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -106,6 +106,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Tue Feb 18 2025 Andris Pavēnis <andris.pavenis@fmi.fi> 25.2.18-1.fmi
+- Update to gdal-3.10, geos-3.13 and proj-9.5
+
 * Tue Feb  4 2025 Andris Pavēnis <andris.pavenis@fmi.fi> 25.2.4-1.fmi
 - Do not try to enable/disable non-existing (removed) smartmet-server.service
 
