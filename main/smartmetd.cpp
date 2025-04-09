@@ -93,7 +93,6 @@ namespace
       for  (i = 0; i < itsCount && itsTimePoints[i] < oldest; ++i)
       {
       }
-      std::cout << "i=" << i << std::endl;
 
       for (std::size_t j = 0; j + i < itsCount; ++j)
       {
