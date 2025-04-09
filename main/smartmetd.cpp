@@ -141,7 +141,7 @@ try
 catch (...)
 {
   // This is a fallback in case the std::bad_alloc handler fails
-  std::cerr << "Failed to throw std::bad_alloc from terminate_new_handler or too many out of memeory errors in short time" << std::endl;
+  std::cerr << "Failed to throw std::bad_alloc from terminate_new_handler or too many out of memory errors in short time" << std::endl;
   std::terminate();
 }
 
