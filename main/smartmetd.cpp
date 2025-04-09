@@ -5,6 +5,7 @@
 #include <macgyver/AsyncTaskGroup.h>
 #include <macgyver/Exception.h>
 #include <macgyver/StaticCleanup.h>
+#include <spine/Backtrace.h>
 #include <spine/Convenience.h>
 #include <spine/HTTP.h>
 #include <spine/Options.h>
@@ -70,14 +71,51 @@ void block_signals()
   pthread_sigmask(SIG_BLOCK, &signal_set, nullptr);
 }
 
+void bad_alloc_new_handler()
+try
+{
+  using namespace SmartMet::Spine;
+  // Print out the active requests (only once in case of multiple terminate calls)
+  const ActiveRequests::Requests requests = reactor->getActiveRequests();
+  std::cout << log_time_str() << ANSI_BOLD_ON << ANSI_FG_RED
+                << " Active requests at the time of throwing std::bad_alloc" << ANSI_BOLD_OFF
+                << ANSI_FG_DEFAULT << std::endl;
+  std::cout << requests << std::endl;
+
+  const std::string backtrace = Backtrace::make_backtrace();
+  std::cout << log_time_str() << ANSI_BOLD_ON << ANSI_FG_RED
+                << " Backtrace at the time of throwing std::bad_alloc" << ANSI_BOLD_OFF
+                << ANSI_FG_DEFAULT << std::endl;
+
+  throw std::bad_alloc();
+}
+catch (...)
+{
+  // This is a fallback in case the std::bad_alloc handler fails
+  std::cerr << "Failed to throw std::bad_alloc from terminate_new_handler" << std::endl;
+  std::terminate();
+}
+
+void terminate_new_handler()
+try
+{
+  // Throw std::bad_alloc to have it in exception trace for terminate handler
+  throw std::bad_alloc();
+}
+catch (...)
+{
+  // std::terminate handler will handle loggin - no need to log anything here
+  std::terminate();
+}
+
 void set_new_handler(const std::string& name)
 {
   if (name == "default")  // system default may change in C++20
-    ;
+    std::set_new_handler(&bad_alloc_new_handler);
   else if (name == "bad_alloc")
-    std::set_new_handler([] { throw std::bad_alloc(); });
+    std::set_new_handler(&bad_alloc_new_handler);
   else if (name == "terminate")
-    std::set_new_handler([] { std::terminate(); });
+    std::set_new_handler(&terminate_new_handler);
   else
     throw Fmi::Exception(BCP, "Unknown new_handler").addParameter("name", name);
 }
