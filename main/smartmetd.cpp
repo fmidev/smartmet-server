@@ -71,10 +71,60 @@ void block_signals()
   pthread_sigmask(SIG_BLOCK, &signal_set, nullptr);
 }
 
+namespace
+{
+  template <std::size_t maxCount>
+  class MaxEventFreq
+  {
+  public:
+    MaxEventFreq(std::size_t timeWindowInSec)
+      : itsCount(0)
+      , itsTimeWindowInSec(timeWindowInSec)
+    {
+    }
+
+    void check()
+    {
+      std::lock_guard<std::mutex> lock(itsMutex);
+      const auto now = std::chrono::steady_clock::now();
+      const auto oldest = now - std::chrono::seconds(itsTimeWindowInSec);
+
+      std::size_t i;
+      for  (i = 0; i < itsCount && itsTimePoints[i] < oldest; ++i)
+      {
+      }
+      std::cout << "i=" << i << std::endl;
+
+      for (std::size_t j = 0; j + i < itsCount; ++j)
+      {
+        itsTimePoints[j] = itsTimePoints[i + j];
+      }
+
+      itsCount -= i;
+      if (itsCount >= maxCount)
+        throw std::runtime_error("Too many errors in time window");
+
+      itsTimePoints[itsCount++] = now;
+    }
+
+  private:
+    std::mutex itsMutex;
+    std::size_t itsCount;
+    std::size_t itsTimeWindowInSec;
+    std::array<std::chrono::steady_clock::time_point, maxCount> itsTimePoints;
+  };
+
+  MaxEventFreq<10> maxEventFreq(60);
+
+} // anonymous namespace
+
 void bad_alloc_new_handler()
 try
 {
   using namespace SmartMet::Spine;
+
+  maxEventFreq.check();
+
   // Print out the active requests (only once in case of multiple terminate calls)
   const ActiveRequests::Requests requests = reactor->getActiveRequests();
   std::cout << log_time_str() << ANSI_BOLD_ON << ANSI_FG_RED
@@ -92,7 +142,7 @@ try
 catch (...)
 {
   // This is a fallback in case the std::bad_alloc handler fails
-  std::cerr << "Failed to throw std::bad_alloc from terminate_new_handler" << std::endl;
+  std::cerr << "Failed to throw std::bad_alloc from terminate_new_handler or too many out of memeory errors in short time" << std::endl;
   std::terminate();
 }
 
