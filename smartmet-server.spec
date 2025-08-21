@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 25.8.20
+Version: 25.8.21
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -113,6 +113,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Thu Aug 21 2025 Andris Pavēnis <andris.pavenis@fmi.fi> 25.8.21-1.fmi
+- Kill smartmetd with SIGKILL if shutdown lasts too long
+
 * Wed Aug 20 2025 Andris Pavēnis <andris.pavenis@fmi.fi> 25.8.20-1.fmi
 - Remove setting coredump_filter
 
