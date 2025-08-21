@@ -221,6 +221,16 @@ int main(int argc, char* argv[])
 
     reactor.reset(new SmartMet::Spine::Reactor(options));
 
+    //
+    // Default handler for shutdown timeout is to abort the process.
+    // We do not however want to cause coredump in this case.
+    //
+    reactor->onShutdownTimedOut(
+        []() -> void
+        {
+          kill(getpid(), SIGKILL);
+        });
+
     server.reset(new SmartMet::Server::AsyncServer(options, *reactor));
 
     tasks.reset(new Fmi::AsyncTaskGroup);
