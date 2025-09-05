@@ -34,14 +34,6 @@ LIBS += $(PREFIX_LDFLAGS) \
 	-lz -lpthread \
 	-ldw
 
-ifneq (,$(findstring sanitize=address,$(CFLAGS)))
-else
-ifneq (,$(findstring sanitize=thread,$(CFLAGS)))
-else
-  LIBS += -ljemalloc
-endif
-endif
-
 ifeq ($(origin SBINDIR), undefined)
   sbindir = $(PREFIX)/sbin
 else

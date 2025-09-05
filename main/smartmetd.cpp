@@ -1,6 +1,5 @@
 #include "AsyncServer.h"
 
-// #include <jemalloc/jemalloc.h>
 #include <macgyver/AnsiEscapeCodes.h>
 #include <macgyver/AsyncTaskGroup.h>
 #include <macgyver/Exception.h>
