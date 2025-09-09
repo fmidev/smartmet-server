@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 25.8.21
+Version: 25.9.9
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -112,6 +112,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Tue Sep  9 2025 Andris Pavēnis <andris.pavenis@fmi.fi> 25.9.9-1.fmi
+- Do not link with libjemalloc. Do not set CAP_NET_BIND_SERVICE
+
 * Thu Aug 21 2025 Andris Pavēnis <andris.pavenis@fmi.fi> 25.8.21-1.fmi
 - Kill smartmetd with SIGKILL if shutdown lasts too long
 
