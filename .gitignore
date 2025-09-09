@@ -1,5 +1,6 @@
 compile_commands.json
 /.cproject
+/.vscode
 /.project
 /*.so
 .settings/
