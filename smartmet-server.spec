@@ -90,7 +90,7 @@ fi
 
 %files
 %defattr(0755,root,root,0755)
-%caps(cap_net_bind_service=+eip) %{_sbindir}/smartmetd
+%{_sbindir}/smartmetd
 %defattr(0644,root,root,0755)
 %config(noreplace) %{_sysconfdir}/logrotate.d/smartmet-server
 %{_sysconfdir}/smartmet
