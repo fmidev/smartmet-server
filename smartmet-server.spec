@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 25.9.9
+Version: 25.10.27
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -112,6 +112,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Mon Oct 27 2025 Andris Pavēnis <andris.pavenis@fmi.fi> 25.10.27-1.fmi
+- Repackage due to smartmet-library-spine ABI changes
+
 * Tue Sep  9 2025 Andris Pavēnis <andris.pavenis@fmi.fi> 25.9.9-1.fmi
 - Do not link with libjemalloc. Do not set CAP_NET_BIND_SERVICE
 
