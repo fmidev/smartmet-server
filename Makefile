@@ -28,7 +28,6 @@ LIBS += $(PREFIX_LDFLAGS) \
 	-lboost_program_options \
 	-lboost_thread \
 	-lboost_chrono \
-	-lboost_system \
 	-lfmt \
 	-lcrypto -lssl \
 	-lz -lpthread \
