@@ -59,7 +59,7 @@ jobs:
             aws s3 cp /dist s3://fmi-smartmet-cicd-beta/centos8/ --recursive
   build-rhel10:
     docker:
-      - image: fmidev/smartmet-cibase-10:latest
+      - image: quay.io/fmi/smartmet-cibase-10:latest
     resource_class: xlarge
     environment:
       RPM_BUILD_NCPUS: 8
@@ -76,7 +76,7 @@ jobs:
           paths: ./*.rpm
   test-rhel10:
     docker:
-      - image: fmidev/smartmet-cibase-10:latest
+      - image: quay.io/fmi/smartmet-cibase-10:latest
     resource_class: xlarge
     environment:
       RPM_BUILD_NCPUS: 8

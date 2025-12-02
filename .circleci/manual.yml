@@ -49,7 +49,7 @@ jobs:
           command: ci-build test
   test-rhel10:
     docker:
-      - image: fmidev/smartmet-cibase-10:latest
+      - image: quay.io/fmi/smartmet-cibase-10:latest
     resource_class: xlarge
     steps:
       - checkout
