@@ -35,6 +35,8 @@ namespace Server
 class AsyncServer : public Server
 {
  public:
+  constexpr static const std::size_t DEFAULT_ASYNC_THREAD_SIZE = 6;
+
   friend class AsyncConnection;
 
   // ======================================================================
@@ -46,7 +48,8 @@ class AsyncServer : public Server
   // ======================================================================
 
   explicit AsyncServer(const SmartMet::Spine::Options& theOptions,
-                       SmartMet::Spine::Reactor& theReactor);
+                       SmartMet::Spine::Reactor& theReactor,
+                       std::size_t numThreads = DEFAULT_ASYNC_THREAD_SIZE);
 
   // ======================================================================
   /*!
@@ -91,6 +94,9 @@ class AsyncServer : public Server
 
   // Current number of connections
   std::size_t itsConnections = 0;
+
+  // Number of threads for asynchronous reads and writes
+  std::size_t numThreads;
 };
 
 }  // namespace Server

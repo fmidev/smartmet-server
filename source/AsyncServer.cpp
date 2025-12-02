@@ -1,6 +1,7 @@
 #include "AsyncServer.h"
 #include <boost/thread.hpp>
 #include <macgyver/Exception.h>
+#include <algorithm>
 #include <fmt/format.h>
 
 namespace SmartMet
@@ -8,14 +9,13 @@ namespace SmartMet
 namespace Server
 {
 // Number of threads for asynchronous reads and writes
-#ifndef ASYNC_THREAD_SIZE
-#define ASYNC_THREAD_SIZE 6
-#endif
 
 AsyncServer::AsyncServer(const SmartMet::Spine::Options& theOptions,
-                         SmartMet::Spine::Reactor& theReactor)
-    : Server(theOptions, theReactor), itsConnections(0)
-
+                         SmartMet::Spine::Reactor& theReactor,
+                         std::size_t numThreads)
+    : Server(theOptions, theReactor)
+    , itsConnections(0)
+    , numThreads(std::max(numThreads, std::size_t{1U}))
 {
   try
   {
@@ -34,7 +34,7 @@ void AsyncServer::run()
   {
     // Create some threads to handle connection accepting and asynchronous events
     boost::thread_group workerThreads;
-    for (std::size_t i = 0; i < ASYNC_THREAD_SIZE; ++i)
+    for (std::size_t i = 0; i < numThreads; ++i)
     {
       // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
       workerThreads.add_thread(
