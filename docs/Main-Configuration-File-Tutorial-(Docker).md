@@ -26,6 +26,11 @@ accesslogdir = "/var/log/smartmet/";
 
 port            = 80;
 
+// Number of server threads (default value 6).
+// Note that this number is for threads used to receive incoming requests, but not
+// for processing them. Often the default value 6 is OK
+server_threads  = 8;
+
 adminpool:
 {
   maxthreads = 5;

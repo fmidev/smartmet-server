@@ -230,7 +230,15 @@ int main(int argc, char* argv[])
           kill(getpid(), SIGKILL);
         });
 
-    server.reset(new SmartMet::Server::AsyncServer(options, *reactor));
+    unsigned server_threads = SmartMet::Server::AsyncServer::DEFAULT_ASYNC_THREAD_SIZE;
+    if (options.itsConfig.exists("server_threads"))
+    {
+      options.itsConfig.lookupValue("server_threads", server_threads);
+      if (server_threads < 1)
+        server_threads = SmartMet::Server::AsyncServer::DEFAULT_ASYNC_THREAD_SIZE;
+    }
+
+    server.reset(new SmartMet::Server::AsyncServer(options, *reactor, server_threads));
 
     tasks.reset(new Fmi::AsyncTaskGroup);
 
