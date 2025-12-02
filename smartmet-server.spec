@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 25.10.27
+Version: 25.12.2
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -112,6 +112,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Tue Dec  2 2025 Andris Pavēnis <andris.pavenis@fmi.fi> 25.12.2-1.fmi
+- Support configuring server thread count (instead of hardcoded value 6)
+
 * Mon Oct 27 2025 Andris Pavēnis <andris.pavenis@fmi.fi> 25.10.27-1.fmi
 - Repackage due to smartmet-library-spine ABI changes
 
