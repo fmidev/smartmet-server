@@ -1,6 +1,7 @@
 #include "AsyncServer.h"
 #include <boost/thread.hpp>
 #include <macgyver/Exception.h>
+#include <fmt/format.h>
 
 namespace SmartMet
 {
@@ -36,7 +37,11 @@ void AsyncServer::run()
     for (std::size_t i = 0; i < ASYNC_THREAD_SIZE; ++i)
     {
       // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-      workerThreads.add_thread(new boost::thread([this]() { this->itsIoService.run(); }));
+      workerThreads.add_thread(
+        new boost::thread(
+          &AsyncServer::serverThreadFunction,
+          this,
+          i));
     }
 
     // Start the Admin Thread Pool Executor
@@ -118,6 +123,35 @@ void AsyncServer::startAccept()
     throw Fmi::Exception::Trace(BCP, "Operation failed!");
   }
 }
+
+
+namespace {
+
+  void setThreadName(unsigned index)
+  {
+#if defined(BOOST_THREAD_PLATFORM_PTHREAD)
+    const std::string name = fmt::format("std-wrk-{:04}", index);
+    const std::string thread_name = name.substr(0, 15).c_str();
+    pthread_setname_np(pthread_self(), thread_name.c_str());
+#endif
+  }
+
+} // namespace
+
+void AsyncServer::serverThreadFunction(unsigned index)
+try
+{
+  setThreadName(index);
+  itsIoService.run();
+}
+catch (...)
+{
+  auto error = Fmi::Exception::Trace(BCP, "Operation failed!");
+  std::cerr << "Async server thread " << index << " terminated with exception: " << error.what()
+            << std::endl;
+  throw error;
+}
+
 
 void AsyncServer::handleAccept(const boost::system::error_code& e)
 {

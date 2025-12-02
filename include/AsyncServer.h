@@ -81,6 +81,8 @@ class AsyncServer : public Server
 
   void handleAccept(const boost::system::error_code& err);
 
+  void serverThreadFunction(unsigned index);
+
   /// The next connection to be accepted.
   AsyncConnection::ConnectionPtr itsNewConnection;
 
