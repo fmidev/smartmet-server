@@ -102,12 +102,5 @@ You may contact us from following channels:
 Other resources which may be useful:
 * Presentation about the server: http://www.slideshare.net/tervo/smartmet-server-providing-metocean-data
 * Our public web pages (in Finnish):  http://ilmatieteenlaitos.fi/avoin-lahdekoodi
-
-# Docker Configuration
-
-* [Setting of SmartMet Server](docs/Setting-up-SmartMet-Server-Tutorial-(Docker).md)
-* [Setting up Docker and Docker Compose](docs/Setting-up-Docker-and-Docker-Compose-(Ubuntu-16.04-and-18.04.1).md)
-* [Main server configuration file](docs/Main-Configuration-File-Tutorial-(Docker).md)
-* [Troubleshooting](docs/Troubleshooting-SmartMet-Server-Installation-(Docker).md)
 * [Test environment](docs/SmartMet-Server-Test-Environment.md)
 * [SmartMet Server admin and information requests](docs/Admin-Requests.md)
