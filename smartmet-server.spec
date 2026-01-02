@@ -112,7 +112,7 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
-* Fri Jan  2 2025 Mika Heiskanen <mika.heiskanen@fmi.fi> 26.1.2-1.fmi
+* Fri Jan  2 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> 26.1.2-1.fmi
 - Fixed backtrace printing
 
 * Tue Dec  2 2025 Andris Pavēnis <andris.pavenis@fmi.fi> 25.12.2-1.fmi
