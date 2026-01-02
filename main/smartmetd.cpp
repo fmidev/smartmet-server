@@ -112,7 +112,7 @@ MaxEventFreq<10> maxEventFreq(60);
 
 }  // anonymous namespace
 
-void bad_alloc_new_handler()
+[[noreturn]] void bad_alloc_new_handler()
 try
 {
   using namespace SmartMet::Spine;
@@ -143,7 +143,7 @@ catch (...)
   std::terminate();
 }
 
-void terminate_new_handler()
+[[noreturn]] void terminate_new_handler()
 try
 {
   // Throw std::bad_alloc to have it in exception trace for terminate handler
