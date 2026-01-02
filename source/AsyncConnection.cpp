@@ -262,7 +262,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         }
 
         // Determine where to put the handler function
-        auto handlerView = itsReactor.getHandlerView(*itsRequest);
+        auto* handlerView = itsReactor.getHandlerView(*itsRequest);
         if (!handlerView)
         {
           // Couldn't find handler for the request
