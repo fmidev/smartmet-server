@@ -134,7 +134,8 @@ try
   std::cout << log_time_str() << ANSI_BOLD_ON << ANSI_FG_RED
                 << " Backtrace at the time of throwing std::bad_alloc" << ANSI_BOLD_OFF
                 << ANSI_FG_DEFAULT << std::endl;
-
+  std::cout << backtrace << std::endl;
+  
   throw std::bad_alloc();
 }
 catch (...)
