@@ -1,8 +1,8 @@
 #include "AsyncServer.h"
 #include <boost/thread.hpp>
+#include <fmt/format.h>
 #include <macgyver/Exception.h>
 #include <algorithm>
-#include <fmt/format.h>
 
 namespace SmartMet
 {
@@ -13,9 +13,9 @@ namespace Server
 AsyncServer::AsyncServer(const SmartMet::Spine::Options& theOptions,
                          SmartMet::Spine::Reactor& theReactor,
                          std::size_t numThreads)
-    : Server(theOptions, theReactor)
-    , itsConnections(0)
-    , numThreads(std::max(numThreads, std::size_t{1U}))
+    : Server(theOptions, theReactor),
+      itsConnections(0),
+      numThreads(std::max(numThreads, std::size_t{1U}))
 {
   try
   {
@@ -37,11 +37,7 @@ void AsyncServer::run()
     for (std::size_t i = 0; i < numThreads; ++i)
     {
       // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-      workerThreads.add_thread(
-        new boost::thread(
-          &AsyncServer::serverThreadFunction,
-          this,
-          i));
+      workerThreads.add_thread(new boost::thread(&AsyncServer::serverThreadFunction, this, i));
     }
 
     // Start the Admin Thread Pool Executor
@@ -101,19 +97,19 @@ void AsyncServer::startAccept()
     // Make a new connection object and let it wait for an incoming connection
     // This should not need locking, since we accept connections from a single socket (handleAccepts
     // are implicity serialized)
-    itsNewConnection = AsyncConnection::create( this,
-                                                itsEncryptionEnabled,
-                                                itsEncryptionContext,
-                                                itsCanGzip,
-                                                itsCompressLimit,
-                                                itsMaxRequestSize,
-                                                itsTimeout,
-                                                itsDumpRequests,
-                                                itsIoService,
-                                                itsReactor,
-                                                itsAdminExecutor,
-                                                itsSlowExecutor,
-                                                itsFastExecutor);
+    itsNewConnection = AsyncConnection::create(this,
+                                               itsEncryptionEnabled,
+                                               itsEncryptionContext,
+                                               itsCanGzip,
+                                               itsCompressLimit,
+                                               itsMaxRequestSize,
+                                               itsTimeout,
+                                               itsDumpRequests,
+                                               itsIoService,
+                                               itsReactor,
+                                               itsAdminExecutor,
+                                               itsSlowExecutor,
+                                               itsFastExecutor);
     itsAcceptor.async_accept(itsNewConnection->socket(),
                              [this](const boost::system::error_code& err)
                              { this->handleAccept(err); });
@@ -124,19 +120,19 @@ void AsyncServer::startAccept()
   }
 }
 
+namespace
+{
 
-namespace {
-
-  void setThreadName(unsigned index)
-  {
+void setThreadName(unsigned index)
+{
 #if defined(BOOST_THREAD_PLATFORM_PTHREAD)
-    const std::string name = fmt::format("std-wrk-{:04}", index);
-    const std::string thread_name = name.substr(0, 15).c_str();
-    pthread_setname_np(pthread_self(), thread_name.c_str());
+  const std::string name = fmt::format("std-wrk-{:04}", index);
+  const std::string thread_name = name.substr(0, 15).c_str();
+  pthread_setname_np(pthread_self(), thread_name.c_str());
 #endif
-  }
+}
 
-} // namespace
+}  // namespace
 
 void AsyncServer::serverThreadFunction(unsigned index)
 try
@@ -151,7 +147,6 @@ catch (...)
             << std::endl;
   throw error;
 }
-
 
 void AsyncServer::handleAccept(const boost::system::error_code& e)
 {

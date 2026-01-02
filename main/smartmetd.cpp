@@ -72,49 +72,45 @@ void block_signals()
 
 namespace
 {
-  template <std::size_t maxCount>
-  class MaxEventFreq
+template <std::size_t maxCount>
+class MaxEventFreq
+{
+ public:
+  MaxEventFreq(std::size_t timeWindowInSec) : itsCount(0), itsTimeWindowInSec(timeWindowInSec) {}
+
+  void check()
   {
-  public:
-    MaxEventFreq(std::size_t timeWindowInSec)
-      : itsCount(0)
-      , itsTimeWindowInSec(timeWindowInSec)
+    std::lock_guard<std::mutex> lock(itsMutex);
+    const auto now = std::chrono::steady_clock::now();
+    const auto oldest = now - std::chrono::seconds(itsTimeWindowInSec);
+
+    std::size_t i;
+    for (i = 0; i < itsCount && itsTimePoints[i] < oldest; ++i)
     {
     }
 
-    void check()
+    for (std::size_t j = 0; j + i < itsCount; ++j)
     {
-      std::lock_guard<std::mutex> lock(itsMutex);
-      const auto now = std::chrono::steady_clock::now();
-      const auto oldest = now - std::chrono::seconds(itsTimeWindowInSec);
-
-      std::size_t i;
-      for  (i = 0; i < itsCount && itsTimePoints[i] < oldest; ++i)
-      {
-      }
-
-      for (std::size_t j = 0; j + i < itsCount; ++j)
-      {
-        itsTimePoints[j] = itsTimePoints[i + j];
-      }
-
-      itsCount -= i;
-      if (itsCount >= maxCount)
-        throw std::runtime_error("Too many errors in time window");
-
-      itsTimePoints[itsCount++] = now;
+      itsTimePoints[j] = itsTimePoints[i + j];
     }
 
-  private:
-    std::mutex itsMutex;
-    std::size_t itsCount;
-    std::size_t itsTimeWindowInSec;
-    std::array<std::chrono::steady_clock::time_point, maxCount> itsTimePoints;
-  };
+    itsCount -= i;
+    if (itsCount >= maxCount)
+      throw std::runtime_error("Too many errors in time window");
 
-  MaxEventFreq<10> maxEventFreq(60);
+    itsTimePoints[itsCount++] = now;
+  }
 
-} // anonymous namespace
+ private:
+  std::mutex itsMutex;
+  std::size_t itsCount;
+  std::size_t itsTimeWindowInSec;
+  std::array<std::chrono::steady_clock::time_point, maxCount> itsTimePoints;
+};
+
+MaxEventFreq<10> maxEventFreq(60);
+
+}  // anonymous namespace
 
 void bad_alloc_new_handler()
 try
@@ -126,22 +122,24 @@ try
   // Print out the active requests (only once in case of multiple terminate calls)
   const ActiveRequests::Requests requests = reactor->getActiveRequests();
   std::cout << log_time_str() << ANSI_BOLD_ON << ANSI_FG_RED
-                << " Active requests at the time of throwing std::bad_alloc" << ANSI_BOLD_OFF
-                << ANSI_FG_DEFAULT << std::endl;
+            << " Active requests at the time of throwing std::bad_alloc" << ANSI_BOLD_OFF
+            << ANSI_FG_DEFAULT << std::endl;
   std::cout << requests << std::endl;
 
   const std::string backtrace = Backtrace::make_backtrace();
   std::cout << log_time_str() << ANSI_BOLD_ON << ANSI_FG_RED
-                << " Backtrace at the time of throwing std::bad_alloc" << ANSI_BOLD_OFF
-                << ANSI_FG_DEFAULT << std::endl;
+            << " Backtrace at the time of throwing std::bad_alloc" << ANSI_BOLD_OFF
+            << ANSI_FG_DEFAULT << std::endl;
   std::cout << backtrace << std::endl;
-  
+
   throw std::bad_alloc();
 }
 catch (...)
 {
   // This is a fallback in case the std::bad_alloc handler fails
-  std::cerr << "Failed to throw std::bad_alloc from terminate_new_handler or too many out of memory errors in short time" << std::endl;
+  std::cerr << "Failed to throw std::bad_alloc from terminate_new_handler or too many out of "
+               "memory errors in short time"
+            << std::endl;
   std::terminate();
 }
 
@@ -225,11 +223,7 @@ int main(int argc, char* argv[])
     // Default handler for shutdown timeout is to abort the process.
     // We do not however want to cause coredump in this case.
     //
-    reactor->onShutdownTimedOut(
-        []() -> void
-        {
-          kill(getpid(), SIGKILL);
-        });
+    reactor->onShutdownTimedOut([]() -> void { kill(getpid(), SIGKILL); });
 
     unsigned server_threads = SmartMet::Server::AsyncServer::DEFAULT_ASYNC_THREAD_SIZE;
     if (options.itsConfig.exists("server_threads"))
