@@ -229,24 +229,24 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
 #ifndef NDEBUG
         // DEBUGGIN OUTPUT************************************
 
-        std::cout << "Incoming request from " << itsRequest->getClientIP() << std::endl;
-        std::cout << "Method: " << itsRequest->getMethodString() << std::endl;
-        std::cout << "URI: " << itsRequest->getURI() << std::endl;
-        std::cout << "Query string: " << itsRequest->getQueryString() << std::endl;
-        std::cout << "Headers: " << std::endl;
+        std::cout << "Incoming request from " << itsRequest->getClientIP() << '\n';
+        std::cout << "Method: " << itsRequest->getMethodString() << '\n';
+        std::cout << "URI: " << itsRequest->getURI() << '\n';
+        std::cout << "Query string: " << itsRequest->getQueryString() << '\n';
+        std::cout << "Headers: \n";
         auto hmappi = itsRequest->getHeaders();
         for (const auto& header : hmappi)
         {
-          std::cout << header.first << " : " << header.second << std::endl;
+          std::cout << header.first << " : " << header.second << '\n';
         }
 
-        std::cout << "Parsed parameters: " << std::endl;
+        std::cout << "Parsed parameters: \n";
         auto mappi = itsRequest->getParameterMap();
         for (const auto& elem : mappi)
         {
-          std::cout << elem.first << " : " << elem.second << std::endl;
+          std::cout << elem.first << " : " << elem.second << '\n';
         }
-        std::cout << "Content: \"" << itsRequest->getContent() << "\"" << std::endl << std::endl;
+        std::cout << "Content: \"" << itsRequest->getContent() << "\"\n\n";
 
 // DEBUGGIN OUTPUT************************************
 #endif
@@ -276,8 +276,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         // Handle high load situations
         if (!itsAdminQuery && itsReactor.isLoadHigh())
         {
-          std::cout << Spine::log_time_str() << " Too many active requests, reporting high load"
-                    << std::endl;
+          std::cout << Spine::log_time_str() << " Too many active requests, reporting high load\n";
           sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
           return;
         }
@@ -380,7 +379,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
   {
     Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::handleRead aborted", nullptr);
     std::cerr << ex.getStackTrace();
-    // std::cerr << "Operation failed! AsyncConnection::handleRead aborted" << std::endl;
+    // std::cerr << "Operation failed! AsyncConnection::handleRead aborted\n";
   }
 }
 
@@ -468,7 +467,7 @@ void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandl
         BCP, "Operation failed! AsyncConnection::handleCompletedRead aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // Must not continue throwing here or the server will terminate
-    // std::cerr << "Operation failed! AsyncConnection::handleCompletedRead aborted" << std::endl;
+    // std::cerr << "Operation failed! AsyncConnection::handleCompletedRead aborted\n";
   }
 }
 
@@ -545,7 +544,7 @@ void AsyncConnection::startChunkedReply()
   {
     Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::startChunkedReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
-    // std::cerr << "Operation failed! AsyncConnection::startChunkedReply aborted" << std::endl;
+    // std::cerr << "Operation failed! AsyncConnection::startChunkedReply aborted\n";
   }
 }
 
@@ -609,7 +608,7 @@ void AsyncConnection::startStreamReply()
   {
     Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::startStreamReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
-    // std::cerr << "Operation failed! AsyncConnection::startStreamReply aborted" << std::endl;
+    // std::cerr << "Operation failed! AsyncConnection::startStreamReply aborted\n";
   }
 }
 
@@ -662,7 +661,7 @@ void AsyncConnection::writeChunkedReply(const boost::system::error_code& e,
   {
     Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::writeChunkedReply", nullptr);
     std::cerr << ex.getStackTrace();
-    // std::cerr << "Operation failed! AsyncConnection::writeChunkedReply aborted" << std::endl;
+    // std::cerr << "Operation failed! AsyncConnection::writeChunkedReply aborted\n";
   }
 }
 
@@ -714,7 +713,7 @@ void AsyncConnection::finalizeChunkedReply(const boost::system::error_code& e,
     Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::finalizeChunkedReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
-    // std::cerr << "Operation failed! AsyncConnection::finalizeChunkedReply aborted" << std::endl;
+    // std::cerr << "Operation failed! AsyncConnection::finalizeChunkedReply aborted\n";
   }
 }
 
@@ -775,7 +774,7 @@ void AsyncConnection::getNextChunk()
   {
     Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::getNextChunk aborted", nullptr);
     std::cerr << ex.getStackTrace();
-    // std::cerr << "Operation failed! AsyncConnection::getNextChunk aborted" << std::endl;
+    // std::cerr << "Operation failed! AsyncConnection::getNextChunk aborted\n";
   }
 }
 
@@ -854,7 +853,7 @@ void AsyncConnection::getNextChunkedChunk()
     Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::getNextChunkedChunk aborted", nullptr);
     std::cerr << ex.getStackTrace();
-    // std::cerr << "Operation failed! AsyncConnection::getNextChunkedChunk aborted" << std::endl;
+    // std::cerr << "Operation failed! AsyncConnection::getNextChunkedChunk aborted\n";
   }
 }
 
@@ -915,7 +914,7 @@ void AsyncConnection::writeStreamReply(const boost::system::error_code& e,
   {
     Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::writeStreamReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
-    // std::cerr << "Operation failed! AsyncConnection::writeStreamReply aborted" << std::endl;
+    // std::cerr << "Operation failed! AsyncConnection::writeStreamReply aborted\n";
   }
 }
 
@@ -967,7 +966,7 @@ void AsyncConnection::writeRegularReply(const boost::system::error_code& e,
   {
     Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::writeRegularReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
-    // std::cerr << "Operation failed! AsyncConnection::writeRegularReply aborted" << std::endl;
+    // std::cerr << "Operation failed! AsyncConnection::writeRegularReply aborted\n";
   }
 }
 
@@ -1027,7 +1026,7 @@ void AsyncConnection::startRegularReply()
   {
     Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::startRegularReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
-    // std::cerr << "Operation failed! AsyncConnection::startRegularReply aborted" << std::endl;
+    // std::cerr << "Operation failed! AsyncConnection::startRegularReply aborted\n";
   }
 }
 
@@ -1049,7 +1048,7 @@ void AsyncConnection::setServerHeaders()
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::setServerHeaders aborted" << std::endl;
+    std::cerr << "Operation failed! AsyncConnection::setServerHeaders aborted\n";
   }
 }
 
@@ -1067,7 +1066,7 @@ void AsyncConnection::sendStockReply(const SmartMet::Spine::HTTP::Status theStat
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::sendStockReply aborted" << std::endl;
+    std::cerr << "Operation failed! AsyncConnection::sendStockReply aborted\n";
   }
 }
 
@@ -1101,7 +1100,7 @@ void AsyncConnection::sendSimpleReply()
   }
   catch (...)
   {
-    std::cerr << "Operation failed! AsyncConnection::sendStockReply aborted" << std::endl;
+    std::cerr << "Operation failed! AsyncConnection::sendStockReply aborted\n";
   }
 }
 
@@ -1137,7 +1136,7 @@ void AsyncConnection::scheduleChunkGetter()
     Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::scheduleChunkGetter aborted", nullptr);
     std::cerr << ex.getStackTrace();
-    // std::cerr << "Operation failed! AsyncConnection::scheduleChunkGetter aborted" << std::endl;
+    // std::cerr << "Operation failed! AsyncConnection::scheduleChunkGetter aborted\n";
   }
 }
 
@@ -1175,8 +1174,7 @@ void AsyncConnection::scheduleChunkedChunkGetter()
     Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::scheduleChunkedChunkGetter aborted", nullptr);
     std::cerr << ex.getStackTrace();
-    // std::cerr << "Operation failed! AsyncConnection::scheduleChunkedChunkGetter aborted" <<
-    // std::endl;
+    // std::cerr << "Operation failed! AsyncConnection::scheduleChunkedChunkGetter aborted\n";
   }
 }
 
@@ -1226,8 +1224,7 @@ void AsyncConnection::notifyClientDisconnect(const boost::system::error_code& e,
     Fmi::Exception ex(
         BCP, "Operation failed! AsyncConnection::notifyClientDisconnect aborted", nullptr);
     std::cerr << ex.getStackTrace();
-    // std::cerr << "Operation failed! AsyncConnection::notifyClientDisconnect aborted" <<
-    // std::endl;
+    // std::cerr << "Operation failed! AsyncConnection::notifyClientDisconnect aborted\n";
   }
 }
 

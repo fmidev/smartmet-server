@@ -85,13 +85,12 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
     }
     catch (const boost::system::system_error& err)
     {
-      std::cout << "Error: Unable to bind listening socket to port " << theOptions.port
-                << std::endl;
+      std::cout << "Error: Unable to bind listening socket to port " << theOptions.port << '\n';
       throw;
     }
 
 #ifndef NDEBUG
-    std::cout << "Bind completed to port " << theOptions.port << std::endl;
+    std::cout << "Bind completed to port " << theOptions.port << '\n';
 #endif
     // Start listening for connections
     itsAcceptor.listen();

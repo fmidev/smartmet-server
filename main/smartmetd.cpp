@@ -121,14 +121,14 @@ try
   const ActiveRequests::Requests requests = reactor->getActiveRequests();
   std::cout << log_time_str() << ANSI_BOLD_ON << ANSI_FG_RED
             << " Active requests at the time of throwing std::bad_alloc" << ANSI_BOLD_OFF
-            << ANSI_FG_DEFAULT << std::endl;
-  std::cout << requests << std::endl;
+            << ANSI_FG_DEFAULT << '\n';
+  std::cout << requests << '\n';
 
   const std::string backtrace = Backtrace::make_backtrace();
   std::cout << log_time_str() << ANSI_BOLD_ON << ANSI_FG_RED
             << " Backtrace at the time of throwing std::bad_alloc" << ANSI_BOLD_OFF
-            << ANSI_FG_DEFAULT << std::endl;
-  std::cout << backtrace << std::endl;
+            << ANSI_FG_DEFAULT << '\n';
+  std::cout << backtrace << '\n';
 
   throw std::bad_alloc();
 }
@@ -136,8 +136,7 @@ catch (...)
 {
   // This is a fallback in case the std::bad_alloc handler fails
   std::cerr << "Failed to throw std::bad_alloc from terminate_new_handler or too many out of "
-               "memory errors in short time"
-            << std::endl;
+               "memory errors in short time\n";
   std::terminate();
 }
 
@@ -262,7 +261,7 @@ int main(int argc, char* argv[])
                  std::this_thread::sleep_for(std::chrono::seconds(3));
                  std::cout << ANSI_BG_GREEN << ANSI_BOLD_ON << ANSI_FG_WHITE
                            << "Launched Synapse server" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF
-                           << ANSI_BG_DEFAULT << std::endl;
+                           << ANSI_BG_DEFAULT << '\n';
                  server->run();
                });
 
@@ -288,7 +287,7 @@ int main(int argc, char* argv[])
         {
           std::cout << ANSI_BG_RED << ANSI_BOLD_ON << ANSI_FG_WHITE
                     << "Unexpected error code from select(): " << msg.data() << ANSI_FG_DEFAULT
-                    << ANSI_BOLD_OFF << ANSI_BG_DEFAULT << std::endl;
+                    << ANSI_BOLD_OFF << ANSI_BG_DEFAULT << '\n';
         }
       }
 
@@ -311,13 +310,13 @@ int main(int argc, char* argv[])
         if (sig == SIGBUS || sig == SIGWINCH)
         {
           std::cout << " - ignoring it!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
-                    << std::endl;
+                    << '\n';
           last_signal = 0;
         }
         else if (sig == SIGTERM)
         {
           std::cout << " - shutting down!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
-                    << std::endl;
+                    << '\n';
 
           tasks->stop();
           server->shutdownServer();
@@ -344,8 +343,7 @@ int main(int argc, char* argv[])
                     if (sigint_cnt > 5)
                     {
                       std::cout << "*** Too many SIGINT or SIGTERM signals after first SIGINT. "
-                                   "Commiting suicide"
-                                << std::endl;
+                                   "Commiting suicide\n";
                       abort();
                     }
                   }
@@ -354,12 +352,11 @@ int main(int argc, char* argv[])
                     sigint_cnt = std::max(0.0, sigint_cnt - 0.05);
                   }
                 }
-                std::cout << "*** Timed out waiting for server to shut down after SIGINT"
-                          << std::endl;
+                std::cout << "*** Timed out waiting for server to shut down after SIGINT\n";
                 abort();
               });
           std::cout << " - shutting down!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
-                    << std::endl;
+                    << '\n';
 
           tasks->stop();
           server->shutdownServer();
@@ -372,8 +369,7 @@ int main(int argc, char* argv[])
         }
         else
         {
-          std::cout << " - exiting!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
-                    << std::endl;
+          std::cout << " - exiting!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT << '\n';
           break;
         }
       }
