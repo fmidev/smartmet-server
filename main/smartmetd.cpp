@@ -294,7 +294,7 @@ int main(int argc, char* argv[])
 
       int sig = last_signal;
 
-      if (reactor->isShutdownFinished())
+      if (SmartMet::Spine::Reactor::isShutdownFinished())
       {
         tasks->stop();
         server->shutdownServer();
