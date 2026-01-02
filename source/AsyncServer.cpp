@@ -127,7 +127,7 @@ void setThreadName(unsigned index)
 {
 #if defined(BOOST_THREAD_PLATFORM_PTHREAD)
   const std::string name = fmt::format("std-wrk-{:04}", index);
-  const std::string thread_name = name.substr(0, 15).c_str();
+  const std::string thread_name = name.substr(0, 15);
   pthread_setname_np(pthread_self(), thread_name.c_str());
 #endif
 }
