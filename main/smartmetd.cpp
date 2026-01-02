@@ -23,6 +23,8 @@
 #define BACKWARD_HAS_DW 1
 #include "backward.h"
 
+namespace
+{
 std::unique_ptr<SmartMet::Server::Server> server;
 std::unique_ptr<SmartMet::Spine::Reactor> reactor;
 std::unique_ptr<Fmi::AsyncTaskGroup> tasks;
@@ -70,8 +72,6 @@ void block_signals()
   pthread_sigmask(SIG_BLOCK, &signal_set, nullptr);
 }
 
-namespace
-{
 template <std::size_t maxCount>
 class MaxEventFreq
 {
@@ -109,8 +109,6 @@ class MaxEventFreq
 };
 
 MaxEventFreq<10> maxEventFreq(60);
-
-}  // anonymous namespace
 
 [[noreturn]] void bad_alloc_new_handler()
 try
@@ -166,6 +164,8 @@ void set_new_handler(const std::string& name)
   else
     throw Fmi::Exception(BCP, "Unknown new_handler").addParameter("name", name);
 }
+
+}  // anonymous namespace
 
 int main(int argc, char* argv[])
 {
