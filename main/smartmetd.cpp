@@ -76,7 +76,7 @@ template <std::size_t maxCount>
 class MaxEventFreq
 {
  public:
-  MaxEventFreq(std::size_t timeWindowInSec) : itsCount(0), itsTimeWindowInSec(timeWindowInSec) {}
+  MaxEventFreq(std::size_t timeWindowInSec) : itsTimeWindowInSec(timeWindowInSec) {}
 
   void check()
   {
@@ -103,7 +103,7 @@ class MaxEventFreq
 
  private:
   std::mutex itsMutex;
-  std::size_t itsCount;
+  std::size_t itsCount = 0;
   std::size_t itsTimeWindowInSec;
   std::array<std::chrono::steady_clock::time_point, maxCount> itsTimePoints;
 };
