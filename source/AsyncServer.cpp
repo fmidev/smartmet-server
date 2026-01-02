@@ -144,7 +144,7 @@ catch (...)
 {
   auto error = Fmi::Exception::Trace(BCP, "Operation failed!");
   std::cerr << "Async server thread " << index << " terminated with exception: " << error.what()
-            << std::endl;
+            << '\n';
   throw error;
 }
 
