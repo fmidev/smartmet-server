@@ -261,7 +261,8 @@ int main(int argc, char* argv[])
                  std::this_thread::sleep_for(std::chrono::seconds(3));
                  std::cout << ANSI_BG_GREEN << ANSI_BOLD_ON << ANSI_FG_WHITE
                            << "Launched Synapse server" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF
-                           << ANSI_BG_DEFAULT << '\n';
+                           << ANSI_BG_DEFAULT << '\n'
+                           << std::flush;
                  server->run();
                });
 
