@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.1.2
+Version: 26.1.8
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -112,6 +112,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Thu Jan  8 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.1.8-1.fmi
+- Repackage due smartmet-library-spine ABI changes (HandlerView)
+
 * Fri Jan  2 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> 26.1.2-1.fmi
 - Fixed backtrace printing
 
