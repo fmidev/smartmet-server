@@ -292,6 +292,8 @@ int main(int argc, char* argv[])
         }
       }
 
+      std::cout << std::flush;
+
       int sig = last_signal;
 
       if (SmartMet::Spine::Reactor::isShutdownFinished())
