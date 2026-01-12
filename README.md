@@ -55,6 +55,7 @@ SmartMet Server consists of following components:
 <tr valign="top">
 <td>Engines         </td><td>Common modules with a state                       </td><td> https://github.com/fmidev/smartmet-engine-geonames<br>
 											 https://github.com/fmidev/smartmet-engine-sputnik<br>
+											 https://github.com/fmidev/smartmet-engine-grid<br>
 											 https://github.com/fmidev/smartmet-engine-querydata<br>
 											 https://github.com/fmidev/smartmet-engine-observation<br>
 											 https://github.com/fmidev/smartmet-engine-contour<br>
