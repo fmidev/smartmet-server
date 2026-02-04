@@ -31,8 +31,8 @@ BuildRequires: elfutils-devel
 BuildRequires: %{smartmet_fmt_devel}
 BuildRequires: openssl-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 25.2.18
-BuildRequires: smartmet-library-spine-devel >= 26.1.8
+BuildRequires: smartmet-library-macgyver-devel >= 26.2.4
+BuildRequires: smartmet-library-spine-devel >= 26.2.4
 Requires: %{smartmet_boost}-iostreams
 Requires: %{smartmet_boost}-program-options
 Requires: %{smartmet_boost}-regex
@@ -42,8 +42,8 @@ Requires: %{smartmet_fmt}
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 25.2.18
-Requires: smartmet-library-spine >= 26.1.8
+Requires: smartmet-library-macgyver >= 26.2.4
+Requires: smartmet-library-spine >= 26.2.4
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -53,7 +53,7 @@ Requires(pre): shadow-utils
 #TestRequires: /bin/bash
 #TestRequires: gcc-c++
 #TestRequires: make
-#TestRequires: smartmet-library-macgyver-devel >= 25.2.18
+#TestRequires: smartmet-library-macgyver-devel >= 26.2.4
 #TestRequires: curl >= 7.42.0
 
 %description
