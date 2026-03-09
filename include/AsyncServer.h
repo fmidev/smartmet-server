@@ -47,7 +47,7 @@ class AsyncServer : public Server
    */
   // ======================================================================
 
-  explicit AsyncServer(const SmartMet::Spine::Options& theOptions,
+  explicit AsyncServer(SmartMet::Spine::Options& theOptions,
                        SmartMet::Spine::Reactor& theReactor,
                        std::size_t numThreads = DEFAULT_ASYNC_THREAD_SIZE);
 

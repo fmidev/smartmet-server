@@ -13,7 +13,7 @@ namespace SmartMet
 {
 namespace Server
 {
-Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& theReactor)
+Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& theReactor)
     : itsEncryptionEnabled(theOptions.encryptionEnabled),
       itsEncryptionPassword(theOptions.encryptionPassword),
       itsEncryptionContext(SMARTMETD_SSL_METHOD),
@@ -87,6 +87,11 @@ Server::Server(const SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reac
     {
       std::cout << "Error: Unable to bind listening socket to port " << theOptions.port << '\n';
       throw;
+    }
+
+    if (!theOptions.port)
+    {
+      theOptions.port = itsAcceptor.local_endpoint().port();
     }
 
 #ifndef NDEBUG

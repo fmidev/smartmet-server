@@ -10,7 +10,7 @@ namespace Server
 {
 // Number of threads for asynchronous reads and writes
 
-AsyncServer::AsyncServer(const SmartMet::Spine::Options& theOptions,
+AsyncServer::AsyncServer(SmartMet::Spine::Options& theOptions,
                          SmartMet::Spine::Reactor& theReactor,
                          std::size_t numThreads)
     : Server(theOptions, theReactor),
