@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.2.4
+Version: 26.3.9
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -107,6 +107,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Mon Mar  9 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.3.9-1.fmi
+- Support using ephemeral ports (perhaps only for testing)
+
 * Wed Feb  4 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.2.4-1.fmi
 - Update to proj-9.7, gdal-3.12, fmt-12
 
