@@ -1045,6 +1045,48 @@ void AsyncConnection::setServerHeaders()
       itsResponse->setHeader("Connection",
                              "close");  // Current implementation is one-request-per-connection
     }
+
+    // Append stale-while-revalidate and stale-if-error to cacheable responses.
+    //
+    // Why here rather than in each individual plugin:
+    //
+    //   This method is the single post-plugin hook that runs on every response before it is
+    //   written to the socket. Plugins (~10 of them) already independently construct their
+    //   Cache-Control header with a plugin-specific max-age, but none of them add the stale
+    //   directives because those values are a server-level policy concern, not a
+    //   data-product concern.  Adding the directives here means:
+    //
+    //   1. One code change covers all existing plugins and every future plugin automatically.
+    //   2. The stale durations are tuned server-wide in smartmet.conf alongside other
+    //      server-level knobs (timeout, compress, etc.), keeping operator config cohesive.
+    //   3. The frontend plugin's ResponseCache stores Cache-Control verbatim and replays it
+    //      on cache hits, so the stale directives propagate to CDN/browser caches with no
+    //      extra code.
+    //
+    // Guard: only touch headers that already carry "max-age" (i.e. genuinely cacheable
+    // responses).  Responses with "no-cache" or no Cache-Control header at all are left
+    // unchanged.  A plugin that needs different stale values can set its own stale-*
+    // directives before returning; the second guard prevents double-appending.
+    //
+    // Rationale for default values (configurable via smartmet.conf):
+    //   stalewhilerevalidate = 60     -- serve at most 60 s stale while fetching fresh data
+    //   staleiferror         = 86400  -- serve up to 24 h stale when the backend is down
+    //
+    const auto& opts = itsReactor.getOptions();
+    if (opts.staleWhileRevalidate > 0 || opts.staleIfError > 0)
+    {
+      auto cc = itsResponse->getHeader("Cache-Control");
+      if (cc && cc->find("max-age") != std::string::npos &&
+          cc->find("stale-") == std::string::npos)
+      {
+        std::string updated = *cc;
+        if (opts.staleWhileRevalidate > 0)
+          updated += ", stale-while-revalidate=" + std::to_string(opts.staleWhileRevalidate);
+        if (opts.staleIfError > 0)
+          updated += ", stale-if-error=" + std::to_string(opts.staleIfError);
+        itsResponse->setHeader("Cache-Control", updated);
+      }
+    }
   }
   catch (...)
   {
