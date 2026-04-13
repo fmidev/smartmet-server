@@ -107,6 +107,11 @@ Plugins handle HTTP requests and provide the server's external interfaces.
 | [smartmet-roadmodel](https://github.com/fmidev/smartmet-roadmodel) | Road weather model |
 | [smartmet-utils](https://github.com/fmidev/smartmet-utils) | General utility scripts |
 
+## Documentation
+
+- [Admin Requests](docs/Admin-Requests.md)
+- [Test Environment Setup](docs/SmartMet-Server-Test-Environment.md)
+
 ## License
 
 MIT — see [LICENSE](LICENSE)
