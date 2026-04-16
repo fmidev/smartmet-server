@@ -14,6 +14,8 @@
 #include <boost/asio.hpp>
 #include <spine/Options.h>
 #include <spine/Reactor.h>
+#include <string>
+#include <vector>
 
 namespace SmartMet
 {
@@ -57,6 +59,9 @@ class Server
   virtual void shutdown();
   virtual std::string getPassword() const;
 
+  void scheduleMemoryLogging();
+  void handleMemoryLogTimer(const boost::system::error_code& ec);
+
   /// The io_service used to perform asynchronous operations.
   boost::asio::io_context itsIoService;
 
@@ -67,6 +72,9 @@ class Server
 
   /// Acceptor used to listen for incoming connections.
   boost::asio::ip::tcp::acceptor itsAcceptor;
+
+  /// Timer for periodic memory usage logging (disabled when itsMemoryLogPeriod == 0)
+  boost::asio::steady_timer itsMemoryLogTimer;
 
   /// This contains HTTP request handling functionality
   SmartMet::Spine::Reactor& itsReactor;
@@ -97,6 +105,12 @@ class Server
 
   /// This is true if the shutdown is requested. The server should not accept any more connections.
   bool itsShutdownRequested;
+
+  /// Period in minutes for logging memory usage to stdout (0 = disabled)
+  unsigned int itsMemoryLogPeriod = 0;
+
+  /// Ordered list of /proc/self/status fields to include in each memory log line
+  std::vector<std::string> itsMemoryLogFields = {"RssAnon", "RssFile"};
 };
 
 }  // namespace Server

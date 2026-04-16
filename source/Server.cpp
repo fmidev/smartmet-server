@@ -1,7 +1,13 @@
 #include "Server.h"
 #include <macgyver/Exception.h>
 #include <array>
+#include <chrono>
 #include <cmath>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 #define SMARTMETD_SSL_METHOD boost::asio::ssl::context::tlsv13
@@ -18,6 +24,7 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
       itsEncryptionPassword(theOptions.encryptionPassword),
       itsEncryptionContext(SMARTMETD_SSL_METHOD),
       itsAcceptor(itsIoService),
+      itsMemoryLogTimer(itsIoService),
       itsReactor(theReactor),
       itsAdminExecutor(theOptions.adminpool.minsize, theOptions.adminpool.maxrequeuesize),
       itsSlowExecutor(theOptions.slowpool.minsize, theOptions.slowpool.maxrequeuesize),
@@ -99,6 +106,19 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
 #endif
     // Start listening for connections
     itsAcceptor.listen();
+
+    // Optional periodic memory usage logging
+    if (theOptions.itsConfig.exists("logmemoryuse"))
+      theOptions.itsConfig.lookupValue("logmemoryuse", itsMemoryLogPeriod);
+    if (theOptions.itsConfig.exists("logmemoryfields"))
+    {
+      const auto& arr = theOptions.itsConfig.lookup("logmemoryfields");
+      itsMemoryLogFields.clear();
+      for (int i = 0; i < arr.getLength(); ++i)
+        itsMemoryLogFields.emplace_back(static_cast<const char*>(arr[i]));
+    }
+    if (itsMemoryLogPeriod > 0)
+      scheduleMemoryLogging();
   }
   catch (...)
   {
@@ -144,6 +164,67 @@ void Server::shutdownServer()
 void Server::shutdown()
 {
   std::cout << "### Server::shutdown()\n";
+}
+
+namespace
+{
+void readAndLogMemoryUsage(const std::vector<std::string>& fields)
+{
+  std::ifstream status("/proc/self/status");
+  if (!status)
+    return;
+
+  std::map<std::string, std::string> values;
+  std::string line;
+  while (std::getline(status, line))
+  {
+    const auto pos = line.find(':');
+    if (pos == std::string::npos)
+      continue;
+    const std::string key = line.substr(0, pos);
+    for (const auto& field : fields)
+    {
+      if (key == field)
+      {
+        std::string val = line.substr(pos + 1);
+        val.erase(0, val.find_first_not_of(" \t"));
+        values[key] = val;
+        break;
+      }
+    }
+  }
+
+  std::cout << "Memory:";
+  for (const auto& field : fields)
+  {
+    const auto it = values.find(field);
+    // Output empty value for missing fields so the user can spot typos in config
+    std::cout << ' ' << field << '=' << (it != values.end() ? it->second : std::string{});
+  }
+  std::cout << '\n';
+}
+}  // namespace
+
+void Server::scheduleMemoryLogging()
+{
+  itsMemoryLogTimer.expires_after(std::chrono::minutes(itsMemoryLogPeriod));
+  itsMemoryLogTimer.async_wait(
+      [this](const boost::system::error_code& ec) { handleMemoryLogTimer(ec); });
+}
+
+void Server::handleMemoryLogTimer(const boost::system::error_code& ec)
+{
+  if (ec || itsShutdownRequested)
+    return;
+  try
+  {
+    readAndLogMemoryUsage(itsMemoryLogFields);
+  }
+  catch (...)
+  {
+    // Silently ignore any errors during memory logging
+  }
+  scheduleMemoryLogging();
 }
 
 }  // namespace Server
