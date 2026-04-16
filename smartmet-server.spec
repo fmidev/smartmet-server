@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.3.9
+Version: 26.4.16
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -107,6 +107,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Thu Apr 16 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.4.16-1.fmi
+- Add optional períodic logging of used memory amount
+
 * Mon Mar  9 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.3.9-1.fmi
 - Support using ephemeral ports (perhaps only for testing)
 
