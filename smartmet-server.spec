@@ -2,8 +2,8 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.4.13
-Release: 1%{?dist}.fmi
+Version: 26.4.16
+Release: 2%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -107,6 +107,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Thu Apr 16 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.4.16-2.fmi
+- Add optional períodic logging of used memory amount
+
 * Mon Apr 13 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.4.13-1.fmi
 - Append stale Cache-Control headers to keep clients somewhat alive
 

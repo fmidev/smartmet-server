@@ -75,6 +75,15 @@ admin:
 };
 </pre>
 
+Admin section may also contain setting **ip_filters**, whoose value is list of strings. For example:
+<pre>
+    ip_filters = ["127.*.*.*", "10.*.*.*", "172.16.0-15.*"];
+</pre>
+The default value is an empty list when setting **admin.uri** is specified (allowed from enywhere) and
+Localhost only if it is not specified and the default value of **admin.uri** (**/admin**) is being used.
+
+It is recommended to set **admin.ip_filter** to restrict access to admin queries due to security reasons.
+
 Currently URI for info requests is hardcoded (**/info**)
 
 Part of admin requests requires user name and password and are not available if user name and/or password are not provided in configuration.
@@ -96,6 +105,18 @@ One can get list of available requests using request **list**
   One can use **/info** request **backends** to get list ov available backends.
 * Viewing admin requests of backend through frontend server is not supported
 
+## Frontends
+
+Frontends have their own info/admin queries. One can get the list of these queries using **list** query (*/info?what=list* or **/admin?what=list**).
+
+Additionally frontend gets information about info requests of backends (not all, but ones implemented by plugins and engines).
+It forwards info query to one of the backends which implements it if not implemented by frontend itself and supported
+by one or more backends.
+
+Example: frontend does not implement query **obsparameters**, but backends which uses obsengine supports. As result
+**obsparameters** query sent directly to frontend is forwarded to one of these backends
+
+Lists of supported backend info queries is not available through frontend **list** query
 
 ## Backends
 
