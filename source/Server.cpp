@@ -68,7 +68,6 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
           *p = '\0';
 
         itsEncryptionPassword = st.data();
-        std::cout << "[" << itsEncryptionPassword << "]\n";
         static_cast<void>(fclose(file));
       }
 
