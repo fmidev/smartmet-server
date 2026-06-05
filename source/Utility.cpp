@@ -9,8 +9,7 @@
 #include <macgyver/Exception.h>
 #include <macgyver/StringConversion.h>
 #include <array>
-#include <iomanip>
-#include <iostream>
+#include <fstream>
 #include <sstream>
 
 namespace
@@ -184,6 +183,27 @@ std::string dumpRequest(SmartMet::Spine::HTTP::Request& request)
   {
     throw Fmi::Exception::Trace(BCP, "Operation failed!");
   }
+}
+
+std::string readPassword(const std::string& file)
+{
+  std::ifstream is{file};
+  if (!is)
+  {
+    Fmi::Exception ex(BCP, "Cannot open the password file!");
+    ex.addParameter("password_file", file);
+    throw ex;
+  }
+
+  std::string s;
+  std::getline(is, s);
+  if (s.empty() && is.eof())
+  {
+    Fmi::Exception ex(BCP, "Cannot read the password!");
+    ex.addParameter("password_file", file);
+    throw ex;
+  }
+  return s;
 }
 
 }  // namespace Server
