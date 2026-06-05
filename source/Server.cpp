@@ -1,6 +1,6 @@
 #include "Server.h"
+#include "Utility.h"
 #include <macgyver/Exception.h>
-#include <array>
 #include <chrono>
 #include <cmath>
 #include <fstream>
@@ -47,28 +47,7 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
     {
       if (!theOptions.encryptionPasswordFile.empty())
       {
-        FILE* file = fopen(theOptions.encryptionPasswordFile.c_str(), "r");
-        if (file == nullptr)
-        {
-          Fmi::Exception ex(BCP, "Cannot open the password file!");
-          ex.addParameter("password_file", theOptions.encryptionPasswordFile);
-          throw ex;
-        }
-
-        std::array<char, 100> st;
-        if (fgets(st.data(), 100, file) == nullptr)
-        {
-          Fmi::Exception ex(BCP, "Cannot read the password!");
-          ex.addParameter("password_file", theOptions.encryptionPasswordFile);
-          throw ex;
-        }
-
-        char* p = strstr(st.data(), "\n");
-        if (p != nullptr)
-          *p = '\0';
-
-        itsEncryptionPassword = st.data();
-        static_cast<void>(fclose(file));
+        itsEncryptionPassword = readPassword(theOptions.encryptionPasswordFile);
       }
 
       itsEncryptionContext.set_options(boost::asio::ssl::context::tlsv13);
