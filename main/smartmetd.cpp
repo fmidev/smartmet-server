@@ -272,25 +272,9 @@ int main(int argc, char* argv[])
 
     while (true)
     {
-      struct timeval tv;
-      tv.tv_sec = 1;
-      tv.tv_usec = 0;
-      errno = 0;
-      if (select(0, nullptr, nullptr, nullptr, &tv) >= 0)
-      {
-        tasks->handle_finished();
-        // FIXME: handle case when all tasks have ended
-      }
-      else if (errno != EINTR)
-      {
-        std::array<char, 1024> msg;
-        if (strerror_r(errno, msg.data(), 1024) == nullptr)
-        {
-          std::cout << ANSI_BG_RED << ANSI_BOLD_ON << ANSI_FG_WHITE
-                    << "Unexpected error code from select(): " << msg.data() << ANSI_FG_DEFAULT
-                    << ANSI_BOLD_OFF << ANSI_BG_DEFAULT << '\n';
-        }
-      }
+      std::this_thread::sleep_for(std::chrono::milliseconds{1000});
+      tasks->handle_finished();
+      // FIXME: handle case when all tasks have ended
 
       std::cout << std::flush;
 
