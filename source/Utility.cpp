@@ -174,7 +174,7 @@ std::string dumpRequest(SmartMet::Spine::HTTP::Request& request)
       // Request has content, dump 25 first characters of it in addition to the URI
       std::size_t maxCharacters = std::min(25UL, static_cast<unsigned long>(contentLength));
       std::string content = request.getContent();  // No support for streamable requests?
-      ss << content.substr(maxCharacters) << "\n";
+      ss << content.substr(0, maxCharacters) << "\n";
     }
 
     return ss.str();
