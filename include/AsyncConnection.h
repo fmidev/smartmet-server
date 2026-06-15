@@ -328,8 +328,22 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
 
   void notifyClientDisconnect(const boost::system::error_code& e, std::size_t bytes_transferred);
 
-  /// Number of sent bytes so far
+  // ======================================================================
+  /*!
+   * \brief Fire the response's deferred access-log finalizer (if any) with
+   * the total number of body bytes streamed. Runs at most once; safe to
+   * call from every stream terminal path (normal completion and errors).
+   */
+  // ======================================================================
+
+  void finalizeStreamLogging();
+
+  /// Number of sent bytes so far (within the current chunk)
   std::size_t itsSentBytes;
+
+  /// Total response body bytes streamed across all chunks, for deferred
+  /// access logging of streamed/chunked responses.
+  std::size_t itsTotalStreamedBytes = 0;
 
   /// Handle to the server instance which spawned this connection
   /* AsyncServer* itsServer; */
