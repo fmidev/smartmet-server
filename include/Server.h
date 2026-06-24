@@ -104,7 +104,7 @@ class Server
   bool itsDumpRequests;
 
   /// This is true if the shutdown is requested. The server should not accept any more connections.
-  bool itsShutdownRequested;
+  std::atomic<bool> itsShutdownRequested;
 
   /// Period in minutes for logging memory usage to stdout (0 = disabled)
   unsigned int itsMemoryLogPeriod = 0;

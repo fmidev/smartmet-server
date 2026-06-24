@@ -25,5 +25,15 @@ std::string parseXForwardedFor(const std::string& input);
 
 std::string dumpRequest(SmartMet::Spine::HTTP::Request& request);
 
+// ======================================================================
+/*!
+ * \brief Read password from a file
+ * \param filename Name of the password file
+ * \return The password read
+ * \throw Fmi::Exception File cannot be opened or is empty
+ */
+// ======================================================================
+std::string readPassword(const std::string& filename);
+
 }  // namespace Server
 }  // namespace SmartMet

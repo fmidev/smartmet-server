@@ -138,7 +138,7 @@ class Connection
   long itsTimeout = 0;
 
   /// Timeout flag
-  bool hasTimedOut = false;
+  std::atomic<bool> hasTimedOut = false;
 
   /// Mutex for this connection
   SmartMet::Spine::MutexType itsMutex;
