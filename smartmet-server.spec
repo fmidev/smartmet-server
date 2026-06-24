@@ -2,8 +2,8 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.4.16
-Release: 2%{?dist}.fmi
+Version: 26.6.15
+Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -107,6 +107,16 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Mon Jun 15 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> 26.6.15-1.fmi
+- Streamed/chunked responses now log the real body size and total
+  execution time. AsyncConnection accumulates the body bytes sent
+  across all chunks (excluding chunk framing) and, once the final
+  chunk has been sent (or the stream aborts on a send error / client
+  disconnect), fires the Response's deferred access-log finalizer
+  with that total. Previously a streamed download logged a bogus
+  byte count and only its handler-setup time. Requires
+  smartmet-library-spine >= 26.6.15.
+
 * Thu Apr 16 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.4.16-2.fmi
 - Add optional períodic logging of used memory amount
 
