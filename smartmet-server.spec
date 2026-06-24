@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.6.15
+Version: 26.6.24
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -107,6 +107,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Wed Jun 24 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> 26.6.24-1.fmi
+- Merged the streamed/chunked access-log fix to master
+
 * Mon Jun 15 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> 26.6.15-1.fmi
 - Streamed/chunked responses now log the real body size and total
   execution time. AsyncConnection accumulates the body bytes sent
