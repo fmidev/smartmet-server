@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.6.24
+Version: 26.6.26
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -107,6 +107,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Fri Jun 26 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> 26.6.26-1.fmi
+- Thread naming: Renamed the reactor-init and server-run tasks and the worker threads to srv-wrk-NNNN
+
 * Wed Jun 24 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> 26.6.24-1.fmi
 - Streamed/chunked responses now log the real body size and total
   execution time. AsyncConnection accumulates the body bytes sent
