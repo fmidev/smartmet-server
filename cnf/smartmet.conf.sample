@@ -42,6 +42,29 @@ lazylinking = false;
 
 defaultlogging = true;
 
+// Reverse-DNS (PTR) resolution of the client IP for the "-HostName:" field of
+// the request log. Resolution is cached and time-bounded and runs off the
+// request thread, so a slow or missing PTR record never delays a response.
+//
+//   resolveclienthostname      master switch; set false to log the raw client
+//                              IP only and skip the PTR lookup entirely
+//                              (default true)
+//   clienthostnametimeout      max milliseconds a request waits for a fresh
+//                              lookup before logging the IP only; 0 = fully
+//                              asynchronous, never wait (default 200)
+//   clienthostnamecachesize    max cached IP -> host name entries, LRU
+//                              (default 10000)
+//   clienthostnamepositivettl  seconds a successful lookup stays cached
+//                              (default 3600)
+//   clienthostnamenegativettl  seconds a failed/timed-out lookup stays cached
+//                              (default 60)
+
+resolveclienthostname = true;
+clienthostnametimeout = 200;
+// clienthostnamecachesize   = 10000;
+// clienthostnamepositivettl = 3600;
+// clienthostnamenegativettl = 60;
+
 debug	       	= false;
 verbose		= true;
 
