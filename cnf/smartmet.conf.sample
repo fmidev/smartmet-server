@@ -55,6 +55,7 @@ dns:
   positivettl = 3600;    // seconds a successful lookup stays cached
   negativettl = 60;      // seconds a failed lookup stays cached
   threads     = 1;       // number of background resolver threads
+  maxinflight = 1000;    // max pending (queued + in-flight) lookups; excess is dropped
 };
 
 debug	       	= false;
