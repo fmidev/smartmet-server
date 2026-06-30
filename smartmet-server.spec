@@ -3,7 +3,7 @@
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
 Version: 26.6.30
-Release: 1%{?dist}.fmi
+Release: 2%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -32,7 +32,7 @@ BuildRequires: %{smartmet_fmt_devel}
 BuildRequires: openssl-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 26.6.26
-BuildRequires: smartmet-library-spine-devel >= 26.6.29
+BuildRequires: smartmet-library-spine-devel >= 26.6.30
 Requires: %{smartmet_boost}-iostreams
 Requires: %{smartmet_boost}-program-options
 Requires: %{smartmet_boost}-regex
@@ -43,7 +43,7 @@ Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
 Requires: smartmet-library-macgyver >= 26.6.26
-Requires: smartmet-library-spine >= 26.6.29
+Requires: smartmet-library-spine >= 26.6.30
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -107,7 +107,7 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
-* Tue Jun 30 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.6.30-1.fmi
+* Tue Jun 30 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.6.30-2.fmi
 - Repackaged since the Options structure changed
 
 * Fri Jun 26 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> 26.6.26-1.fmi
