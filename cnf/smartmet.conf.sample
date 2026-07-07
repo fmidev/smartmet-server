@@ -42,6 +42,22 @@ lazylinking = false;
 
 defaultlogging = true;
 
+// Reverse-DNS (PTR) resolution of the client IP for diagnostics and the admin
+// active-requests output. Resolution is cached (LRU, with separate positive and
+// negative TTLs) and performed entirely off the request thread by background
+// workers, so a slow or missing PTR record never delays request handling. Set
+// dns.resolve = false to log the raw client IP only and skip lookups.
+
+dns:
+{
+  resolve     = true;    // master switch
+  cachesize   = 200000;  // max cached IP -> host name entries (LRU)
+  positivettl = 3600;    // seconds a successful lookup stays cached
+  negativettl = 60;      // seconds a failed lookup stays cached
+  threads     = 1;       // number of background resolver threads
+  maxqueuesize = 1000;   // max pending (queued + in-flight) lookups; excess is dropped
+};
+
 debug	       	= false;
 verbose		= true;
 

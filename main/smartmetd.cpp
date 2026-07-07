@@ -247,14 +247,14 @@ int main(int argc, char* argv[])
 
     tasks->stop_on_error(true);
 
-    tasks->add("SmartMet::Spine::Reactor::init",
+    tasks->add("ini-reactor",
                [signals_init]()
                {
                  signals_init();
                  reactor->init();
                });
 
-    tasks->add("Run SmartMet::Server::AsyncServer",
+    tasks->add("srv-run",
                [signals_init]()
                {
                  signals_init();

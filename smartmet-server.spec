@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.4.16
+Version: 26.6.30
 Release: 2%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -31,8 +31,8 @@ BuildRequires: elfutils-devel
 BuildRequires: %{smartmet_fmt_devel}
 BuildRequires: openssl-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 26.4.13
-BuildRequires: smartmet-library-spine-devel >= 26.4.13
+BuildRequires: smartmet-library-macgyver-devel >= 26.6.26
+BuildRequires: smartmet-library-spine-devel >= 26.6.30
 Requires: %{smartmet_boost}-iostreams
 Requires: %{smartmet_boost}-program-options
 Requires: %{smartmet_boost}-regex
@@ -42,8 +42,8 @@ Requires: %{smartmet_fmt}
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 26.4.13
-Requires: smartmet-library-spine >= 26.4.13
+Requires: smartmet-library-macgyver >= 26.6.26
+Requires: smartmet-library-spine >= 26.6.30
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -53,7 +53,7 @@ Requires(pre): shadow-utils
 #TestRequires: /bin/bash
 #TestRequires: gcc-c++
 #TestRequires: make
-#TestRequires: smartmet-library-macgyver-devel >= 26.4.13
+#TestRequires: smartmet-library-macgyver-devel >= 26.6.26
 #TestRequires: curl >= 7.42.0
 
 %description
@@ -107,6 +107,22 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Tue Jun 30 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.6.30-2.fmi
+- Repackaged since the Options structure changed
+
+* Fri Jun 26 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> 26.6.26-1.fmi
+- Thread naming: Renamed the reactor-init and server-run tasks and the worker threads to srv-wrk-NNNN
+
+* Wed Jun 24 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> 26.6.24-1.fmi
+- Streamed/chunked responses now log the real body size and total
+  execution time. AsyncConnection accumulates the body bytes sent
+  across all chunks (excluding chunk framing) and, once the final
+  chunk has been sent (or the stream aborts on a send error / client
+  disconnect), fires the Response's deferred access-log finalizer
+  with that total. Previously a streamed download logged a bogus
+  byte count and only its handler-setup time. Requires
+  smartmet-library-spine >= 26.6.15.
+
 * Thu Apr 16 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.4.16-2.fmi
 - Add optional períodic logging of used memory amount
 

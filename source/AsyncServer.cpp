@@ -2,6 +2,7 @@
 #include <boost/thread.hpp>
 #include <fmt/format.h>
 #include <macgyver/Exception.h>
+#include <macgyver/ThreadName.h>
 #include <algorithm>
 
 namespace SmartMet
@@ -125,11 +126,7 @@ namespace
 
 void setThreadName(unsigned index)
 {
-#if defined(BOOST_THREAD_PLATFORM_PTHREAD)
-  const std::string name = fmt::format("std-wrk-{:04}", index);
-  const std::string thread_name = name.substr(0, 15);
-  pthread_setname_np(pthread_self(), thread_name.c_str());
-#endif
+  Fmi::set_thread_name(fmt::format("srv-wrk-{:04}", index));
 }
 
 }  // namespace

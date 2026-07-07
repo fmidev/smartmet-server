@@ -655,6 +655,8 @@ void AsyncConnection::writeChunkedReply(const boost::system::error_code& e,
       sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
       reportInfo("Error in chunked reply send to " + itsRequest->getClientIP() +
                  ". Reason: " + e.message() + ". Code: " + Fmi::to_string(e.value()));
+      // Log the aborted stream with the bytes delivered so far.
+      finalizeStreamLogging();
     }
   }
   catch (...)
@@ -698,14 +700,19 @@ void AsyncConnection::finalizeChunkedReply(const boost::system::error_code& e,
                                     { me->finalizeChunkedReply(err, bytes_transferred); });
         }
       }
-
-      // Implicit else here, this was the final chunk so stop scheduling async writes
+      else
+      {
+        // Final chunk has been sent — the streamed response is complete.
+        finalizeStreamLogging();
+      }
     }
     else
     {
       sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
       reportInfo("Error in finalizing chunked reply send to " + itsRequest->getClientIP() +
                  ". Reason: " + e.message() + ". Code: " + Fmi::to_string(e.value()));
+      // Log the aborted stream with the bytes delivered so far.
+      finalizeStreamLogging();
     }
   }
   catch (...)
@@ -730,6 +737,9 @@ void AsyncConnection::getNextChunk()
 
       if (!contentstring.empty())
       {
+        // Account this chunk's body bytes for the deferred access log.
+        itsTotalStreamedBytes += contentstring.size();
+
         // Send received data
         itsResponseString = contentstring;
 
@@ -760,7 +770,10 @@ void AsyncConnection::getNextChunk()
     }
     else
     {
-      // Stream status is EXIT, finalize the send
+      // Stream status is EXIT, finalize the send. The streamed response is
+      // complete: write the deferred access-log entry with the real size.
+      finalizeStreamLogging();
+
       if (itsResponse->isGatewayResponse)
       {
         // If the response is a gateway response (sent by frontend plugin) call the associated hooks
@@ -792,6 +805,13 @@ void AsyncConnection::getNextChunkedChunk()
       if (!contentstring.empty())
       {
         std::size_t length = contentstring.size();
+
+        // Account this chunk's body bytes for the deferred access log.
+        // The hex length + CRLF framing is transport overhead and is
+        // deliberately excluded so the logged size matches the response
+        // body size, like non-chunked responses.
+        itsTotalStreamedBytes += length;
+
         std::string hexlength = convertToHex(length);
         std::string responsestring = hexlength + "\r\n" + contentstring + "\r\n";
 
@@ -900,6 +920,8 @@ void AsyncConnection::writeStreamReply(const boost::system::error_code& e,
       sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
       reportInfo("Error in stream reply send to " + itsRequest->getClientIP() +
                  ". Reason: " + e.message());
+      // Log the aborted stream with the bytes delivered so far.
+      finalizeStreamLogging();
       if (itsResponse->isGatewayResponse)
       {
         // If the response is a gateway response (sent by frontend plugin) call the associated hooks
@@ -967,6 +989,25 @@ void AsyncConnection::writeRegularReply(const boost::system::error_code& e,
     Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::writeRegularReply aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::writeRegularReply aborted\n";
+  }
+}
+
+// Fire the response's deferred access-log finalizer with the total body
+// bytes streamed. Runs at most once (the handler removes itself), so this
+// is safe to call from every stream terminal path: normal completion, send
+// errors, and client disconnects. No-op for responses that did not register
+// a finalizer (non-streamed, or logging disabled for the handler).
+void AsyncConnection::finalizeStreamLogging()
+{
+  try
+  {
+    if (itsResponse)
+      itsResponse->runStreamCompletionHandler(itsTotalStreamedBytes);
+  }
+  catch (...)
+  {
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::finalizeStreamLogging", nullptr);
+    std::cerr << ex.getStackTrace();
   }
 }
 
