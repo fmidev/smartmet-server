@@ -3,9 +3,13 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <dlfcn.h>
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -168,6 +172,79 @@ void Server::shutdown()
 
 namespace
 {
+using mallctl_t = int (*)(const char*, void*, std::size_t*, void*, std::size_t);
+
+// Resolve jemalloc's mallctl() at runtime. jemalloc is never linked directly; in
+// production it is injected via LD_PRELOAD, so the symbol only exists then (and is
+// absent when e.g. libasan is preloaded instead). Resolving against the handle for the
+// main program (dlopen(nullptr, ...)) searches the global scope, which includes any
+// LD_PRELOAD'ed library. Returns nullptr when jemalloc is not active. Resolved once.
+mallctl_t getMallctl()
+{
+  static const mallctl_t mallctl_ptr = []() -> mallctl_t
+  {
+    void* handle = dlopen(nullptr, RTLD_LAZY);
+    if (handle == nullptr)
+      return nullptr;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    auto* ptr = reinterpret_cast<mallctl_t>(dlsym(handle, "mallctl"));
+    dlclose(handle);
+    return ptr;
+  }();
+  return mallctl_ptr;
+}
+
+// Read a size_t-valued jemalloc statistic via mallctl. Returns false if unavailable.
+bool jemallocStat(mallctl_t mallctl, const char* name, std::size_t& value)
+{
+  std::size_t sz = sizeof(value);
+  return mallctl(name, &value, &sz, nullptr, 0) == 0;
+}
+
+// Append jemalloc allocator/fragmentation statistics to the memory log line. A no-op
+// when jemalloc is not the active allocator or was built without statistics support.
+void appendJemallocStats(std::ostream& out)
+{
+  const mallctl_t mallctl = getMallctl();
+  if (mallctl == nullptr)
+    return;
+
+  // jemalloc caches statistics and only refreshes them when the "epoch" is advanced.
+  std::uint64_t epoch = 1;
+  std::size_t epoch_sz = sizeof(epoch);
+  if (mallctl("epoch", &epoch, &epoch_sz, &epoch, sizeof(epoch)) != 0)
+    return;  // stats not enabled in this jemalloc build
+
+  std::size_t allocated = 0;
+  std::size_t active = 0;
+  std::size_t resident = 0;
+  std::size_t mapped = 0;
+  std::size_t retained = 0;
+  if (!jemallocStat(mallctl, "stats.allocated", allocated))
+    return;  // built without --enable-stats
+  jemallocStat(mallctl, "stats.active", active);
+  jemallocStat(mallctl, "stats.resident", resident);
+  jemallocStat(mallctl, "stats.mapped", mapped);
+  jemallocStat(mallctl, "stats.retained", retained);
+
+  out << " jemalloc.allocated=" << allocated << " jemalloc.active=" << active
+      << " jemalloc.resident=" << resident << " jemalloc.mapped=" << mapped
+      << " jemalloc.retained=" << retained;
+
+  // External fragmentation: the fraction of page-backed (active) memory not actually
+  // requested by the application. active is allocated rounded up to whole pages, so
+  // active >= allocated holds for consistent stats.
+  if (active > 0 && active >= allocated)
+  {
+    const double frag =
+        100.0 * static_cast<double>(active - allocated) / static_cast<double>(active);
+    std::array<char, 32> buf;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+    std::snprintf(buf.data(), buf.size(), "%.1f%%", frag);
+    out << " jemalloc.fragmentation=" << buf.data();
+  }
+}
+
 void readAndLogMemoryUsage(const std::vector<std::string>& fields)
 {
   std::ifstream status("/proc/self/status");
@@ -201,6 +278,7 @@ void readAndLogMemoryUsage(const std::vector<std::string>& fields)
     // Output empty value for missing fields so the user can spot typos in config
     std::cout << ' ' << field << '=' << (it != values.end() ? it->second : std::string{});
   }
+  appendJemallocStats(std::cout);
   std::cout << '\n';
 }
 }  // namespace
@@ -208,8 +286,8 @@ void readAndLogMemoryUsage(const std::vector<std::string>& fields)
 void Server::scheduleMemoryLogging()
 {
   itsMemoryLogTimer.expires_after(std::chrono::minutes(itsMemoryLogPeriod));
-  itsMemoryLogTimer.async_wait(
-      [this](const boost::system::error_code& ec) { handleMemoryLogTimer(ec); });
+  itsMemoryLogTimer.async_wait([this](const boost::system::error_code& ec)
+                               { handleMemoryLogTimer(ec); });
 }
 
 void Server::handleMemoryLogTimer(const boost::system::error_code& ec)

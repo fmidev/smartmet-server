@@ -58,6 +58,18 @@ dns:
   maxqueuesize = 1000;   // max pending (queued + in-flight) lookups; excess is dropped
 };
 
+// Optional periodic logging of process memory usage to stdout. Disabled when
+// logmemoryuse is 0 or absent. logmemoryfields selects which /proc/self/status
+// fields are printed (default: RssAnon, RssFile). When jemalloc is the active
+// allocator (typically injected via LD_PRELOAD in production), each line is also
+// appended with jemalloc.{allocated,active,resident,mapped,retained} byte counts
+// and jemalloc.fragmentation (external fragmentation percentage, (active-allocated)
+// /active). jemalloc is resolved at runtime, so these fields are silently omitted
+// when it is not preloaded (e.g. under libasan).
+
+logmemoryuse    = 0;                          // logging period in minutes (0 = disabled)
+logmemoryfields = ["RssAnon", "RssFile"];     // /proc/self/status fields to log
+
 debug	       	= false;
 verbose		= true;
 
