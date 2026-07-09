@@ -272,6 +272,11 @@ int main(int argc, char* argv[])
 
     while (true)
     {
+      // Note: this replaced a select() that returned early on EINTR. Unlike select(),
+      // std::this_thread::sleep_for loops over nanosleep with the remaining time and does
+      // not return early on a signal, so reacting to SIGTERM/SIGINT may be delayed by up to
+      // one second. This is acceptable for shutdown; do not switch back to select() without
+      // reconsidering that trade-off.
       std::this_thread::sleep_for(std::chrono::milliseconds{1000});
       tasks->handle_finished();
       // FIXME: handle case when all tasks have ended
