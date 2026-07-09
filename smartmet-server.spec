@@ -2,8 +2,8 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.6.30
-Release: 2%{?dist}.fmi
+Version: 26.7.9
+Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -107,6 +107,13 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Thu Jul 09 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.7.9-1.fmi
+- Security audit fixes (BRAINSTORM-3396):
+- No longer print the SSL encryption password to stdout
+- Request dumps now log the first 25 characters of the body instead of everything after them
+- Made hasTimedOut and itsShutdownRequested atomic to fix data races
+- Replaced the select() call in the main loop with sleep_for
+
 * Tue Jun 30 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.6.30-2.fmi
 - Repackaged since the Options structure changed
 
