@@ -174,16 +174,23 @@ namespace
 {
 using mallctl_t = int (*)(const char*, void*, std::size_t*, void*, std::size_t);
 
-// Resolve jemalloc's mallctl() at runtime. jemalloc is never linked directly; in
-// production it is injected via LD_PRELOAD, so the symbol only exists then (and is
-// absent when e.g. libasan is preloaded instead). Resolving against the handle for the
-// main program (dlopen(nullptr, ...)) searches the global scope, which includes any
-// LD_PRELOAD'ed library. Returns nullptr when jemalloc is not active. Resolved once.
+// jemalloc's runtime soname. jemalloc is never linked directly; in production it is
+// injected via LD_PRELOAD (and is absent when e.g. libasan is preloaded instead).
+constexpr const char* JEMALLOC_SONAME = "libjemalloc.so.2";
+
+// Resolve jemalloc's mallctl() at runtime, or nullptr when jemalloc is not the active
+// allocator. Resolved once.
+//
+// We deliberately look mallctl() up in the jemalloc library specifically rather than in
+// the global symbol scope: another allocator could also export a mallctl() with an
+// incompatible prototype, and calling that through our signature would crash. RTLD_NOLOAD
+// returns a handle only if libjemalloc.so.2 is *already* resident (it never loads it), so
+// a non-null handle both proves jemalloc is active and gives us jemalloc's own mallctl().
 mallctl_t getMallctl()
 {
   static const mallctl_t mallctl_ptr = []() -> mallctl_t
   {
-    void* handle = dlopen(nullptr, RTLD_LAZY);
+    void* handle = dlopen(JEMALLOC_SONAME, RTLD_LAZY | RTLD_NOLOAD);
     if (handle == nullptr)
       return nullptr;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
