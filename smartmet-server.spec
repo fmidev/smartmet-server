@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.7.9
+Version: 26.7.14
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -107,6 +107,12 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Tue Jul 14 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.7.14-1.fmi
+- Added zstd response compression, preferred over gzip when the client advertises
+  it in Accept-Encoding. Compression now uses faster levels: zstd at its default
+  level and gzip at level 3, avoiding zlib's slow deflate_slow lazy matcher used
+  by the previous gzip default level 6.
+
 * Thu Jul 09 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.7.9-1.fmi
 - Security audit fixes (BRAINSTORM-3396):
 - No longer print the SSL encryption password to stdout

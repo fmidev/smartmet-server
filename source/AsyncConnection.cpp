@@ -1018,9 +1018,11 @@ void AsyncConnection::startRegularReply()
   {
     // Regular response
     // Compress response if its greater than limit and client accepts
-    if (itsCanGzipResponse && response_is_compressable(*itsRequest, *itsResponse, itsCompressLimit))
+    if (itsCanGzipResponse)
     {
-      gzip_response(*itsResponse);
+      auto encoding = select_content_encoding(*itsRequest, *itsResponse, itsCompressLimit);
+      if (!encoding.empty())
+        compress_response(*itsResponse, encoding);
     }
 
     // Set Content-Length header, as it may change during compression

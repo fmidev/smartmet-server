@@ -2,6 +2,7 @@
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filter/zstd.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <fmt/format.h>
 #include <fmt/printf.h>
@@ -71,9 +72,9 @@ std::string convertToHex(std::size_t theNumber)
   }
 }
 
-bool response_is_compressable(const SmartMet::Spine::HTTP::Request& request,
-                              const SmartMet::Spine::HTTP::Response& response,
-                              std::size_t compressLimit)
+std::string select_content_encoding(const SmartMet::Spine::HTTP::Request& request,
+                                    const SmartMet::Spine::HTTP::Response& response,
+                                    std::size_t compressLimit)
 {
   try
   {
@@ -86,25 +87,31 @@ bool response_is_compressable(const SmartMet::Spine::HTTP::Request& request,
       for (const auto& mime : non_compressable_mimes)
       {
         if (content_header->find(mime) != std::string::npos)
-          return false;
+          return "";
       }
     }
 
+    // The gzip=1 request parameter forces gzip compression regardless of size.
     auto gzip = request.getParameter("gzip");
     if (gzip && *gzip == "1")
-      return true;
+      return "gzip";
 
     auto header = request.getHeader("Accept-Encoding");
     if (!header)
-      return false;
+      return "";
+
+    if (response.getContentLength() < compressLimit)
+      return "";
+
+    // Prefer zstd over gzip: at their default/fast levels it is both faster and
+    // compresses better. Fall back to gzip for clients that do not support zstd.
+    if (header->find("zstd") != std::string::npos)
+      return "zstd";
 
     if (header->find("gzip") != std::string::npos)
-    {
-      if (response.getContentLength() >= compressLimit)
-        return true;
-    }
+      return "gzip";
 
-    return false;
+    return "";
   }
   catch (...)
   {
@@ -112,27 +119,36 @@ bool response_is_compressable(const SmartMet::Spine::HTTP::Request& request,
   }
 }
 
-void gzip_response(SmartMet::Spine::HTTP::Response& response)
+void compress_response(SmartMet::Spine::HTTP::Response& response, const std::string& encoding)
 {
   try
   {
     namespace io = boost::iostreams;
     std::string content = response.getContent();
 
-    // REF: http://lists.boost.org/boost-users/att-34361/main.cpp
-    // This is supposed to be the fastest way to compress out
-    // of the presented methods.
-
     std::string output;
     io::filtering_streambuf<io::output> tmp;
-    tmp.push(io::gzip_compressor());
+
+    if (encoding == "zstd")
+    {
+      // Use zstd's default level (3). Higher levels switch to slower search
+      // strategies for little extra gain on typical responses.
+      tmp.push(io::zstd_compressor());
+    }
+    else
+    {
+      // gzip level 3: the highest level still using zlib's fast deflate algorithm.
+      // The default level 6 uses the much slower deflate_slow lazy matcher.
+      constexpr int gzip_fast_level = 3;
+      tmp.push(io::gzip_compressor(io::gzip_params(gzip_fast_level)));
+    }
+
     tmp.push(io::back_inserter(output));
     io::copy(boost::make_iterator_range(content.begin(), content.end()), tmp);
-    // Rewrite output
 
     response.setContent(output);
 
-    response.setHeader("Content-Encoding", "gzip");
+    response.setHeader("Content-Encoding", encoding);
   }
   catch (...)
   {
