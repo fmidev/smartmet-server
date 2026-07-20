@@ -14,6 +14,7 @@
 #include <boost/asio.hpp>
 #include <spine/Options.h>
 #include <spine/Reactor.h>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -79,14 +80,19 @@ class Server
   /// This contains HTTP request handling functionality
   SmartMet::Spine::Reactor& itsReactor;
 
+  /// The thread pool executors for asynchronous request processing. Held by unique_ptr so
+  /// that shutdown() can destroy them (and thus drop any still-queued request tasks, which
+  /// pin AsyncConnections and their plugin-created response streamers) before the reactor
+  /// unloads the plugins. See AsyncServer::shutdown().
+
   /// The Admin Thread Pool Executor for asynchronous processing of admin requests
-  ThreadPoolType itsAdminExecutor;
+  std::unique_ptr<ThreadPoolType> itsAdminExecutor;
 
   /// The Slow Thread Pool Executor for asynchronous processing of slow requests
-  ThreadPoolType itsSlowExecutor;
+  std::unique_ptr<ThreadPoolType> itsSlowExecutor;
 
   /// The Fast Thread Pool Executor for asynchronous processing of fast requests
-  ThreadPoolType itsFastExecutor;
+  std::unique_ptr<ThreadPoolType> itsFastExecutor;
 
   /// Flag to enable response gzip compression
   bool itsCanGzip;
