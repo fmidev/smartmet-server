@@ -4,6 +4,8 @@
 #include <macgyver/Exception.h>
 #include <macgyver/ThreadName.h>
 #include <algorithm>
+#include <chrono>
+#include <thread>
 
 namespace SmartMet
 {
@@ -33,7 +35,9 @@ void AsyncServer::run()
 {
   try
   {
-    // Create some threads to handle connection accepting and asynchronous events
+    // Create some threads to handle connection accepting and asynchronous events.
+    // Publish the worker count before spawning so shutdown() can wait for them to drain.
+    itsRunningWorkers.store(numThreads);
     boost::thread_group workerThreads;
     for (std::size_t i = 0; i < numThreads; ++i)
     {
@@ -42,13 +46,13 @@ void AsyncServer::run()
     }
 
     // Start the Admin Thread Pool Executor
-    itsAdminExecutor.start();
+    itsAdminExecutor->start();
 
     // Start the Slow Thread Pool Executor
-    itsSlowExecutor.start();
+    itsSlowExecutor->start();
 
     // Start the Fast Thread Pool Executor
-    itsFastExecutor.start();
+    itsFastExecutor->start();
 
     // Wait for all threads in the pool to exit.
     // Main thread waits here
@@ -71,13 +75,31 @@ void AsyncServer::shutdown()
     // Shutdown the IO service - does not block (is this necessary after the above?)
     itsIoService.stop();
 
+    // Wait for the io_service worker threads to leave io_service::run() before touching the
+    // executors. A completion handler still running after stop() may call executor->schedule()
+    // (via AsyncConnection::scheduleChunkGetter); letting that race with the reset() below
+    // would be a use-after-free on the pool. Bounded so shutdown itself cannot hang here.
+    for (int waited = 0; itsRunningWorkers.load() > 0 && waited < 2000; ++waited)
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
     // Shutdown the thread pools
-    itsAdminExecutor.setGracefulShutdown(true);
-    itsSlowExecutor.setGracefulShutdown(true);
-    itsFastExecutor.setGracefulShutdown(true);
-    itsAdminExecutor.shutdown();
-    itsSlowExecutor.shutdown();
-    itsFastExecutor.shutdown();
+    itsAdminExecutor->setGracefulShutdown(true);
+    itsSlowExecutor->setGracefulShutdown(true);
+    itsFastExecutor->setGracefulShutdown(true);
+    itsAdminExecutor->shutdown();
+    itsSlowExecutor->shutdown();
+    itsFastExecutor->shutdown();
+
+    // Destroy the pools before the reactor unloads the plugins. Destroying a pool also
+    // destroys its task queue, dropping any request task still queued there. Each such task
+    // pins an AsyncConnection -> Response -> plugin-created response streamer; releasing them
+    // now, while the plugins' shared libraries are still mapped, avoids destroying that
+    // plugin code after it has been dlclose()'d (which crashed at process exit otherwise).
+    // Safe because the io_service workers have stopped, so nothing can schedule onto the
+    // pools anymore.
+    itsAdminExecutor.reset();
+    itsSlowExecutor.reset();
+    itsFastExecutor.reset();
 
     // Shutdown the reactor (i.e. plugins and engines)
     itsReactor.shutdown();
@@ -108,9 +130,9 @@ void AsyncServer::startAccept()
                                                itsDumpRequests,
                                                itsIoService,
                                                itsReactor,
-                                               itsAdminExecutor,
-                                               itsSlowExecutor,
-                                               itsFastExecutor);
+                                               *itsAdminExecutor,
+                                               *itsSlowExecutor,
+                                               *itsFastExecutor);
     itsAcceptor.async_accept(itsNewConnection->socket(),
                              [this](const boost::system::error_code& err)
                              { this->handleAccept(err); });
@@ -132,17 +154,27 @@ void setThreadName(unsigned index)
 }  // namespace
 
 void AsyncServer::serverThreadFunction(unsigned index)
-try
 {
-  setThreadName(index);
-  itsIoService.run();
-}
-catch (...)
-{
-  auto error = Fmi::Exception::Trace(BCP, "Operation failed!");
-  std::cerr << "Async server thread " << index << " terminated with exception: " << error.what()
-            << '\n';
-  throw error;
+  // Signal to shutdown() that this worker has left io_service::run(), on both normal and
+  // exceptional exit, so it can safely tear the executors down afterwards.
+  struct WorkerExitGuard
+  {
+    std::atomic<std::size_t>& count;
+    ~WorkerExitGuard() { --count; }
+  } guard{itsRunningWorkers};
+
+  try
+  {
+    setThreadName(index);
+    itsIoService.run();
+  }
+  catch (...)
+  {
+    auto error = Fmi::Exception::Trace(BCP, "Operation failed!");
+    std::cerr << "Async server thread " << index << " terminated with exception: " << error.what()
+              << '\n';
+    throw error;
+  }
 }
 
 void AsyncServer::handleAccept(const boost::system::error_code& e)

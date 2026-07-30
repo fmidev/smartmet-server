@@ -15,6 +15,7 @@
 #include <spine/Options.h>
 #include <spine/Reactor.h>
 #include <spine/Thread.h>
+#include <atomic>
 #include <string>
 #include <vector>
 
@@ -97,6 +98,12 @@ class AsyncServer : public Server
 
   // Number of threads for asynchronous reads and writes
   std::size_t numThreads;
+
+  // Number of io_service worker threads currently running run(). shutdown() waits for this
+  // to reach zero after stopping the io_service, so no worker can still be executing a
+  // completion handler (which might schedule onto an executor) when the executors are torn
+  // down. Set before the workers are spawned, decremented as each leaves io_service::run().
+  std::atomic<std::size_t> itsRunningWorkers{0};
 };
 
 }  // namespace Server
