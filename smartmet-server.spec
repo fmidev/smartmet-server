@@ -3,7 +3,7 @@
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
 Version: 26.7.30
-Release: 1%{?dist}.fmi
+Release: 2%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -54,6 +54,7 @@ Requires(pre): shadow-utils
 #TestRequires: gcc-c++
 #TestRequires: make
 #TestRequires: curl >= 7.42.0
+#TestRequires: smartmet-utils-devel
 
 %description
 SmartMet server
@@ -106,7 +107,7 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
-* Thu Jul 30 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.7.30-1.fmi
+* Thu Jul 30 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.7.30-2.fmi
 - Destroy thread pools before unloading plugins on shutdown
 
 * Tue Jul 14 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.7.14-1.fmi
