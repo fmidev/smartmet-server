@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.7.14
+Version: 26.7.30
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -106,6 +106,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Thu Jul 30 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.7.30-1.fmi
+- Destroy thread pools before unloading plugins on shutdown
+
 * Tue Jul 14 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.7.14-1.fmi
 - Added zstd response compression, preferred over gzip when the client advertises
   it in Accept-Encoding. Compression now uses faster levels: zstd at its default
