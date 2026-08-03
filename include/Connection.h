@@ -137,6 +137,33 @@ class Connection
   /// Connection timeout in seconds
   long itsTimeout = 0;
 
+  /// Persistent connections enabled server wide
+  bool itsKeepAliveEnabled = false;
+
+  /// Seconds an idle persistent connection waits for the next request
+  long itsKeepAliveTimeout = 0;
+
+  /// Maximum number of requests to serve over this connection (0 = unlimited)
+  std::size_t itsMaxKeepAliveRequests = 0;
+
+  /// Number of requests parsed from this connection so far
+  std::size_t itsRequestCount = 0;
+
+  /// True if the connection is to be reused after the response currently being
+  /// produced. Reset to false at the start of every request/response cycle, so
+  /// any path that has not explicitly negotiated persistence closes the socket.
+  bool itsKeepAlive = false;
+
+  /// HTTP version to answer the current request with, "1.0" or "1.1"
+  std::string itsResponseVersion{"1.0"};
+
+  /// True while an already used persistent connection is waiting for the next request
+  std::atomic<bool> itsIdle = false;
+
+  /// The server's shutdown flag. Co-owned because the connection may outlive the
+  /// server object, see Server::getShutdownFlag().
+  std::shared_ptr<const std::atomic<bool>> itsShutdownFlag;
+
   /// Timeout flag
   std::atomic<bool> hasTimedOut = false;
 

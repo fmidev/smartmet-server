@@ -138,6 +138,14 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
 
   // ======================================================================
   /*!
+   * \brief Start an asynchronous read of the next block of request data
+   */
+  // ======================================================================
+
+  void startRead();
+
+  // ======================================================================
+  /*!
    * \brief Handle partial read from socket
    *
    * Reads some bytes from the socket and attempts to parse the incoming
@@ -146,6 +154,37 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
   // ======================================================================
 
   void handleRead(const boost::system::error_code& e, std::size_t bytes_transferred);
+
+  // ======================================================================
+  /*!
+   * \brief Decide whether the connection may be reused after this request
+   *
+   * Implements the HTTP persistent connection negotiation, which differs
+   * between the protocol versions:
+   *
+   * - HTTP/1.1 connections are persistent by default (RFC 9112 9.3). The
+   *   client opts out with "Connection: close".
+   * - HTTP/1.0 has no persistent connections in the standard; keep-alive is
+   *   an extension the client must explicitly ask for with
+   *   "Connection: keep-alive" and the server must explicitly confirm.
+   *
+   * Must be called only after the request has been completely parsed and
+   * itsResponseVersion has been resolved.
+   */
+  // ======================================================================
+
+  bool evaluateKeepAlive() const;
+
+  // ======================================================================
+  /*!
+   * \brief Terminal handler for a completely and successfully sent response
+   *
+   * Either rearms the connection for the next request or lets it go, which
+   * closes the socket once the last reference to the connection is dropped.
+   */
+  // ======================================================================
+
+  void finishResponse();
 
   // ======================================================================
   /*!
@@ -344,6 +383,11 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
   /// Total response body bytes streamed across all chunks, for deferred
   /// access logging of streamed/chunked responses.
   std::size_t itsTotalStreamedBytes = 0;
+
+  /// Content-Length announced for a non-chunked streamed response. A persistent
+  /// connection may only be reused if the streamer really delivered that many
+  /// bytes, otherwise the client cannot find the start of the next response.
+  std::size_t itsDeclaredContentLength = 0;
 
   /// Handle to the server instance which spawned this connection
   /* AsyncServer* itsServer; */

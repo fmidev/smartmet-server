@@ -41,7 +41,7 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
       itsMaxRequestSize(theOptions.maxrequestsize),
       itsTimeout(theOptions.timeout),
       itsDumpRequests(theOptions.logrequests),
-      itsShutdownRequested(false)
+      itsShutdownRequested(std::make_shared<std::atomic<bool>>(false))
 {
   try
   {
@@ -104,6 +104,23 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
     }
     if (itsMemoryLogPeriod > 0)
       scheduleMemoryLogging();
+
+    // Persistent connections (HTTP keep-alive). See AsyncConnection for the
+    // HTTP/1.0 vs HTTP/1.1 negotiation rules.
+    if (theOptions.itsConfig.exists("keepalive"))
+    {
+      theOptions.itsConfig.lookupValue("keepalive.enabled", itsKeepAliveEnabled);
+
+      int keepAliveTimeout = static_cast<int>(itsKeepAliveTimeout);
+      if (theOptions.itsConfig.lookupValue("keepalive.timeout", keepAliveTimeout) &&
+          keepAliveTimeout > 0)
+        itsKeepAliveTimeout = keepAliveTimeout;
+
+      int maxRequests = static_cast<int>(itsMaxKeepAliveRequests);
+      if (theOptions.itsConfig.lookupValue("keepalive.maxrequests", maxRequests) &&
+          maxRequests >= 0)
+        itsMaxKeepAliveRequests = static_cast<std::size_t>(maxRequests);
+    }
   }
   catch (...)
   {
@@ -125,7 +142,7 @@ std::string Server::getPassword() const
 
 bool Server::isShutdownRequested() const
 {
-  return itsShutdownRequested;
+  return *itsShutdownRequested;
 }
 
 void Server::shutdownServer()
@@ -133,7 +150,7 @@ void Server::shutdownServer()
   try
   {
     // std::cout << "### Server::shutdownServer()\n";
-    itsShutdownRequested = true;
+    *itsShutdownRequested = true;
 
     // Take heap snapshots before and after engine+plugin shutdown if profiling is enabled
     // mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
@@ -280,7 +297,7 @@ void Server::scheduleMemoryLogging()
 
 void Server::handleMemoryLogTimer(const boost::system::error_code& ec)
 {
-  if (ec || itsShutdownRequested)
+  if (ec || *itsShutdownRequested)
     return;
   try
   {

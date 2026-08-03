@@ -95,11 +95,47 @@ void AsyncConnection::handleTimer(const boost::system::error_code& err)
   try
   {
     SmartMet::Spine::WriteLock lock(itsMutex);  // Lock here, just in case
-    if (err != boost::asio::error::operation_aborted)
+    if (err == boost::asio::error::operation_aborted)
+      return;
+
+    hasTimedOut = true;
+
+    if (itsIdle)
     {
-      hasTimedOut = true;
-      sendStockReply(SmartMet::Spine::HTTP::Status::request_timeout);
+      // The keep-alive timeout of an idle persistent connection expired before the
+      // next request line arrived. A server may close a persistent connection at any
+      // time (RFC 9112 9.6), and it must do so silently here: the client may be
+      // writing a request at this very moment, in which case an unsolicited 408 would
+      // arrive in the middle of a request it still expects an answer to.
+      boost::system::error_code ignored_ec;
+      socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+      socket().close(ignored_ec);
+      return;
     }
+
+    // A request was being read (or is the first one on this connection) and did not
+    // arrive in time. Report it and close.
+    itsKeepAlive = false;
+    sendStockReply(SmartMet::Spine::HTTP::Status::request_timeout);
+  }
+  catch (...)
+  {
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
+  }
+}
+
+void AsyncConnection::startRead()
+{
+  try
+  {
+    auto handler = [me = shared_from_this()](const boost::system::error_code& err,
+                                             std::size_t bytes_transferred)
+    { me->handleRead(err, bytes_transferred); };
+
+    if (itsEncryptionEnabled)
+      itsSocket.async_read_some(boost::asio::buffer(itsSocketBuffer), handler);
+    else
+      socket().async_read_some(boost::asio::buffer(itsSocketBuffer), handler);
   }
   catch (...)
   {
@@ -131,10 +167,7 @@ void AsyncConnection::start()
     else
     {
       // Begin the reading process
-      socket().async_read_some(boost::asio::buffer(itsSocketBuffer),
-                               [me = shared_from_this()](const boost::system::error_code& err,
-                                                         std::size_t bytes_transferred)
-                               { me->handleRead(err, bytes_transferred); });
+      startRead();
     }
   }
   catch (...)
@@ -148,10 +181,7 @@ void AsyncConnection::handleHandshake(const boost::system::error_code& error)
   if (!error)
   {
     // Handshake is ok. Start socket reading
-    itsSocket.async_read_some(boost::asio::buffer(itsSocketBuffer),
-                              [me = shared_from_this()](const boost::system::error_code& err,
-                                                        std::size_t bytes_transferred)
-                              { me->handleRead(err, bytes_transferred); });
+    startRead();
   }
   else
   {
@@ -180,6 +210,18 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
 
     if (!e)
     {
+      if (itsIdle.exchange(false) && !hasTimedOut)
+      {
+        // First bytes of the next request on a persistent connection. Swap the timer
+        // from the keep-alive idle timeout back to the request read timeout, so that a
+        // client on a slow uplink gets the same time to deliver a request as it would
+        // on a fresh connection - and so that an expiry from here on is reported as a
+        // request timeout instead of quietly dropping the socket.
+        itsTimeoutTimer->expires_after(std::chrono::seconds(itsTimeout));
+        itsTimeoutTimer->async_wait([me = shared_from_this()](const boost::system::error_code& err)
+                                    { me->handleTimer(err); });
+      }
+
       itsReceivedBytes += bytes_transferred;
 
       if (itsMaxRequestSize > 0 && itsReceivedBytes > itsMaxRequestSize)
@@ -251,14 +293,20 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
 // DEBUGGIN OUTPUT************************************
 #endif
 
+        ++itsRequestCount;
+
+        // Answer in the client's own HTTP version and negotiate the persistence of
+        // the connection for this request/response cycle.
+        itsResponseVersion = negotiateVersion(itsRequest->getVersion());
+        itsKeepAlive = evaluateKeepAlive();
+
         // Check whether we have 'OPTIONS' request
-        if (itsRequest->getMethodString() == "OPTIONS")
+        if (itsRequest->getMethodString() == "OPTIONS" && itsRequest->getResource() == "*")
         {
-          if (itsRequest->getResource() == "*")
-          {
-            *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
-            sendSimpleReply();
-          }
+          *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
+          setServerHeaders();
+          sendSimpleReply();
+          return;
         }
 
         // Determine where to put the handler function
@@ -340,26 +388,20 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
       else
       {
         // Request is not succesfully parsed, attempt to get more data from socket and try again
-        if (itsEncryptionEnabled)
-        {
-          itsSocket.async_read_some(boost::asio::buffer(itsSocketBuffer),
-                                    [me = shared_from_this()](const boost::system::error_code& err,
-                                                              std::size_t bytes_transferred)
-                                    { me->handleRead(err, bytes_transferred); });
-        }
-        else
-        {
-          socket().async_read_some(boost::asio::buffer(itsSocketBuffer),
-                                   [me = shared_from_this()](const boost::system::error_code& err,
-                                                             std::size_t bytes_transferred)
-                                   { me->handleRead(err, bytes_transferred); });
-        }
+        startRead();
       }
     }
     else if (e == boost::asio::error::eof)
     {
       // Peer closed the socket or timeout has occurred
       // Abort this connection
+      return;
+    }
+    else if (itsIdle)
+    {
+      // An idle persistent connection went away: either the client closed it, or the
+      // keep-alive timeout reaped it here. Both are the expected end of a reused
+      // connection and are not worth a log entry.
       return;
     }
     else if (e == boost::asio::error::operation_aborted)
@@ -380,6 +422,112 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
     Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::handleRead aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::handleRead aborted\n";
+  }
+}
+
+bool AsyncConnection::evaluateKeepAlive() const
+{
+  try
+  {
+    if (!itsKeepAliveEnabled)
+      return false;
+
+    // Do not invite a client to reuse a socket the server is about to close anyway
+    if (itsServer->isShutdownRequested())
+      return false;
+
+    // Recycle the connection after a while so that clients are periodically
+    // redistributed over the backends and no socket is held forever.
+    if (itsMaxKeepAliveRequests > 0 && itsRequestCount >= itsMaxKeepAliveRequests)
+      return false;
+
+    // Pipelining guard. The request grammar ends with "body = *char_", i.e. the parser
+    // consumes everything left in the buffer as the request body. If the client
+    // pipelined a second request into the same TCP segment, those bytes were swallowed
+    // by this request instead of being left for the next round, and answering only the
+    // first request would leave the client waiting forever for the second. A request
+    // without a Content-Length header must therefore have an empty body; when it does
+    // not, fall back to the one-request-per-connection behaviour so the client sees the
+    // socket close and retries the requests it got no answer to.
+    if (!itsRequest->getHeader("Content-Length") && itsRequest->getContentLength() > 0)
+    {
+      reportInfo("Pipelined request detected, closing the connection after the response");
+      return false;
+    }
+
+    const auto connection = itsRequest->getHeader("Connection");
+
+    if (itsResponseVersion == "1.1")
+    {
+      // HTTP/1.1: persistent by default, the client opts out with "Connection: close"
+      return !(connection && hasHeaderToken(*connection, "close"));
+    }
+
+    // HTTP/1.0: no persistent connections in the standard, so the client has to opt in
+    // with the keep-alive extension. Some HTTP/1.0 era clients and proxies send that
+    // request in "Proxy-Connection" instead; the header never had any meaning beyond
+    // this HTTP/1.0 hack and is deliberately not consulted for HTTP/1.1 requests.
+    if (connection)
+      return hasHeaderToken(*connection, "keep-alive");
+
+    const auto proxyConnection = itsRequest->getHeader("Proxy-Connection");
+    return proxyConnection && hasHeaderToken(*proxyConnection, "keep-alive");
+  }
+  catch (...)
+  {
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
+  }
+}
+
+// Single exit point for a response that was delivered completely and successfully.
+// May be called from an io_service thread or from a thread pool thread.
+void AsyncConnection::finishResponse()
+{
+  try
+  {
+    if (!itsKeepAlive || hasTimedOut || itsServer->isShutdownRequested())
+    {
+      // Not reusing the socket. The caller drops the last reference to this connection
+      // right after returning, and the destructor shuts the socket down.
+      return;
+    }
+
+    // Reset the per-request state. The client IP is carried over: it identifies the
+    // connection in the error reports and in the connection-finished hooks also while
+    // no request is being handled.
+    const std::string clientIP = itsRequest->getClientIP();
+
+    itsBuffer.clear();
+    itsReceivedBytes = 0;
+    itsSentBytes = 0;
+    itsTotalStreamedBytes = 0;
+    itsDeclaredContentLength = 0;
+    itsResponseString.clear();
+    itsRequest = std::make_unique<SmartMet::Spine::HTTP::Request>();
+    itsRequest->setClientIP(clientIP);
+    itsResponse = std::make_unique<SmartMet::Spine::HTTP::Response>();
+    itsResponseVersion = "1.0";
+    itsQueryIsFast = false;
+    itsAdminQuery = false;
+    itsKeepAlive = false;
+
+    // Must be set before arming the timer so that an expiry is handled as an idle
+    // timeout instead of as a request timeout.
+    itsIdle = true;
+
+    // The timer was cancelled when the request was handed to a plugin, so that a slow
+    // plugin is not killed by the request timeout. Rearm it as the keep-alive idle
+    // timeout for the next request.
+    itsTimeoutTimer->expires_after(std::chrono::seconds(itsKeepAliveTimeout));
+    itsTimeoutTimer->async_wait([me = shared_from_this()](const boost::system::error_code& err)
+                                { me->handleTimer(err); });
+
+    startRead();
+  }
+  catch (...)
+  {
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::finishResponse aborted", nullptr);
+    std::cerr << ex.getStackTrace();
   }
 }
 
@@ -477,7 +625,15 @@ void AsyncConnection::startGatewayReply()
   try
   {
     // This response is a gateway response, simply stream its content to client without any
-    // modifications
+    // modifications.
+    //
+    // The frontend forwards the backend's status line, headers and body verbatim, so this
+    // server neither knows how the body is framed nor is able to inject a Connection
+    // header of its own. The connection therefore cannot be reused. This is consistent
+    // with what the client actually sees: the frontend asks its backends for
+    // "Connection: close", so the forwarded headers announce the close as well.
+    itsKeepAlive = false;
+
     // Get first chunk
 
     this->getNextChunk();
@@ -555,9 +711,10 @@ void AsyncConnection::startStreamReply()
   try
   {
     // Set Content-Length header, just to be sure
+    itsDeclaredContentLength = itsResponse->getContentLength();
     itsResponse->setHeader(
         "Content-Length",
-        std::to_string(static_cast<long long unsigned int>(itsResponse->getContentLength())));
+        std::to_string(static_cast<long long unsigned int>(itsDeclaredContentLength)));
 
     // Currently headers a written syncronously
     try
@@ -652,6 +809,9 @@ void AsyncConnection::writeChunkedReply(const boost::system::error_code& e,
     }
     else
     {
+      // The body was cut short, so the client cannot tell where the next response would
+      // begin even if the socket still worked. Never reuse the connection.
+      itsKeepAlive = false;
       sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
       reportInfo("Error in chunked reply send to " + itsRequest->getClientIP() +
                  ". Reason: " + e.message() + ". Code: " + Fmi::to_string(e.value()));
@@ -704,10 +864,12 @@ void AsyncConnection::finalizeChunkedReply(const boost::system::error_code& e,
       {
         // Final chunk has been sent — the streamed response is complete.
         finalizeStreamLogging();
+        finishResponse();
       }
     }
     else
     {
+      itsKeepAlive = false;
       sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
       reportInfo("Error in finalizing chunked reply send to " + itsRequest->getClientIP() +
                  ". Reason: " + e.message() + ". Code: " + Fmi::to_string(e.value()));
@@ -781,6 +943,19 @@ void AsyncConnection::getNextChunk()
         itsReactor.callBackendConnectionFinishedHooks(
             itsResponse->itsOriginatingBackend, itsResponse->itsBackendPort, streamStatus);
       }
+      else if (itsKeepAlive && itsTotalStreamedBytes != itsDeclaredContentLength)
+      {
+        // Reusing the connection requires the body to be framed exactly as announced.
+        // The streamer stopped after a different number of bytes than the Content-Length
+        // header promised, so the client cannot find the start of the next response and
+        // the socket has to be closed instead.
+        reportInfo("Streamed response delivered " + Fmi::to_string(itsTotalStreamedBytes) +
+                   " bytes instead of the announced " + Fmi::to_string(itsDeclaredContentLength) +
+                   ", closing the connection");
+        itsKeepAlive = false;
+      }
+
+      finishResponse();
     }
   }
   catch (...)
@@ -917,6 +1092,7 @@ void AsyncConnection::writeStreamReply(const boost::system::error_code& e,
     }
     else
     {
+      itsKeepAlive = false;
       sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
       reportInfo("Error in stream reply send to " + itsRequest->getClientIP() +
                  ". Reason: " + e.message());
@@ -974,11 +1150,13 @@ void AsyncConnection::writeRegularReply(const boost::system::error_code& e,
         return;
       }
 
-      // If we are here, everything has been sent and we can close the connection (stop setting
-      // asynchronous writes)
+      // If we are here, everything has been sent. Either wait for the next request on
+      // this connection or let it close.
+      finishResponse();
     }
     else
     {
+      itsKeepAlive = false;
       sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
       reportInfo("Error in reply send to " + itsRequest->getClientIP() +
                  ". Reason: " + e.message());
@@ -1083,10 +1261,66 @@ void AsyncConnection::setServerHeaders()
     itsResponse->setHeader("Vary", "Accept-Encoding");
     itsResponse->setHeader("Date", makeDateString());
 
-    if (itsResponse->getVersion() == "1.1")
+    // --- Persistent connection (keep-alive) negotiation --------------------------
+    //
+    // The reply is sent in the client's own HTTP version, because the two versions
+    // disagree on what a missing Connection header means:
+    //
+    //   HTTP/1.1  Connections are persistent by default (RFC 9112 9.3). Only the end
+    //             of persistence has to be announced, with "Connection: close". The
+    //             response version matters: answering an HTTP/1.1 request with an
+    //             HTTP/1.0 status line would make the client assume a non-persistent
+    //             connection no matter what we do with the headers.
+    //
+    //   HTTP/1.0  Has no persistent connections at all; keep-alive is an extension
+    //             (RFC 1945 appendix D.1.1). The client asks for it with
+    //             "Connection: keep-alive" and the server MUST echo the same header
+    //             to confirm, otherwise the client reads the body until EOF and
+    //             would hang on our reused socket.
+    //
+    // A chunked response is HTTP/1.1 by definition (Spine forces the version when a
+    // stream of unknown length is set as the content), so its version is left alone.
+    // Chunked transfer encoding does not exist in HTTP/1.0, so an HTTP/1.0 client
+    // cannot be given a reusable connection in that case.
+    if (itsResponse->getChunked())
     {
-      itsResponse->setHeader("Connection",
-                             "close");  // Current implementation is one-request-per-connection
+      if (itsResponseVersion != "1.1")
+        itsKeepAlive = false;
+    }
+    else
+    {
+      // AsyncConnection is a friend of Response; there is no public version setter
+      itsResponse->itsVersion = itsResponseVersion;
+    }
+
+    // A plugin may veto the reuse of the connection on its own terms
+    auto connectionHeader = itsResponse->getHeader("Connection");
+    if (connectionHeader && hasHeaderToken(*connectionHeader, "close"))
+      itsKeepAlive = false;
+
+    if (!itsKeepAlive)
+    {
+      itsResponse->setHeader("Connection", "close");
+      itsResponse->removeHeader("Keep-Alive");
+    }
+    else if (itsResponseVersion == "1.1")
+    {
+      // Persistence is the default, saying so would only waste bytes
+      itsResponse->removeHeader("Connection");
+      itsResponse->removeHeader("Keep-Alive");
+    }
+    else
+    {
+      itsResponse->setHeader("Connection", "keep-alive");
+
+      // The Keep-Alive header is informational: it tells an HTTP/1.0 client how long the
+      // socket will be held and how many more requests it may still send. "max" is left
+      // out entirely when the number of requests is unlimited, since "max=0" would read
+      // as "no more requests allowed".
+      std::string keepAlive = "timeout=" + Fmi::to_string(itsKeepAliveTimeout);
+      if (itsMaxKeepAliveRequests > 0)
+        keepAlive += ", max=" + Fmi::to_string(itsMaxKeepAliveRequests - itsRequestCount);
+      itsResponse->setHeader("Keep-Alive", keepAlive);
     }
 
     // Append stale-while-revalidate and stale-if-error to cacheable responses.
@@ -1119,8 +1353,7 @@ void AsyncConnection::setServerHeaders()
     if (opts.staleWhileRevalidate > 0 || opts.staleIfError > 0)
     {
       auto cc = itsResponse->getHeader("Cache-Control");
-      if (cc && cc->find("max-age") != std::string::npos &&
-          cc->find("stale-") == std::string::npos)
+      if (cc && cc->find("max-age") != std::string::npos && cc->find("stale-") == std::string::npos)
       {
         std::string updated = *cc;
         if (opts.staleWhileRevalidate > 0)
@@ -1178,6 +1411,17 @@ void AsyncConnection::sendSimpleReply()
 
     itsFinalStatus = err;
 
+    if (err)
+      itsKeepAlive = false;  // The socket is not usable for another request
+
+    if (itsKeepAlive)
+    {
+      // Stock replies are fully framed by their Content-Length header, so the client
+      // knows where this response ends and the connection can serve another request.
+      finishResponse();
+      return;
+    }
+
     // Shutdown immediately to avoid lingering CLOSE_WAIT sockets
     boost::system::error_code ignored_ec;
     socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
@@ -1212,6 +1456,8 @@ void AsyncConnection::scheduleChunkGetter()
     // Task queue was full, send busy response
     if (!scheduled)
     {
+      // Aborting in the middle of the body leaves the response unframed
+      itsKeepAlive = false;
       sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
       reportInfo("Request queue was full, aborting chunked transfer");
     }
@@ -1250,6 +1496,8 @@ void AsyncConnection::scheduleChunkedChunkGetter()
     // Task queue was full, send busy response
     if (!scheduled)
     {
+      // Aborting in the middle of the body leaves the response unframed
+      itsKeepAlive = false;
       sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
       reportInfo("Request queue was full, aborting chunked transfer");
     }

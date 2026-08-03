@@ -57,6 +57,56 @@ Network I/O (socket reads/writes, accept loop) runs on a separate set of `server
 
 > **High-load rejections are not access-logged.** When the server is overloaded it sends a high-load (`503`) stock reply directly from `AsyncConnection` — either on `isLoadHigh()` or when a pool's task queue is full — and `return`s *before* the request is scheduled to a handler. Access logging lives in `HandlerView::handle()` (per-handler `AccessLogger`), so a rejected request never reaches it and produces **no access-log entry** — only a stdout line (`"Too many active requests, reporting high load"` / `"Backend request queue was full..."`). Don't compute error rates or count `503`s from access logs; high-load events appear only in the system/stdout log. (And the frontend silently retries these on another backend, so they may be invisible client-side too.)
 
+### Persistent connections (HTTP keep-alive)
+
+`AsyncConnection` serves several requests over one socket. The negotiation lives in
+`evaluateKeepAlive()` (decision) and `setServerHeaders()` (headers), and the reuse itself in
+`finishResponse()`, which every successful terminal write path calls.
+
+The two HTTP versions differ, and the response is therefore sent in the *client's* version
+(`Utility::negotiateVersion`) — replying HTTP/1.0 to an HTTP/1.1 request would make the client
+assume a non-persistent connection no matter what the headers say:
+
+- **HTTP/1.1** — persistent by default. The server only announces the end of persistence
+  with `Connection: close`; it deliberately sends no header when the connection is kept.
+- **HTTP/1.0** — has no persistent connections; keep-alive is an extension. The client must
+  ask with `Connection: keep-alive` (or the HTTP/1.0-only `Proxy-Connection` variant) and the
+  server must confirm with the same header plus `Keep-Alive: timeout=…`, otherwise the client
+  reads the body until EOF and hangs on a reused socket.
+
+The connection is **always closed** when the response cannot be framed unambiguously, or when
+the request stream cannot be trusted:
+
+| Case | Why |
+| --- | --- |
+| Gateway responses (`isGatewayResponse`) | The frontend forwards the backend's bytes verbatim; this layer neither knows the framing nor can inject headers. Consistent with what the client sees, since the frontend asks its backends for `Connection: close`. |
+| Chunked response to an HTTP/1.0 client | Chunked transfer encoding does not exist in HTTP/1.0. |
+| Streamed response whose byte count ≠ the announced `Content-Length` | The client cannot find the start of the next response. |
+| 413 / 400 / 408, and shutdown replies | The request was not (or not fully) read, so the unread remainder would be parsed as the next request. |
+| Any send error, or a queue-full abort mid-body | The body was cut short. |
+| A plugin that sets `Connection: close` itself | Plugin intent wins. |
+
+Stock replies produced *after* a complete parse (404, 503 high load, queue-full at scheduling
+time) do keep the connection alive — they carry a `Content-Length` and the request stream is
+fully consumed.
+
+> **Pipelining is not supported.** Spine's request grammar ends with `body = *char_`, i.e.
+> `parseRequest` consumes the whole buffer as the body. Bytes of a pipelined follow-up request
+> get swallowed into the current request instead of being left for the next round. A request
+> without `Content-Length` whose parsed body is non-empty is therefore treated as pipelining
+> and answered with a close, so the client sees EOF and retries what it got no answer to.
+> Removing this guard requires a parser change in `smartmet-library-spine` first.
+
+Timers: the existing `timeout` option still bounds reading the first (and each subsequent)
+request. Once a response is finished, `finishResponse()` re-arms the same timer as an *idle*
+timeout (`keepalive.timeout`); when that expires the socket is closed **silently** rather than
+with a 408, because the client may be writing a request at that very moment. `keepalive.maxrequests`
+caps how many requests one connection may serve.
+
+Config (`keepalive.enabled` / `.timeout` / `.maxrequests`) is read in `Server`'s constructor
+straight from `Options::itsConfig`, like `logmemoryuse`; the connections pick it up through the
+`Server::isKeepAliveEnabled()` accessors.
+
 ### Startup sequence (smartmetd.cpp)
 
 1. Parse command-line options via `Spine::Options`
@@ -70,6 +120,7 @@ Network I/O (socket reads/writes, accept loop) runs on a separate set of `server
 
 Uses libconfig format (`.conf` files). The server config specifies:
 - `port`, `server_threads`, `defaultlogging`, `lazylinking`
+- `keepalive` block (`enabled`, `timeout`, `maxrequests`)
 - `encryption` block (SSL/TLS cert, key, password)
 - `adminpool`, `slowpool`, `fastpool` (thread counts, queue sizes)
 - `engines` and `plugins` blocks listing modules to load with their config file paths

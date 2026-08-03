@@ -42,6 +42,10 @@ Connection::Connection(Server* theServer,
       itsCompressLimit(compressLimit),
       itsMaxRequestSize(maxRequestSize),
       itsTimeout(timeout),
+      itsKeepAliveEnabled(theServer->isKeepAliveEnabled()),
+      itsKeepAliveTimeout(theServer->getKeepAliveTimeout()),
+      itsMaxKeepAliveRequests(theServer->getMaxKeepAliveRequests()),
+      itsShutdownFlag(theServer->getShutdownFlag()),
       itsDumpRequests(dumpRequests),
       itsFinalStatus(0, boost::system::system_category())
 {
@@ -54,7 +58,10 @@ boost::asio::ip::tcp::socket& Connection::socket()
 
 Connection::~Connection()
 {
-  if (!itsServer->isShutdownRequested())
+  // Deliberately not itsServer->isShutdownRequested(): a connection left waiting for
+  // its next request is destroyed together with the io_context, i.e. after the rest of
+  // the server object is already gone. See Server::getShutdownFlag().
+  if (!*itsShutdownFlag)
   {
     // Call the client connection finished - hooks
     itsReactor.callClientConnectionFinishedHooks(itsRequest->getClientIP(), itsFinalStatus);

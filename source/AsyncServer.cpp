@@ -114,7 +114,7 @@ void AsyncServer::startAccept()
 {
   try
   {
-    if (itsShutdownRequested)
+    if (*itsShutdownRequested)
       return;
 
     // Make a new connection object and let it wait for an incoming connection
@@ -181,7 +181,7 @@ void AsyncServer::handleAccept(const boost::system::error_code& e)
 {
   try
   {
-    if (itsShutdownRequested)
+    if (*itsShutdownRequested)
       return;
 
     if (!e)

@@ -38,6 +38,25 @@ fastpool:
 };
 
 
+// Persistent connections (HTTP keep-alive). The connection is reused only when the
+// response is framed unambiguously (Content-Length, or chunked encoding towards an
+// HTTP/1.1 client) - error replies produced before the request was fully read, gateway
+// responses forwarded by the frontend plugin and aborted transfers always close.
+//
+// The negotiation follows the protocol version of the request: HTTP/1.1 connections are
+// persistent unless the client sends "Connection: close", while for HTTP/1.0 keep-alive
+// is an extension the client must request with "Connection: keep-alive" (or the old
+// "Proxy-Connection" variant) and the server confirms with a header of its own.
+//
+// Setting enabled = false restores the one-request-per-connection behaviour.
+
+keepalive:
+{
+  enabled     = true;   // reuse connections for further requests
+  timeout     = 30;     // seconds an idle connection waits for the next request
+  maxrequests = 1000;   // requests served over one connection (0 = unlimited)
+};
+
 lazylinking = false;
 
 defaultlogging = true;

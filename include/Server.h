@@ -54,6 +54,28 @@ class Server
   void shutdownServer();
   bool isShutdownRequested() const;
 
+  /// Persistent (keep-alive) connections enabled
+  bool isKeepAliveEnabled() const { return itsKeepAliveEnabled; }
+
+  /// Seconds an idle persistent connection is kept open waiting for the next request
+  long getKeepAliveTimeout() const { return itsKeepAliveTimeout; }
+
+  /// Maximum number of requests served over one connection (0 = unlimited)
+  std::size_t getMaxKeepAliveRequests() const { return itsMaxKeepAliveRequests; }
+
+  /// Shared "shutdown requested" flag.
+  ///
+  /// Connections outlive the server object: a connection blocked in an asynchronous
+  /// read is owned by the completion handler stored in the io_context, and those
+  /// handlers are only destroyed when the io_context itself is destroyed - which,
+  /// as the first declared member of Server, happens last, after every other Server
+  /// member is already gone. ~Connection must still be able to tell whether the
+  /// server is shutting down (to decide whether calling the reactor hooks is safe),
+  /// so the flag is heap allocated and co-owned by every connection instead of being
+  /// read back through the dangling Server pointer. Persistent connections make such
+  /// long-lived idle connections the normal case rather than a rarity.
+  std::shared_ptr<const std::atomic<bool>> getShutdownFlag() const { return itsShutdownRequested; }
+
   virtual ~Server() = default;
 
  protected:
@@ -110,7 +132,17 @@ class Server
   bool itsDumpRequests;
 
   /// This is true if the shutdown is requested. The server should not accept any more connections.
-  std::atomic<bool> itsShutdownRequested;
+  /// Heap allocated and shared with the connections, see getShutdownFlag().
+  std::shared_ptr<std::atomic<bool>> itsShutdownRequested;
+
+  /// Keep incoming connections open for further requests (HTTP persistent connections)
+  bool itsKeepAliveEnabled = true;
+
+  /// Seconds an idle persistent connection waits for the next request before being closed
+  long itsKeepAliveTimeout = 30;
+
+  /// Maximum number of requests served over one connection (0 = unlimited)
+  std::size_t itsMaxKeepAliveRequests = 1000;
 
   /// Period in minutes for logging memory usage to stdout (0 = disabled)
   unsigned int itsMemoryLogPeriod = 0;

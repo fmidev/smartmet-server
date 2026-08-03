@@ -28,6 +28,35 @@ std::string makeDateString();
 
 std::string parseXForwardedFor(const std::string& input);
 
+// ======================================================================
+/*!
+ * \brief Test whether a comma separated HTTP header value contains a token
+ *
+ * Several HTTP headers ("Connection", "Proxy-Connection", ...) carry a comma
+ * separated list of case insensitive tokens, e.g. "keep-alive, Upgrade".
+ * Surrounding whitespace around each token is ignored.
+ *
+ * \param headerValue The raw header value
+ * \param token The token to look for, in lower case
+ */
+// ======================================================================
+bool hasHeaderToken(const std::string& headerValue, const std::string& token);
+
+// ======================================================================
+/*!
+ * \brief Resolve the HTTP version to answer a request with
+ *
+ * The reply must speak the same HTTP version as the request, since the
+ * default connection semantics differ between versions. Anything the request
+ * parser reports as 1.1 or newer is answered as 1.1 (the highest version this
+ * server implements), everything else as 1.0.
+ *
+ * \param requestVersion Version string of the request, e.g. "1.1"
+ * \return Either "1.1" or "1.0"
+ */
+// ======================================================================
+std::string negotiateVersion(const std::string& requestVersion);
+
 std::string dumpRequest(SmartMet::Spine::HTTP::Request& request);
 
 // ======================================================================

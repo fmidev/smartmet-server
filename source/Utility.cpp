@@ -173,6 +173,65 @@ std::string parseXForwardedFor(const std::string& input)
   }
 }
 
+bool hasHeaderToken(const std::string& headerValue, const std::string& token)
+{
+  try
+  {
+    std::size_t pos = 0;
+    while (pos <= headerValue.size())
+    {
+      std::size_t end = headerValue.find(',', pos);
+      if (end == std::string::npos)
+        end = headerValue.size();
+
+      // Trim the linear whitespace allowed around a list element
+      std::size_t first = headerValue.find_first_not_of(" \t", pos);
+      if (first != std::string::npos && first < end)
+      {
+        std::size_t last = headerValue.find_last_not_of(" \t", end - 1);
+        if (Fmi::ascii_tolower_copy(headerValue.substr(first, last - first + 1)) == token)
+          return true;
+      }
+
+      pos = end + 1;
+    }
+
+    return false;
+  }
+  catch (...)
+  {
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
+  }
+}
+
+std::string negotiateVersion(const std::string& requestVersion)
+{
+  try
+  {
+    const std::size_t dot = requestVersion.find('.');
+    if (dot != std::string::npos)
+    {
+      try
+      {
+        const unsigned long major = Fmi::stoul(requestVersion.substr(0, dot));
+        const unsigned long minor = Fmi::stoul(requestVersion.substr(dot + 1));
+        if (major > 1 || (major == 1 && minor >= 1))
+          return "1.1";
+      }
+      catch (...)
+      {
+        // Unparseable version, fall through to the conservative default
+      }
+    }
+
+    return "1.0";
+  }
+  catch (...)
+  {
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
+  }
+}
+
 std::string dumpRequest(SmartMet::Spine::HTTP::Request& request)
 {
   try
