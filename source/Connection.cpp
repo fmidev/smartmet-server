@@ -46,6 +46,7 @@ Connection::Connection(Server* theServer,
       itsKeepAliveTimeout(theServer->getKeepAliveTimeout()),
       itsMaxKeepAliveRequests(theServer->getMaxKeepAliveRequests()),
       itsShutdownFlag(theServer->getShutdownFlag()),
+      itsConnectionCount(theServer->getConnectionCounter()),
       itsDumpRequests(dumpRequests),
       itsFinalStatus(0, boost::system::system_category())
 {
@@ -56,8 +57,17 @@ boost::asio::ip::tcp::socket& Connection::socket()
   return (boost::asio::ip::tcp::socket&)itsSocket.lowest_layer();
 }
 
+void Connection::registerConnection()
+{
+  itsCounted = true;
+  ++(*itsConnectionCount);
+}
+
 Connection::~Connection()
 {
+  if (itsCounted)
+    --(*itsConnectionCount);
+
   // Deliberately not itsServer->isShutdownRequested(): a connection left waiting for
   // its next request is destroyed together with the io_context, i.e. after the rest of
   // the server object is already gone. See Server::getShutdownFlag().

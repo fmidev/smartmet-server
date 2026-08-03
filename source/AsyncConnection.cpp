@@ -17,6 +17,22 @@ namespace SmartMet
 {
 namespace Server
 {
+namespace
+{
+// Status codes whose responses are defined to carry no message body. Their
+// framing comes from the status code, not from a header, so no body and no
+// Content-Length may be sent - a client stops reading at the end of the header
+// section and would take anything after it for the next response.
+//
+// Spine's Status enumerators are the numeric codes themselves, except for the
+// two local ones (high_load, shutdown) which are far outside these ranges.
+bool statusHasNoBody(SmartMet::Spine::HTTP::Status status)
+{
+  const int code = static_cast<int>(status);
+  return (code >= 100 && code < 200) || code == 204 || code == 304;
+}
+}  // namespace
+
 AsyncConnection::AsyncConnection(Private,
                                  AsyncServer* serverInstance,
                                  bool sslEnabled,
@@ -149,6 +165,10 @@ void AsyncConnection::start()
 {
   try
   {
+    // The connection has been accepted, so it now occupies a slot against the
+    // server's connection limit until it is destroyed.
+    registerConnection();
+
     // Start the timeout timer
 
     itsTimeoutTimer =
@@ -300,6 +320,22 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         itsResponseVersion = negotiateVersion(itsRequest->getVersion());
         itsKeepAlive = evaluateKeepAlive();
 
+        // RFC 9112 3.2: an HTTP/1.1 request without a Host header cannot be
+        // routed to a target resource and must be rejected. The check lives here
+        // rather than in the parser because HTTP/1.0 requests legitimately have
+        // no Host. The connection is closed: a client that gets this wrong is
+        // not one whose framing should be trusted for a second request.
+        if (itsResponseVersion == "1.1" && !itsRequest->getHeader("Host"))
+        {
+          reportError("400 Missing Host header on an HTTP/1.1 request");
+          itsKeepAlive = false;
+          sendStockReply(SmartMet::Spine::HTTP::Status::bad_request);
+          return;
+        }
+
+        // Must come after the keep-alive negotiation, which reads Connection
+        stripHopByHopHeaders();
+
         // Check whether we have 'OPTIONS' request
         if (itsRequest->getMethodString() == "OPTIONS" && itsRequest->getResource() == "*")
         {
@@ -387,8 +423,10 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
       }
       else
       {
-        // Request is not succesfully parsed, attempt to get more data from socket and try again
-        startRead();
+        // Request is not succesfully parsed, attempt to get more data from socket and try
+        // again - unless the client is waiting for us to accept its body first.
+        if (handleExpectContinue())
+          startRead();
       }
     }
     else if (e == boost::asio::error::eof)
@@ -422,6 +460,145 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
     Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::handleRead aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::handleRead aborted\n";
+  }
+}
+
+bool AsyncConnection::handleExpectContinue()
+{
+  try
+  {
+    if (itsExpectHandled)
+      return true;
+
+    const auto head = peekRequestHead(itsBuffer);
+    if (!head.complete)
+      return true;  // Header section is still on its way
+
+    itsExpectHandled = true;  // One decision per request, whatever it is
+
+    if (head.expect.empty())
+      return true;
+
+    // "Expect" is an HTTP/1.1 mechanism. An interim response must never be sent
+    // to an HTTP/1.0 client (RFC 9112 9.4): it has no notion of one and would
+    // read the 100 as the final answer to its request.
+    if (negotiateVersion(head.version) != "1.1")
+      return true;
+
+    if (hasHeaderToken(head.expect, "100-continue"))
+    {
+      // Tell the client to go ahead and send the body it is holding back.
+      // Without this it waits for its own timeout and the request never
+      // completes - which is why this cannot wait for a parseable request.
+      static const std::string continueReply = "HTTP/1.1 100 Continue\r\n\r\n";
+
+      boost::system::error_code err;
+      if (itsEncryptionEnabled)
+        boost::asio::write(itsSocket, boost::asio::buffer(continueReply), err);
+      else
+        boost::asio::write(socket(), boost::asio::buffer(continueReply), err);
+
+      if (err)
+      {
+        itsFinalStatus = err;
+        itsKeepAlive = false;
+        return false;
+      }
+
+      return true;
+    }
+
+    // An expectation we do not understand cannot be met. RFC 9110 10.1.1 asks
+    // for 417 Expectation Failed here; Spine's Status enum has no 417, so this
+    // reports a framed 400 and closes instead, which at least does not leave the
+    // client waiting forever for a body acknowledgement that never comes.
+    // (417 belongs with the Spine changes.)
+    reportInfo("Unsupported expectation '" + head.expect + "', rejecting the request");
+    itsKeepAlive = false;
+    sendStockReply(SmartMet::Spine::HTTP::Status::bad_request);
+    return false;
+  }
+  catch (...)
+  {
+    Fmi::Exception ex(
+        BCP, "Operation failed! AsyncConnection::handleExpectContinue aborted", nullptr);
+    std::cerr << ex.getStackTrace();
+    return false;
+  }
+}
+
+void AsyncConnection::stripHopByHopHeaders()
+{
+  try
+  {
+    // Connection-management headers. They apply to the single hop the request
+    // arrived over and must not reach a handler, nor be forwarded by the
+    // frontend to a backend (RFC 9110 7.6.1).
+    //
+    // Transfer-Encoding is deliberately not in this list even though it is
+    // hop-by-hop: the request parser does not decode chunked request bodies
+    // yet, so the body is still chunk-framed and dropping the header that says
+    // so would turn a visibly broken request into a silently corrupt one.
+    static const std::array<const char*, 7> hopByHop = {"Connection",
+                                                        "Keep-Alive",
+                                                        "Proxy-Connection",
+                                                        "Proxy-Authenticate",
+                                                        "Proxy-Authorization",
+                                                        "TE",
+                                                        "Trailer"};
+
+    // Whatever the Connection header itself names is hop-by-hop too, so collect
+    // those before the header is removed.
+    std::vector<std::string> listed;
+    const auto connection = itsRequest->getHeader("Connection");
+    if (connection)
+    {
+      std::size_t pos = 0;
+      while (pos <= connection->size())
+      {
+        std::size_t end = connection->find(',', pos);
+        if (end == std::string::npos)
+          end = connection->size();
+
+        const std::size_t first = connection->find_first_not_of(" \t", pos);
+        if (first != std::string::npos && first < end)
+        {
+          const std::size_t last = connection->find_last_not_of(" \t", end - 1);
+          listed.push_back(connection->substr(first, last - first + 1));
+        }
+        pos = end + 1;
+      }
+    }
+
+    for (const auto* name : hopByHop)
+      itsRequest->removeHeader(name);
+
+    for (const auto& name : listed)
+      itsRequest->removeHeader(name);
+  }
+  catch (...)
+  {
+    Fmi::Exception ex(
+        BCP, "Operation failed! AsyncConnection::stripHopByHopHeaders aborted", nullptr);
+    std::cerr << ex.getStackTrace();
+  }
+}
+
+void AsyncConnection::rejectConnection()
+{
+  try
+  {
+    // The connection was never started, so there is no timer to cancel and no
+    // request to report. Answer with a framed 503 so a legitimate client backs
+    // off instead of seeing an unexplained reset, then close.
+    itsKeepAlive = false;
+    itsResponseVersion = "1.0";  // Nothing has been read, so the version is unknown
+    sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
+  }
+  catch (...)
+  {
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::rejectConnection aborted", nullptr);
+    std::cerr << ex.getStackTrace();
   }
 }
 
@@ -510,6 +687,7 @@ void AsyncConnection::finishResponse()
     itsQueryIsFast = false;
     itsAdminQuery = false;
     itsKeepAlive = false;
+    itsExpectHandled = false;
 
     // Must be set before arming the timer so that an expiry is handled as an idle
     // timeout instead of as a request timeout.
@@ -649,8 +827,12 @@ void AsyncConnection::startChunkedReply()
 {
   try
   {
-    // Content is to be sent using chunked content encoding
+    // Content is to be sent using chunked content encoding. A message must never
+    // carry both framings (RFC 9112 6.1): a recipient that honoured the
+    // Content-Length instead would stop mid-stream and read the remaining chunks
+    // as the next response, so drop anything a plugin may have set.
     itsResponse->setHeader("Transfer-Encoding", "chunked");
+    itsResponse->removeHeader("Content-Length");
 
     // Headers are currently written synchronously
     try
@@ -1203,10 +1385,24 @@ void AsyncConnection::startRegularReply()
         compress_response(*itsResponse, encoding);
     }
 
-    // Set Content-Length header, as it may change during compression
-    itsResponse->setHeader(
-        "Content-Length",
-        std::to_string(static_cast<long long unsigned int>(itsResponse->getContentLength())));
+    if (statusHasNoBody(itsResponse->getStatus()))
+    {
+      // 1xx, 204 and 304 are framed by the status code itself: the message ends
+      // at the header section, whatever the headers claim (RFC 9110 15.3.5,
+      // 15.4.5). Sending a body - or a Content-Length promising one - would
+      // desynchronise the next response on a persistent connection, since the
+      // client stops reading at the end of the headers.
+      itsResponse->setContent(std::string());
+      itsResponse->removeHeader("Content-Length");
+      itsResponse->removeHeader("Transfer-Encoding");
+    }
+    else
+    {
+      // Set Content-Length header, as it may change during compression
+      itsResponse->setHeader(
+          "Content-Length",
+          std::to_string(static_cast<long long unsigned int>(itsResponse->getContentLength())));
+    }
 
     std::string headers;
     std::string content;

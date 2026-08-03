@@ -177,6 +177,46 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
 
   // ======================================================================
   /*!
+   * \brief Answer an "Expect" header while the request body is still on its way
+   *
+   * A client sending "Expect: 100-continue" holds the body back until the
+   * server has said it wants it, so this has to be decided from the raw buffer
+   * as soon as the header section is complete - waiting for a parseable
+   * request would deadlock until the timeout. Returns false when the request
+   * has been rejected and reading must stop.
+   */
+  // ======================================================================
+
+  bool handleExpectContinue();
+
+  // ======================================================================
+  /*!
+   * \brief Remove the hop-by-hop headers from the request
+   *
+   * These describe the single connection the request arrived on and are
+   * meaningless - and, forwarded by the frontend to a backend, actively
+   * harmful - to a handler (RFC 9110 7.6.1). Must run after the keep-alive
+   * negotiation, which reads the Connection header.
+   */
+  // ======================================================================
+
+  void stripHopByHopHeaders();
+
+  // ======================================================================
+  /*!
+   * \brief Refuse a connection that would exceed the server's connection limit
+   *
+   * Sends a framed 503 and closes. The connection is never started, so it is
+   * not counted and holds no socket beyond this call.
+   */
+  // ======================================================================
+
+ public:
+  void rejectConnection();
+
+ private:
+  // ======================================================================
+  /*!
    * \brief Terminal handler for a completely and successfully sent response
    *
    * Either rearms the connection for the next request or lets it go, which
@@ -383,6 +423,10 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
   /// Total response body bytes streamed across all chunks, for deferred
   /// access logging of streamed/chunked responses.
   std::size_t itsTotalStreamedBytes = 0;
+
+  /// True once the current request's "Expect" header has been acted on, so the
+  /// interim response is sent at most once per request.
+  bool itsExpectHandled = false;
 
   /// Content-Length announced for a non-chunked streamed response. A persistent
   /// connection may only be reused if the streamer really delivered that many

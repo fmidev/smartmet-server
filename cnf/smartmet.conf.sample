@@ -57,6 +57,14 @@ keepalive:
   maxrequests = 1000;   // requests served over one connection (0 = unlimited)
 };
 
+// Cap on simultaneously open client connections. Persistent connections are held
+// open between requests, so without a cap a slow or hostile client population can
+// exhaust the process's file descriptors. Defaults to three quarters of the soft
+// RLIMIT_NOFILE; 0 disables the cap. Connections beyond it are answered with a
+// framed 503 and closed.
+
+// maxconnections = 0;
+
 lazylinking = false;
 
 defaultlogging = true;

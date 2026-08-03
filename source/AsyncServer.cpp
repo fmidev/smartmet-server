@@ -3,6 +3,7 @@
 #include <fmt/format.h>
 #include <macgyver/Exception.h>
 #include <macgyver/ThreadName.h>
+#include <spine/Convenience.h>
 #include <algorithm>
 #include <chrono>
 #include <thread>
@@ -186,8 +187,28 @@ void AsyncServer::handleAccept(const boost::system::error_code& e)
 
     if (!e)
     {
-      // Start processing the new connection
-      itsNewConnection->start();
+      if (itsMaxConnections > 0 && *itsConnectionCount >= itsMaxConnections)
+      {
+        // At the connection limit. Persistent connections are held open between
+        // requests, so without this a slow or hostile client population would
+        // keep accumulating sockets until the process runs out of descriptors.
+        // The connection is answered with a framed 503 and closed rather than
+        // just dropped, so a legitimate client backs off instead of seeing an
+        // unexplained reset.
+        if (!itsConnectionLimitReported.exchange(true))
+        {
+          std::cout << Spine::log_time_str() << " Connection limit " << itsMaxConnections
+                    << " reached, refusing new connections\n";
+        }
+        itsNewConnection->rejectConnection();
+      }
+      else
+      {
+        itsConnectionLimitReported = false;
+
+        // Start processing the new connection
+        itsNewConnection->start();
+      }
     }
 
     // Go back to listen for the next connection

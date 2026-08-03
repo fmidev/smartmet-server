@@ -63,6 +63,17 @@ class Server
   /// Maximum number of requests served over one connection (0 = unlimited)
   std::size_t getMaxKeepAliveRequests() const { return itsMaxKeepAliveRequests; }
 
+  /// Maximum number of simultaneously open client connections (0 = unlimited)
+  std::size_t getMaxConnections() const { return itsMaxConnections; }
+
+  /// Number of client connections currently open. Heap allocated and co-owned by
+  /// the connections for the same reason as the shutdown flag below: a connection
+  /// may outlive the server object, and it decrements the counter when it dies.
+  std::shared_ptr<std::atomic<std::size_t>> getConnectionCounter() const
+  {
+    return itsConnectionCount;
+  }
+
   /// Shared "shutdown requested" flag.
   ///
   /// Connections outlive the server object: a connection blocked in an asynchronous
@@ -143,6 +154,15 @@ class Server
 
   /// Maximum number of requests served over one connection (0 = unlimited)
   std::size_t itsMaxKeepAliveRequests = 1000;
+
+  /// Maximum number of simultaneously open client connections (0 = unlimited).
+  /// Persistent connections are held open between requests, so without a cap a
+  /// slow or malicious client population can exhaust the process's file
+  /// descriptors. Defaults to a fraction of RLIMIT_NOFILE, see Server.cpp.
+  std::size_t itsMaxConnections = 0;
+
+  /// Number of client connections currently open
+  std::shared_ptr<std::atomic<std::size_t>> itsConnectionCount;
 
   /// Period in minutes for logging memory usage to stdout (0 = disabled)
   unsigned int itsMemoryLogPeriod = 0;

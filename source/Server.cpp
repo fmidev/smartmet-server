@@ -1,6 +1,7 @@
 #include "Server.h"
 #include "Utility.h"
 #include <macgyver/Exception.h>
+#include <sys/resource.h>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -23,6 +24,27 @@ namespace SmartMet
 {
 namespace Server
 {
+namespace
+{
+// Default cap on simultaneously open client connections.
+//
+// The cap exists to keep persistent connections - which are held open between
+// requests, and by a slowloris-style client indefinitely - from exhausting the
+// process's file descriptors. It is therefore derived from the descriptor limit
+// rather than being a fixed number: three quarters of the soft RLIMIT_NOFILE,
+// leaving room for the listening socket, the plugins' database and file handles
+// and the log files. Operators can override it with the "maxconnections"
+// setting, where 0 means unlimited.
+std::size_t defaultMaxConnections()
+{
+  struct rlimit limit;  // NOLINT(cppcoreguidelines-pro-type-member-init)
+  if (getrlimit(RLIMIT_NOFILE, &limit) != 0 || limit.rlim_cur == RLIM_INFINITY)
+    return 4000;
+
+  return std::max<std::size_t>(static_cast<std::size_t>(limit.rlim_cur) * 3 / 4, 64);
+}
+}  // namespace
+
 Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& theReactor)
     : itsEncryptionEnabled(theOptions.encryptionEnabled),
       itsEncryptionPassword(theOptions.encryptionPassword),
@@ -41,7 +63,9 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
       itsMaxRequestSize(theOptions.maxrequestsize),
       itsTimeout(theOptions.timeout),
       itsDumpRequests(theOptions.logrequests),
-      itsShutdownRequested(std::make_shared<std::atomic<bool>>(false))
+      itsShutdownRequested(std::make_shared<std::atomic<bool>>(false)),
+      itsMaxConnections(defaultMaxConnections()),
+      itsConnectionCount(std::make_shared<std::atomic<std::size_t>>(0))
 {
   try
   {
@@ -121,6 +145,13 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
           maxRequests >= 0)
         itsMaxKeepAliveRequests = static_cast<std::size_t>(maxRequests);
     }
+
+    // Cap on simultaneously open connections. Not under "keepalive" because it
+    // bounds every connection, but it only really matters once connections are
+    // persistent and therefore long lived.
+    int maxConnections = 0;
+    if (theOptions.itsConfig.lookupValue("maxconnections", maxConnections) && maxConnections >= 0)
+      itsMaxConnections = static_cast<std::size_t>(maxConnections);
   }
   catch (...)
   {

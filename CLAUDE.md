@@ -14,7 +14,7 @@ make test             # Run the startup test (starts server with minimal.conf, v
 make format           # clang-format all source
 ```
 
-The test is not a unit test suite — it is a single integration test (`test/startup-test.sh`) that launches `smartmetd` with an empty engine/plugin config (`test/minimal.conf`), waits for the "Launched Synapse server" log line, sends an HTTP OPTIONS request, then shuts the server down via SIGTERM and verifies clean exit.
+`make test` runs two integration scripts, not a unit test suite. `test/startup-test.sh` launches `smartmetd` with an empty engine/plugin config (`test/minimal.conf`), waits for the "Launched Synapse server" log line, checks the OPTIONS reply and the keep-alive negotiation through curl, then shuts the server down via SIGTERM and verifies clean exit. `test/conformance-test.sh` starts a second server and drives `test/conformance-test.py` against it over a raw socket for the HTTP/1.1 obligations curl cannot express.
 
 To run the built binary directly for manual testing:
 
@@ -103,9 +103,57 @@ timeout (`keepalive.timeout`); when that expires the socket is closed **silently
 with a 408, because the client may be writing a request at that very moment. `keepalive.maxrequests`
 caps how many requests one connection may serve.
 
-Config (`keepalive.enabled` / `.timeout` / `.maxrequests`) is read in `Server`'s constructor
-straight from `Options::itsConfig`, like `logmemoryuse`; the connections pick it up through the
-`Server::isKeepAliveEnabled()` accessors.
+Config (`keepalive.enabled` / `.timeout` / `.maxrequests`, plus the server-wide `maxconnections`)
+is read in `Server`'s constructor straight from `Options::itsConfig`, like `logmemoryuse`; the
+connections pick it up through the `Server::isKeepAliveEnabled()` accessors.
+
+`maxconnections` bounds how many client connections may be open at once — necessary once
+connections are persistent, since they are held open between requests and a slowloris-style client
+otherwise accumulates sockets until the process runs out of descriptors. It therefore defaults to
+three quarters of the soft `RLIMIT_NOFILE` rather than to a fixed number. Connections over the cap
+get a framed 503 and are closed; the limit is logged once per episode, not once per refusal.
+
+### Protocol obligations that come with keep-alive (BS-3475)
+
+A single framing mistake corrupts every later message on the connection, so these are not
+cosmetic. Implemented in this repo:
+
+- **One framing, never two.** `startChunkedReply()` drops any `Content-Length` a plugin left
+  behind when it sets `Transfer-Encoding: chunked`.
+- **Bodyless statuses.** 1xx, 204 and 304 are framed by the status code itself: `startRegularReply()`
+  clears the content and removes `Content-Length`/`Transfer-Encoding` for them (`statusHasNoBody()`).
+  A client stops reading at the end of the header section, so a body there would be read as the
+  next response.
+- **`Host` required on HTTP/1.1** → 400 and close (RFC 9112 3.2). Checked in the server rather than
+  the parser because HTTP/1.0 requests legitimately have none.
+- **`Expect: 100-continue`** → interim `HTTP/1.1 100 Continue`. Decided from the *raw* buffer via
+  `Utility::peekRequestHead()` as soon as the header section is complete, because the client is
+  withholding the body until it is answered — waiting for a parseable request would deadlock.
+  Never sent to an HTTP/1.0 client, which would read the 100 as the final response.
+- **Hop-by-hop headers** are removed from the request before handlers see them
+  (`stripHopByHopHeaders()`), including whatever `Connection` itself names. Runs *after* the
+  keep-alive negotiation, which reads `Connection`.
+
+Still open, and blocked on `smartmet-library-spine`'s request parser:
+
+| Gap | Why it needs spine |
+| --- | --- |
+| Chunked **request** bodies | The grammar ends with `body = *char_`; there is no decoder. |
+| Answering pipelined requests in order | `parseRequest()` consumes the whole buffer and reports no consumed length, so trailing bytes cannot be kept for the next request. |
+| `HEAD` | The parser accepts only GET/POST/OPTIONS. |
+| Rejecting duplicate `Content-Length`, and `Content-Length` + `Transfer-Encoding` together | `HeaderMap` is a `std::map`, so duplicate headers silently collapse to the first — a request-smuggling vector. |
+| 417 Expectation Failed | `Spine::HTTP::Status` has no 417; an unmet expectation currently gets a framed 400 + close. |
+
+The frontend's backend connection pool, forwarded-request framing and hop-by-hop stripping on the
+proxy side are likewise still open, in `smartmet-plugin-frontend`.
+
+### Tests
+
+`make test` runs two scripts. `startup-test.sh` is the launch/shutdown smoke test plus the
+keep-alive negotiation seen through curl. `conformance-test.sh` starts a server on port 8079 and
+runs `conformance-test.py` against it over a raw socket — the interesting cases (missing `Host`, a
+withheld body, a bodyless status, a pipelined request) are exactly the ones a well-behaved client
+will not produce, so curl cannot drive them.
 
 ### Startup sequence (smartmetd.cpp)
 

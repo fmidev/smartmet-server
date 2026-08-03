@@ -57,6 +57,30 @@ bool hasHeaderToken(const std::string& headerValue, const std::string& token);
 // ======================================================================
 std::string negotiateVersion(const std::string& requestVersion);
 
+// ======================================================================
+/*!
+ * \brief Selected fields of a request whose header section has arrived
+ *
+ * Read straight from the raw socket buffer, i.e. before the request can be
+ * parsed. "Expect: 100-continue" has to be answered at exactly that point:
+ * the client is deliberately withholding the body until the server says it
+ * wants it, so waiting for a complete request would deadlock.
+ */
+// ======================================================================
+struct RawRequestHead
+{
+  /// True once the CRLFCRLF terminating the header section has been seen
+  bool complete = false;
+
+  /// Version from the request line, e.g. "1.1". Empty when unparseable.
+  std::string version;
+
+  /// Value of the Expect header, empty when absent
+  std::string expect;
+};
+
+RawRequestHead peekRequestHead(const std::string& buffer);
+
 std::string dumpRequest(SmartMet::Spine::HTTP::Request& request);
 
 // ======================================================================

@@ -160,9 +160,28 @@ class Connection
   /// True while an already used persistent connection is waiting for the next request
   std::atomic<bool> itsIdle = false;
 
+  /// True once this connection has been counted against the server's connection
+  /// limit, so that the destructor decrements exactly what start() incremented.
+  bool itsCounted = false;
+
   /// The server's shutdown flag. Co-owned because the connection may outlive the
   /// server object, see Server::getShutdownFlag().
   std::shared_ptr<const std::atomic<bool>> itsShutdownFlag;
+
+  /// The server's live connection counter, co-owned for the same reason
+  std::shared_ptr<std::atomic<std::size_t>> itsConnectionCount;
+
+  // ======================================================================
+  /*!
+   * \brief Count this connection against the server's connection limit
+   *
+   * Called once the connection has actually been accepted, not when the object
+   * is created: the server keeps one unused connection object around waiting
+   * for the next accept, and that one must not occupy a slot.
+   */
+  // ======================================================================
+
+  void registerConnection();
 
   /// Timeout flag
   std::atomic<bool> hasTimedOut = false;
