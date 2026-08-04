@@ -53,6 +53,7 @@ Requires(pre): shadow-utils
 #TestRequires: /bin/bash
 #TestRequires: gcc-c++
 #TestRequires: make
+#TestRequires: python3
 #TestRequires: curl >= 7.42.0
 #TestRequires: smartmet-utils-devel
 

@@ -173,6 +173,116 @@ std::string parseXForwardedFor(const std::string& input)
   }
 }
 
+bool hasHeaderToken(const std::string& headerValue, const std::string& token)
+{
+  try
+  {
+    std::size_t pos = 0;
+    while (pos <= headerValue.size())
+    {
+      std::size_t end = headerValue.find(',', pos);
+      if (end == std::string::npos)
+        end = headerValue.size();
+
+      // Trim the linear whitespace allowed around a list element
+      std::size_t first = headerValue.find_first_not_of(" \t", pos);
+      if (first != std::string::npos && first < end)
+      {
+        std::size_t last = headerValue.find_last_not_of(" \t", end - 1);
+        if (Fmi::ascii_tolower_copy(headerValue.substr(first, last - first + 1)) == token)
+          return true;
+      }
+
+      pos = end + 1;
+    }
+
+    return false;
+  }
+  catch (...)
+  {
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
+  }
+}
+
+std::string negotiateVersion(const std::string& requestVersion)
+{
+  try
+  {
+    const std::size_t dot = requestVersion.find('.');
+    if (dot != std::string::npos)
+    {
+      try
+      {
+        const unsigned long major = Fmi::stoul(requestVersion.substr(0, dot));
+        const unsigned long minor = Fmi::stoul(requestVersion.substr(dot + 1));
+        if (major > 1 || (major == 1 && minor >= 1))
+          return "1.1";
+      }
+      catch (...)
+      {
+        // Unparseable version, fall through to the conservative default
+      }
+    }
+
+    return "1.0";
+  }
+  catch (...)
+  {
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
+  }
+}
+
+RawRequestHead peekRequestHead(const std::string& buffer)
+{
+  try
+  {
+    RawRequestHead head;
+
+    const std::size_t end = buffer.find("\r\n\r\n");
+    if (end == std::string::npos)
+      return head;  // Header section is still on its way
+
+    head.complete = true;
+
+    // Request line: METHOD SP request-target SP HTTP/<major>.<minor>
+    const std::size_t eol = buffer.find("\r\n");
+    const std::size_t versionPos = buffer.rfind("HTTP/", eol);
+    if (versionPos != std::string::npos)
+      head.version = buffer.substr(versionPos + 5, eol - versionPos - 5);
+
+    // Header lines. Obsolete line folding is rejected by the request parser,
+    // so every header occupies exactly one line here.
+    std::size_t pos = eol + 2;
+    while (pos < end)
+    {
+      const std::size_t lineEnd = buffer.find("\r\n", pos);
+      if (lineEnd == std::string::npos || lineEnd > end)
+        break;
+
+      const std::size_t colon = buffer.find(':', pos);
+      if (colon != std::string::npos && colon < lineEnd &&
+          Fmi::ascii_tolower_copy(buffer.substr(pos, colon - pos)) == "expect")
+      {
+        const std::size_t first = buffer.find_first_not_of(" \t", colon + 1);
+        if (first != std::string::npos && first < lineEnd)
+        {
+          const std::size_t last = buffer.find_last_not_of(" \t", lineEnd - 1);
+          head.expect = buffer.substr(first, last - first + 1);
+        }
+        break;
+      }
+
+      pos = lineEnd + 2;
+    }
+
+    return head;
+  }
+  catch (...)
+  {
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
+  }
+}
+
 std::string dumpRequest(SmartMet::Spine::HTTP::Request& request)
 {
   try

@@ -15,6 +15,7 @@
 #include <spine/Options.h>
 #include <spine/Reactor.h>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -53,6 +54,42 @@ class Server
   virtual void run() = 0;
   void shutdownServer();
   bool isShutdownRequested() const;
+
+  /// Persistent (keep-alive) connections enabled
+  bool isKeepAliveEnabled() const { return itsKeepAliveEnabled; }
+
+  /// Seconds an idle persistent connection is kept open waiting for the next request
+  long getKeepAliveTimeout() const { return itsKeepAliveTimeout; }
+
+  /// Maximum number of requests served over one connection (0 = unlimited)
+  std::size_t getMaxKeepAliveRequests() const { return itsMaxKeepAliveRequests; }
+
+  /// Maximum number of simultaneously open client connections (0 = unlimited)
+  std::size_t getMaxConnections() const { return itsMaxConnections; }
+
+  /// Maximum size of a request's header section in bytes (0 = unlimited)
+  std::size_t getMaxHeaderSize() const { return itsMaxHeaderSize; }
+
+  /// Number of client connections currently open. Heap allocated and co-owned by
+  /// the connections for the same reason as the shutdown flag below: a connection
+  /// may outlive the server object, and it decrements the counter when it dies.
+  std::shared_ptr<std::atomic<std::size_t>> getConnectionCounter() const
+  {
+    return itsConnectionCount;
+  }
+
+  /// Shared "shutdown requested" flag.
+  ///
+  /// Connections outlive the server object: a connection blocked in an asynchronous
+  /// read is owned by the completion handler stored in the io_context, and those
+  /// handlers are only destroyed when the io_context itself is destroyed - which,
+  /// as the first declared member of Server, happens last, after every other Server
+  /// member is already gone. ~Connection must still be able to tell whether the
+  /// server is shutting down (to decide whether calling the reactor hooks is safe),
+  /// so the flag is heap allocated and co-owned by every connection instead of being
+  /// read back through the dangling Server pointer. Persistent connections make such
+  /// long-lived idle connections the normal case rather than a rarity.
+  std::shared_ptr<const std::atomic<bool>> getShutdownFlag() const { return itsShutdownRequested; }
 
   virtual ~Server() = default;
 
@@ -94,6 +131,13 @@ class Server
   /// The Fast Thread Pool Executor for asynchronous processing of fast requests
   std::unique_ptr<ThreadPoolType> itsFastExecutor;
 
+  /// Guards the executors' lifetime against run() and shutdown() racing.
+  /// shutdown() destroys them, and it can run before run() has started them:
+  /// a SIGTERM during startup is enough, since the run task deliberately waits
+  /// before entering run(). Held only around the start and the teardown, never
+  /// while serving.
+  std::mutex itsExecutorMutex;
+
   /// Flag to enable response gzip compression
   bool itsCanGzip;
 
@@ -110,7 +154,30 @@ class Server
   bool itsDumpRequests;
 
   /// This is true if the shutdown is requested. The server should not accept any more connections.
-  std::atomic<bool> itsShutdownRequested;
+  /// Heap allocated and shared with the connections, see getShutdownFlag().
+  std::shared_ptr<std::atomic<bool>> itsShutdownRequested;
+
+  /// Keep incoming connections open for further requests (HTTP persistent connections)
+  bool itsKeepAliveEnabled = true;
+
+  /// Seconds an idle persistent connection waits for the next request before being closed
+  long itsKeepAliveTimeout = 30;
+
+  /// Maximum number of requests served over one connection (0 = unlimited)
+  std::size_t itsMaxKeepAliveRequests = 1000;
+
+  /// Maximum number of simultaneously open client connections (0 = unlimited).
+  /// Persistent connections are held open between requests, so without a cap a
+  /// slow or malicious client population can exhaust the process's file
+  /// descriptors. Defaults to a fraction of RLIMIT_NOFILE, see Server.cpp.
+  std::size_t itsMaxConnections = 0;
+
+  /// Number of client connections currently open
+  std::shared_ptr<std::atomic<std::size_t>> itsConnectionCount;
+
+  /// Maximum size of a request's header section in bytes (0 = unlimited). Bounds
+  /// how long a client can hold a connection open without completing a request.
+  std::size_t itsMaxHeaderSize = 16384;
 
   /// Period in minutes for logging memory usage to stdout (0 = disabled)
   unsigned int itsMemoryLogPeriod = 0;
