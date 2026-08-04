@@ -424,6 +424,10 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
   /// access logging of streamed/chunked responses.
   std::size_t itsTotalStreamedBytes = 0;
 
+  /// True when the current request was a HEAD. The request itself is handed to
+  /// the handler as a GET, so this is the only record of it.
+  bool itsHeadRequest = false;
+
   /// True once the current request's "Expect" header has been acted on, so the
   /// interim response is sent at most once per request.
   bool itsExpectHandled = false;

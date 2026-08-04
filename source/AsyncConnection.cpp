@@ -257,14 +257,21 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
 
       // std::cout << itsBuffer << "\n";
 
-      // Try to parse the incoming message
-      auto parsedRequest =
-          SmartMet::Spine::HTTP::parseRequest(itsBuffer);  // Of type (tribool, parsed request)
+      // Try to parse the incoming message. parseOneRequest reads exactly one
+      // message and says how much of the buffer it took, so anything a
+      // pipelining client sent after it stays put for the next round instead of
+      // being swallowed into this request's body.
+      auto parsedRequest = SmartMet::Spine::HTTP::parseOneRequest(itsBuffer);
 
-      if (parsedRequest.first == SmartMet::Spine::HTTP::ParsingStatus::COMPLETE)
+      if (parsedRequest.status == SmartMet::Spine::HTTP::ParsingStatus::COMPLETE)
       {
         // Successfully parsed the request, set connection request
-        itsRequest = std::move(parsedRequest.second);
+        itsRequest = std::move(parsedRequest.request);
+
+        // Drop the bytes this message occupied; what is left belongs to the
+        // next request and is carried over by finishResponse().
+        itsBuffer.erase(0, parsedRequest.consumed);
+        itsReceivedBytes = itsBuffer.size();
 
         // Set client ip
         auto forwardHeader = itsRequest->getHeader("X-Forwarded-For");
@@ -335,6 +342,15 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
 
         // Must come after the keep-alive negotiation, which reads Connection
         stripHopByHopHeaders();
+
+        // RFC 9110 9.3.2: the response to HEAD is the response to GET with the
+        // content left out. The plugins do not know the method - several answer
+        // only GET and POST and would reject it - so the request is handed on as
+        // a GET and the body is dropped when the reply is written. The cost is
+        // that a HEAD shows up as a GET in the per-handler access log.
+        itsHeadRequest = (itsRequest->getMethod() == SmartMet::Spine::HTTP::RequestMethod::HEAD);
+        if (itsHeadRequest)
+          itsRequest->setMethod(SmartMet::Spine::HTTP::RequestMethod::GET);
 
         // Check whether we have 'OPTIONS' request
         if (itsRequest->getMethodString() == "OPTIONS" && itsRequest->getResource() == "*")
@@ -416,13 +432,25 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
           }
         }
       }
-      else if (parsedRequest.first == SmartMet::Spine::HTTP::ParsingStatus::FAILED)
+      else if (parsedRequest.status == SmartMet::Spine::HTTP::ParsingStatus::FAILED)
       {
         // Failed parse, something (fundamentally) wrong with the request
         sendStockReply(SmartMet::Spine::HTTP::Status::bad_request);
       }
       else
       {
+        // Bound the header section. Without this a client can hold a connection
+        // - and a slot against the connection limit - open indefinitely by
+        // dribbling header bytes that never reach the terminating blank line.
+        if (itsMaxHeaderSize > 0 && itsBuffer.size() > itsMaxHeaderSize &&
+            itsBuffer.find("\r\n\r\n") == std::string::npos)
+        {
+          reportError("431 Request header fields too large");
+          itsKeepAlive = false;
+          sendStockReply(SmartMet::Spine::HTTP::Status::request_header_fields_too_large);
+          return;
+        }
+
         // Request is not succesfully parsed, attempt to get more data from socket and try
         // again - unless the client is waiting for us to accept its body first.
         if (handleExpectContinue())
@@ -508,14 +536,10 @@ bool AsyncConnection::handleExpectContinue()
       return true;
     }
 
-    // An expectation we do not understand cannot be met. RFC 9110 10.1.1 asks
-    // for 417 Expectation Failed here; Spine's Status enum has no 417, so this
-    // reports a framed 400 and closes instead, which at least does not leave the
-    // client waiting forever for a body acknowledgement that never comes.
-    // (417 belongs with the Spine changes.)
+    // An expectation we do not understand cannot be met (RFC 9110 10.1.1).
     reportInfo("Unsupported expectation '" + head.expect + "', rejecting the request");
     itsKeepAlive = false;
-    sendStockReply(SmartMet::Spine::HTTP::Status::bad_request);
+    sendStockReply(SmartMet::Spine::HTTP::Status::expectation_failed);
     return false;
   }
   catch (...)
@@ -535,10 +559,10 @@ void AsyncConnection::stripHopByHopHeaders()
     // arrived over and must not reach a handler, nor be forwarded by the
     // frontend to a backend (RFC 9110 7.6.1).
     //
-    // Transfer-Encoding is deliberately not in this list even though it is
-    // hop-by-hop: the request parser does not decode chunked request bodies
-    // yet, so the body is still chunk-framed and dropping the header that says
-    // so would turn a visibly broken request into a silently corrupt one.
+    // Transfer-Encoding is not in this list because parseOneRequest has already
+    // removed it: a chunked body is decoded during parsing and the header is
+    // replaced by the Content-Length of the decoded body, so what reaches a
+    // handler - or a backend, via the frontend - is an ordinary message.
     static const std::array<const char*, 7> hopByHop = {"Connection",
                                                         "Keep-Alive",
                                                         "Proxy-Connection",
@@ -618,20 +642,6 @@ bool AsyncConnection::evaluateKeepAlive() const
     if (itsMaxKeepAliveRequests > 0 && itsRequestCount >= itsMaxKeepAliveRequests)
       return false;
 
-    // Pipelining guard. The request grammar ends with "body = *char_", i.e. the parser
-    // consumes everything left in the buffer as the request body. If the client
-    // pipelined a second request into the same TCP segment, those bytes were swallowed
-    // by this request instead of being left for the next round, and answering only the
-    // first request would leave the client waiting forever for the second. A request
-    // without a Content-Length header must therefore have an empty body; when it does
-    // not, fall back to the one-request-per-connection behaviour so the client sees the
-    // socket close and retries the requests it got no answer to.
-    if (!itsRequest->getHeader("Content-Length") && itsRequest->getContentLength() > 0)
-    {
-      reportInfo("Pipelined request detected, closing the connection after the response");
-      return false;
-    }
-
     const auto connection = itsRequest->getHeader("Connection");
 
     if (itsResponseVersion == "1.1")
@@ -674,8 +684,9 @@ void AsyncConnection::finishResponse()
     // no request is being handled.
     const std::string clientIP = itsRequest->getClientIP();
 
-    itsBuffer.clear();
-    itsReceivedBytes = 0;
+    // itsBuffer is deliberately not cleared: handleRead() erased exactly the
+    // bytes this message occupied, so whatever remains is the next request,
+    // already delivered by a pipelining client.
     itsSentBytes = 0;
     itsTotalStreamedBytes = 0;
     itsDeclaredContentLength = 0;
@@ -688,17 +699,35 @@ void AsyncConnection::finishResponse()
     itsAdminQuery = false;
     itsKeepAlive = false;
     itsExpectHandled = false;
+    itsHeadRequest = false;
 
-    // Must be set before arming the timer so that an expiry is handled as an idle
-    // timeout instead of as a request timeout.
-    itsIdle = true;
+    // A pipelined next request is already here, so the connection is not idle
+    // and the timer bounds reading that request rather than waiting for one.
+    // Must be decided before arming the timer, which is what tells handleTimer
+    // whether an expiry means "drop a stale idle connection" or "408".
+    const bool pipelined = !itsBuffer.empty();
+    itsIdle = !pipelined;
 
     // The timer was cancelled when the request was handed to a plugin, so that a slow
-    // plugin is not killed by the request timeout. Rearm it as the keep-alive idle
-    // timeout for the next request.
-    itsTimeoutTimer->expires_after(std::chrono::seconds(itsKeepAliveTimeout));
+    // plugin is not killed by the request timeout. Rearm it for whichever wait comes
+    // next.
+    itsTimeoutTimer->expires_after(
+        std::chrono::seconds(pipelined ? itsTimeout : itsKeepAliveTimeout));
     itsTimeoutTimer->async_wait([me = shared_from_this()](const boost::system::error_code& err)
                                 { me->handleTimer(err); });
+
+    if (pipelined)
+    {
+      // Answer the buffered request without going to the socket. Posted rather
+      // than called directly so that a client which pipelines many requests
+      // does not nest one whole request/response cycle inside the previous
+      // one's stack frame. Responses stay in request order because a connection
+      // only ever has one request in flight.
+      boost::asio::post(itsIoService,
+                        [me = shared_from_this()]()
+                        { me->handleRead(boost::system::error_code(), 0); });
+      return;
+    }
 
     startRead();
   }
@@ -759,6 +788,15 @@ void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandl
 
       sendStockReply(SmartMet::Spine::HTTP::Status::bad_request);
 
+      return;
+    }
+
+    if (itsHeadRequest)
+    {
+      // No body is produced at all: a streamed or chunked response is collapsed
+      // here rather than started, so the plugin's streamer is never pulled.
+      this->setServerHeaders();
+      this->startRegularReply();
       return;
     }
 
@@ -1376,9 +1414,14 @@ void AsyncConnection::startRegularReply()
 {
   try
   {
+    // A streamed response only reaches this function for a HEAD request, where
+    // there is no buffered body to compress and asking the streamer for one
+    // would run the plugin's producer for a body nobody will read.
+    const bool streamed = itsResponse->hasStreamContent();
+
     // Regular response
     // Compress response if its greater than limit and client accepts
-    if (itsCanGzipResponse)
+    if (itsCanGzipResponse && !streamed)
     {
       auto encoding = select_content_encoding(*itsRequest, *itsResponse, itsCompressLimit);
       if (!encoding.empty())
@@ -1393,6 +1436,13 @@ void AsyncConnection::startRegularReply()
       // desynchronise the next response on a persistent connection, since the
       // client stops reading at the end of the headers.
       itsResponse->setContent(std::string());
+      itsResponse->removeHeader("Content-Length");
+      itsResponse->removeHeader("Transfer-Encoding");
+    }
+    else if (itsHeadRequest && itsResponse->getChunked())
+    {
+      // The GET would have been sent chunked, which announces no length, so
+      // neither does the answer to HEAD.
       itsResponse->removeHeader("Content-Length");
       itsResponse->removeHeader("Transfer-Encoding");
     }
@@ -1419,9 +1469,15 @@ void AsyncConnection::startRegularReply()
       headers = itsResponse->headersToString();
     }
 
-    content = itsResponse->getContent();
-
-    itsResponseString = headers + content;
+    // RFC 9110 9.3.2: a HEAD response carries the header fields describing the
+    // content GET would have returned, but not the content itself.
+    if (itsHeadRequest)
+      itsResponseString = headers;
+    else
+    {
+      content = itsResponse->getContent();
+      itsResponseString = headers + content;
+    }
 
     // Start async write to socket
     if (itsEncryptionEnabled)
@@ -1485,8 +1541,7 @@ void AsyncConnection::setServerHeaders()
     }
     else
     {
-      // AsyncConnection is a friend of Response; there is no public version setter
-      itsResponse->itsVersion = itsResponseVersion;
+      itsResponse->setVersion(itsResponseVersion);
     }
 
     // A plugin may veto the reuse of the connection on its own terms

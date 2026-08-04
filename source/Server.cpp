@@ -152,6 +152,10 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
     int maxConnections = 0;
     if (theOptions.itsConfig.lookupValue("maxconnections", maxConnections) && maxConnections >= 0)
       itsMaxConnections = static_cast<std::size_t>(maxConnections);
+
+    int maxHeaderSize = static_cast<int>(itsMaxHeaderSize);
+    if (theOptions.itsConfig.lookupValue("maxheadersize", maxHeaderSize) && maxHeaderSize >= 0)
+      itsMaxHeaderSize = static_cast<std::size_t>(maxHeaderSize);
   }
   catch (...)
   {

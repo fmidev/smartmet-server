@@ -146,6 +146,9 @@ class Connection
   /// Maximum number of requests to serve over this connection (0 = unlimited)
   std::size_t itsMaxKeepAliveRequests = 0;
 
+  /// Maximum size of a request's header section in bytes (0 = unlimited)
+  std::size_t itsMaxHeaderSize = 0;
+
   /// Number of requests parsed from this connection so far
   std::size_t itsRequestCount = 0;
 

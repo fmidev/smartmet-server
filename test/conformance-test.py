@@ -105,16 +105,75 @@ check("204 has no Content-Length",
 check("204 has no body",
       replies[0].endswith(b"\r\n\r\n"), repr(replies[0][-40:]))
 
-# A pipelined follow-up request must not corrupt the first answer.  Answering
-# both is a Spine parser change; until then the connection must close so the
-# client retries what it got no answer to, rather than hanging.
-replies, closed = exchange(
-    [b"GET /a HTTP/1.1\r\nHost: h\r\n\r\nGET /b HTTP/1.1\r\nHost: h\r\n\r\n"])
-check("pipelined request does not corrupt the response",
+# Two requests in one segment must both be answered, in order, over the same
+# connection.  This is what parseOneRequest() made possible: it reads a single
+# message and reports what it consumed, so the second request is left in the
+# buffer instead of being swallowed into the first one's body.
+replies, _ = exchange(
+    [b"GET /admin?what=servicestats HTTP/1.1\r\nHost: h\r\n\r\n"
+     b"GET /nosuchthing HTTP/1.1\r\nHost: h\r\n\r\n"],
+    read_rounds=3)
+joined = b"".join(replies)
+first = joined.find(b"HTTP/1.1 200")
+second = joined.find(b"HTTP/1.1 404")
+check("pipelined requests are both answered",
+      first != -1 and second != -1, repr(joined[:120]))
+check("pipelined responses come back in request order",
+      first != -1 and second != -1 and first < second,
+      "200 at %d, 404 at %d" % (first, second))
+
+# A request body must be consumed in full, or the leftover would be read as the
+# next request.
+replies, _ = exchange(
+    [b"POST /a HTTP/1.1\r\nHost: h\r\nContent-Length: 5\r\n\r\nhello"
+     b"GET /b HTTP/1.1\r\nHost: h\r\n\r\n"],
+    read_rounds=3)
+check("a request body does not leak into the next request",
+      b"".join(replies).count(b"HTTP/1.1 404") == 2, repr(b"".join(replies)[:160]))
+
+# Chunked request bodies are decoded by the parser, so the handler sees an
+# ordinary message and the connection stays usable afterwards.
+replies, _ = exchange(
+    [b"POST /a HTTP/1.1\r\nHost: h\r\nTransfer-Encoding: chunked\r\n\r\n"
+     b"5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n",
+     b"GET /b HTTP/1.1\r\nHost: h\r\n\r\n"])
+check("chunked request body is accepted",
       status_of(replies[0]).startswith("HTTP/1.1 404"), repr(replies[0][:80]))
-check("pipelined request closes the connection rather than hanging",
-      closed or "close" in headers_of(replies[0]).get("connection", ""),
-      repr(head_of(replies[0])))
+check("connection survives a chunked request body",
+      status_of(replies[1]).startswith("HTTP/1.1 404"), repr(replies[1][:80]))
+
+# Request smuggling defences (RFC 9112 6.3).
+for label, raw in [
+    ("Content-Length with Transfer-Encoding",
+     b"POST /a HTTP/1.1\r\nHost: h\r\nContent-Length: 5\r\n"
+     b"Transfer-Encoding: chunked\r\n\r\n0\r\n\r\n"),
+    ("conflicting Content-Length fields",
+     b"POST /a HTTP/1.1\r\nHost: h\r\nContent-Length: 5\r\nContent-Length: 6\r\n\r\nhello!"),
+    ("non-numeric Content-Length",
+     b"POST /a HTTP/1.1\r\nHost: h\r\nContent-Length: 0x5\r\n\r\nhello"),
+    ("undecodable transfer coding",
+     b"POST /a HTTP/1.1\r\nHost: h\r\nTransfer-Encoding: gzip\r\n\r\nxx"),
+]:
+    replies, closed = exchange([raw])
+    check("%s is rejected with 400" % label,
+          "400" in status_of(replies[0]), repr(head_of(replies[0])))
+    check("%s closes the connection" % label,
+          closed or headers_of(replies[0]).get("connection") == "close")
+
+# HEAD: headers as for GET, but no content.
+replies, _ = exchange([b"HEAD /admin?what=servicestats HTTP/1.1\r\nHost: h\r\n\r\n",
+                       b"GET /admin?what=servicestats HTTP/1.1\r\nHost: h\r\n\r\n"])
+head_hdrs = headers_of(replies[0])
+get_hdrs = headers_of(replies[1])
+check("HEAD returns a 200 with no body",
+      status_of(replies[0]).startswith("HTTP/1.1 200") and replies[0].endswith(b"\r\n\r\n"),
+      repr(replies[0][-60:]))
+check("HEAD reports the length GET would have sent",
+      head_hdrs.get("content-length") == get_hdrs.get("content-length"),
+      "HEAD said %r, GET said %r" % (head_hdrs.get("content-length"),
+                                     get_hdrs.get("content-length")))
+check("connection survives a HEAD request",
+      status_of(replies[1]).startswith("HTTP/1.1 200"), repr(replies[1][:80]))
 
 
 print()
@@ -194,6 +253,18 @@ check("malformed request closes the connection", closed)
 replies, closed = exchange([b"GET /x HTTP/1.1\r\nHost: h\r\nX-Foo: a\r\n  b\r\n\r\n"])
 check("obsolete line folding is rejected",
       "400" in status_of(replies[0]), repr(head_of(replies[0])))
+
+# A client must not be able to hold a connection open by dribbling header bytes
+# that never reach the terminating blank line.
+replies, closed = exchange([b"GET /a HTTP/1.1\r\nHost: h\r\n" + b"X-Pad: " + b"p" * 40000 + b"\r\n"])
+check("an oversized header section gives 431",
+      "431" in status_of(replies[0]), repr(head_of(replies[0])))
+
+# An unsupported expectation cannot be met (RFC 9110 10.1.1).
+replies, closed = exchange([b"POST /a HTTP/1.1\r\nHost: h\r\nExpect: something-else\r\n"
+                            b"Content-Length: 5\r\n\r\n"])
+check("an unsupported Expect gives 417",
+      "417" in status_of(replies[0]), repr(head_of(replies[0])))
 
 # An idle persistent connection must be dropped silently, never with a 408 that
 # could collide with a request the client is writing at that moment.

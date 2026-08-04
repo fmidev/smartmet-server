@@ -66,6 +66,9 @@ class Server
   /// Maximum number of simultaneously open client connections (0 = unlimited)
   std::size_t getMaxConnections() const { return itsMaxConnections; }
 
+  /// Maximum size of a request's header section in bytes (0 = unlimited)
+  std::size_t getMaxHeaderSize() const { return itsMaxHeaderSize; }
+
   /// Number of client connections currently open. Heap allocated and co-owned by
   /// the connections for the same reason as the shutdown flag below: a connection
   /// may outlive the server object, and it decrements the counter when it dies.
@@ -163,6 +166,10 @@ class Server
 
   /// Number of client connections currently open
   std::shared_ptr<std::atomic<std::size_t>> itsConnectionCount;
+
+  /// Maximum size of a request's header section in bytes (0 = unlimited). Bounds
+  /// how long a client can hold a connection open without completing a request.
+  std::size_t itsMaxHeaderSize = 16384;
 
   /// Period in minutes for logging memory usage to stdout (0 = disabled)
   unsigned int itsMemoryLogPeriod = 0;

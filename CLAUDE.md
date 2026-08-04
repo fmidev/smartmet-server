@@ -133,19 +133,40 @@ cosmetic. Implemented in this repo:
 - **Hop-by-hop headers** are removed from the request before handlers see them
   (`stripHopByHopHeaders()`), including whatever `Connection` itself names. Runs *after* the
   keep-alive negotiation, which reads `Connection`.
+- **Header section bounded** by `maxheadersize` (16 kB default) → 431, so a client cannot hold a
+  connection — and a slot against `maxconnections` — open by dribbling header bytes.
 
-Still open, and blocked on `smartmet-library-spine`'s request parser:
+### Pipelining, chunked request bodies, HEAD
 
-| Gap | Why it needs spine |
-| --- | --- |
-| Chunked **request** bodies | The grammar ends with `body = *char_`; there is no decoder. |
-| Answering pipelined requests in order | `parseRequest()` consumes the whole buffer and reports no consumed length, so trailing bytes cannot be kept for the next request. |
-| `HEAD` | The parser accepts only GET/POST/OPTIONS. |
-| Rejecting duplicate `Content-Length`, and `Content-Length` + `Transfer-Encoding` together | `HeaderMap` is a `std::map`, so duplicate headers silently collapse to the first — a request-smuggling vector. |
-| 417 Expectation Failed | `Spine::HTTP::Status` has no 417; an unmet expectation currently gets a framed 400 + close. |
+These rest on `Spine::HTTP::parseOneRequest()`, which reads **one** message and reports how many
+bytes it consumed. `parseRequest()` is still there and unchanged, but it ends its grammar with
+`body = *char_`, so it cannot be used on a connection carrying more than one request.
 
-The frontend's backend connection pool, forwarded-request framing and hop-by-hop stripping on the
-proxy side are likewise still open, in `smartmet-plugin-frontend`.
+- `handleRead()` erases exactly the consumed prefix from `itsBuffer`. Whatever remains is the
+  next request, so `finishResponse()` does **not** clear the buffer: if it is non-empty it
+  `boost::asio::post()`s another `handleRead()` instead of going to the socket. Posted rather than
+  called directly so a client pipelining many requests does not nest one request/response cycle
+  inside the previous one's stack frame. Responses stay in request order because a connection only
+  ever has one request in flight.
+- Chunked request bodies are decoded by the parser and delivered as an ordinary body with
+  `Transfer-Encoding` replaced by the decoded `Content-Length`, so no handler sees chunk framing.
+  This is why `Transfer-Encoding` is *not* in the hop-by-hop strip list — it is already gone.
+- Request smuggling is rejected in the parser, not resolved by precedence: `Content-Length` with
+  `Transfer-Encoding`, conflicting repeats of either, a non-decimal `Content-Length`, and any
+  transfer coding other than chunked all give 400 + close.
+- **HEAD** is answered as GET with the content omitted (RFC 9110 9.3.2). The request is handed to
+  the handler *as a GET* — the plugins do not know the method and several answer only GET and POST
+  — with `itsHeadRequest` the only record of it. A streamed or chunked response is collapsed in
+  `handleCompletedRead()` rather than started, so the plugin's streamer is never pulled. The cost
+  of the rewrite: a HEAD appears as a GET in the per-handler access log.
+
+Still open, in `smartmet-plugin-frontend`: the backend connection pool, framing of forwarded
+requests, consuming each backend response body before returning a connection to the pool, and
+hop-by-hop stripping on the proxy side.
+
+> **This server now requires a `smartmet-library-spine` that has `parseOneRequest()`.** The
+> `BuildRequires`/`Requires` lines in `smartmet-server.spec` still name the older version and must
+> be bumped when that spine is released.
 
 ### Tests
 

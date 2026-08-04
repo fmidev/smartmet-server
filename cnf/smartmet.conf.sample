@@ -65,6 +65,12 @@ keepalive:
 
 // maxconnections = 0;
 
+// Maximum size of a request's header section in bytes. Bounds how long a client can
+// hold a connection open without ever completing a request; exceeding it gives a
+// framed 431 and closes. 0 disables the check.
+
+// maxheadersize = 16384;
+
 lazylinking = false;
 
 defaultlogging = true;
