@@ -417,12 +417,28 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
 
   void finalizeStreamLogging();
 
+  // ======================================================================
+  /*!
+   * \brief Report the outcome of a backend conversation to the health hooks
+   *
+   * Fires sputnik's backend heartbeat at most once per response, for responses
+   * that carry an originating backend. Keyed on that rather than on
+   * isGatewayResponse, because the frontend re-emits a backend response as an
+   * ordinary framed response and the heartbeat must still see it.
+   */
+  // ======================================================================
+
+  void notifyBackendFinished(SmartMet::Spine::HTTP::ContentStreamer::StreamerStatus theStatus);
+
   /// Number of sent bytes so far (within the current chunk)
   std::size_t itsSentBytes;
 
   /// Total response body bytes streamed across all chunks, for deferred
   /// access logging of streamed/chunked responses.
   std::size_t itsTotalStreamedBytes = 0;
+
+  /// True once the backend health hooks have been told how this response ended
+  bool itsBackendNotified = false;
 
   /// True when the current request was a HEAD. The request itself is handed to
   /// the handler as a GET, so this is the only record of it.

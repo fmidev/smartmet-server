@@ -700,6 +700,7 @@ void AsyncConnection::finishResponse()
     itsKeepAlive = false;
     itsExpectHandled = false;
     itsHeadRequest = false;
+    itsBackendNotified = false;
 
     // A pipelined next request is already here, so the connection is not idle
     // and the timer bounds reading that request rather than waiting for one.
@@ -1156,14 +1157,14 @@ void AsyncConnection::getNextChunk()
       // complete: write the deferred access-log entry with the real size.
       finalizeStreamLogging();
 
-      if (itsResponse->isGatewayResponse)
-      {
-        // If the response is a gateway response (sent by frontend plugin) call the associated hooks
+      // Tell the backend heartbeat hooks how the backend conversation ended.
+      // Keyed on the backend having been recorded rather than on the response
+      // being a raw gateway passthrough: the frontend now re-emits a backend
+      // response as an ordinary framed response, and the heartbeat must still
+      // see it.
+      notifyBackendFinished(streamStatus);
 
-        itsReactor.callBackendConnectionFinishedHooks(
-            itsResponse->itsOriginatingBackend, itsResponse->itsBackendPort, streamStatus);
-      }
-      else if (itsKeepAlive && itsTotalStreamedBytes != itsDeclaredContentLength)
+      if (itsKeepAlive && itsTotalStreamedBytes != itsDeclaredContentLength)
       {
         // Reusing the connection requires the body to be framed exactly as announced.
         // The streamer stopped after a different number of bytes than the Content-Length
@@ -1318,14 +1319,7 @@ void AsyncConnection::writeStreamReply(const boost::system::error_code& e,
                  ". Reason: " + e.message());
       // Log the aborted stream with the bytes delivered so far.
       finalizeStreamLogging();
-      if (itsResponse->isGatewayResponse)
-      {
-        // If the response is a gateway response (sent by frontend plugin) call the associated hooks
-
-        itsReactor.callBackendConnectionFinishedHooks(itsResponse->itsOriginatingBackend,
-                                                      itsResponse->itsBackendPort,
-                                                      itsResponse->getStreamingStatus());
-      }
+      notifyBackendFinished(itsResponse->getStreamingStatus());
     }
   }
   catch (...)
@@ -1372,6 +1366,7 @@ void AsyncConnection::writeRegularReply(const boost::system::error_code& e,
 
       // If we are here, everything has been sent. Either wait for the next request on
       // this connection or let it close.
+      notifyBackendFinished(SmartMet::Spine::HTTP::ContentStreamer::StreamerStatus::EXIT_OK);
       finishResponse();
     }
     else
@@ -1395,6 +1390,28 @@ void AsyncConnection::writeRegularReply(const boost::system::error_code& e,
 // is safe to call from every stream terminal path: normal completion, send
 // errors, and client disconnects. No-op for responses that did not register
 // a finalizer (non-streamed, or logging disabled for the handler).
+// Report the outcome of a backend conversation to the hooks that track backend
+// health (sputnik's heartbeat). Runs at most once per response, and only for
+// responses that actually came from a backend.
+void AsyncConnection::notifyBackendFinished(
+    SmartMet::Spine::HTTP::ContentStreamer::StreamerStatus theStatus)
+{
+  try
+  {
+    if (itsBackendNotified || !itsResponse || itsResponse->itsOriginatingBackend.empty())
+      return;
+
+    itsBackendNotified = true;
+    itsReactor.callBackendConnectionFinishedHooks(
+        itsResponse->itsOriginatingBackend, itsResponse->itsBackendPort, theStatus);
+  }
+  catch (...)
+  {
+    Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::notifyBackendFinished", nullptr);
+    std::cerr << ex.getStackTrace();
+  }
+}
+
 void AsyncConnection::finalizeStreamLogging()
 {
   try
