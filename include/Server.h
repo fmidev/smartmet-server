@@ -15,6 +15,7 @@
 #include <spine/Options.h>
 #include <spine/Reactor.h>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -129,6 +130,13 @@ class Server
 
   /// The Fast Thread Pool Executor for asynchronous processing of fast requests
   std::unique_ptr<ThreadPoolType> itsFastExecutor;
+
+  /// Guards the executors' lifetime against run() and shutdown() racing.
+  /// shutdown() destroys them, and it can run before run() has started them:
+  /// a SIGTERM during startup is enough, since the run task deliberately waits
+  /// before entering run(). Held only around the start and the teardown, never
+  /// while serving.
+  std::mutex itsExecutorMutex;
 
   /// Flag to enable response gzip compression
   bool itsCanGzip;
