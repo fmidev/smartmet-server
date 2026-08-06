@@ -74,7 +74,8 @@ std::string convertToHex(std::size_t theNumber)
 
 std::string select_content_encoding(const SmartMet::Spine::HTTP::Request& request,
                                     const SmartMet::Spine::HTTP::Response& response,
-                                    std::size_t compressLimit)
+                                    std::size_t compressLimit,
+                                    const std::vector<std::string>& contentCodings)
 {
   try
   {
@@ -101,10 +102,13 @@ std::string select_content_encoding(const SmartMet::Spine::HTTP::Request& reques
       return "";
 
     // Quality values decide, so a client stating it cannot decode a coding
-    // ("zstd;q=0") is not answered with it.
-    return Spine::HTTP::selectContentEncoding(request,
-                                              Spine::HTTP::supportedContentEncodings(),
-                                              Spine::HTTP::wildcardContentEncoding());
+    // ("zstd;q=0") is not answered with it. An unset list of codings means the
+    // built-in ones, so that an Options object that never saw parse() does not
+    // silently turn compression off.
+    return Spine::HTTP::selectContentEncoding(
+        request,
+        contentCodings.empty() ? Spine::HTTP::supportedContentEncodings() : contentCodings,
+        Spine::HTTP::wildcardContentEncoding());
   }
   catch (...)
   {

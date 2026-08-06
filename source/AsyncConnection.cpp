@@ -1020,7 +1020,8 @@ void AsyncConnection::startRegularReply()
     // Compress response if its greater than limit and client accepts
     if (itsCanGzipResponse)
     {
-      auto encoding = select_content_encoding(*itsRequest, *itsResponse, itsCompressLimit);
+      auto encoding = select_content_encoding(
+          *itsRequest, *itsResponse, itsCompressLimit, itsReactor.getOptions().contentCodings);
       if (!encoding.empty())
         compress_response(*itsResponse, encoding);
     }
