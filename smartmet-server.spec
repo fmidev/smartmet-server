@@ -32,7 +32,7 @@ BuildRequires: %{smartmet_fmt_devel}
 BuildRequires: openssl-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 26.7.29
-BuildRequires: smartmet-library-spine-devel >= 26.8.4
+BuildRequires: smartmet-library-spine-devel >= 26.8.6
 Requires: %{smartmet_boost}-iostreams
 Requires: %{smartmet_boost}-program-options
 Requires: %{smartmet_boost}-regex
@@ -43,7 +43,7 @@ Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
 Requires: smartmet-library-macgyver >= 26.7.29
-Requires: smartmet-library-spine >= 26.8.4
+Requires: smartmet-library-spine >= 26.8.6
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -108,6 +108,18 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Thu Aug  6 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.8.6-1.fmi
+- Content encoding negotiation now honours quality values. A response is no
+  longer compressed with a coding the client refused: "Accept-Encoding: gzip,
+  deflate, zstd;q=0" was answered with zstd, which clients unable to decode it
+  reported as corrupt output
+- "Accept-Encoding: *" is answered with gzip rather than zstd, as it states
+  that any coding is acceptable rather than that the newest one is preferred
+- The entity-tag of a compressed response now names its content coding
+  ("abc-timeseries+zstd"), so that the encodings of one resource no longer
+  share an entity-tag (RFC 9110 4.3.4). Conditional requests carrying either
+  form are still answered correctly
+
 * Fri Aug 21 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.8.21-1.fmi
 - Set TCP_NODELAY on accepted connections
 
