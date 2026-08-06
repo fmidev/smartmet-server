@@ -119,6 +119,10 @@ done
   ("abc-timeseries+zstd"), so that the encodings of one resource no longer
   share an entity-tag (RFC 9110 4.3.4). Conditional requests carrying either
   form are still answered correctly
+- New 'compresscodings' setting lists the content codings the server offers, in
+  preference order (default "zstd,gzip"). Narrowing it to "gzip" takes zstd out
+  of use without a rebuild; an unknown coding name stops the server at startup.
+  The startup report prints the offered codings
 
 * Fri Aug 21 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.8.21-1.fmi
 - Set TCP_NODELAY on accepted connections
