@@ -74,7 +74,8 @@ std::string convertToHex(std::size_t theNumber)
 
 std::string select_content_encoding(const SmartMet::Spine::HTTP::Request& request,
                                     const SmartMet::Spine::HTTP::Response& response,
-                                    std::size_t compressLimit)
+                                    std::size_t compressLimit,
+                                    const std::vector<std::string>& contentCodings)
 {
   try
   {
@@ -96,22 +97,18 @@ std::string select_content_encoding(const SmartMet::Spine::HTTP::Request& reques
     if (gzip && *gzip == "1")
       return "gzip";
 
-    auto header = request.getHeader("Accept-Encoding");
-    if (!header)
-      return "";
-
+    // Small responses are not worth compressing
     if (response.getContentLength() < compressLimit)
       return "";
 
-    // Prefer zstd over gzip: at their default/fast levels it is both faster and
-    // compresses better. Fall back to gzip for clients that do not support zstd.
-    if (header->find("zstd") != std::string::npos)
-      return "zstd";
-
-    if (header->find("gzip") != std::string::npos)
-      return "gzip";
-
-    return "";
+    // Quality values decide, so a client stating it cannot decode a coding
+    // ("zstd;q=0") is not answered with it. An unset list of codings means the
+    // built-in ones, so that an Options object that never saw parse() does not
+    // silently turn compression off.
+    return Spine::HTTP::selectContentEncoding(
+        request,
+        contentCodings.empty() ? Spine::HTTP::supportedContentEncodings() : contentCodings,
+        Spine::HTTP::wildcardContentEncoding());
   }
   catch (...)
   {
@@ -149,6 +146,14 @@ void compress_response(SmartMet::Spine::HTTP::Response& response, const std::str
     response.setContent(output);
 
     response.setHeader("Content-Encoding", encoding);
+
+    // The encoded body is a different representation of the data than the
+    // unencoded one, and RFC 9110 4.3.4 wants a distinct entity-tag for it.
+    // Plugins hash the data they produce and cannot know which coding it will
+    // be sent with, so the coding is appended here.
+    auto etag = response.getHeader("ETag");
+    if (etag)
+      response.setHeader("ETag", Spine::HTTP::contentCodedETag(*etag, encoding));
   }
   catch (...)
   {

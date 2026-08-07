@@ -16,12 +16,19 @@ std::string convertToHex(std::size_t theNumber);
 // Choose the Content-Encoding to use for the response based on the request's
 // Accept-Encoding header, the response mime type and size. Returns "zstd", "gzip"
 // or an empty string when the response should not be compressed.
+//
+// The codings offered are Options::contentCodings (the "compresscodings" setting),
+// and an empty list means Spine::HTTP::supportedContentEncodings(). The frontend
+// plugin negotiates over the same codings, so that the coding it expects to find
+// in its cache is the one a backend produced.
 std::string select_content_encoding(const SmartMet::Spine::HTTP::Request& request,
                                     const SmartMet::Spine::HTTP::Response& response,
-                                    std::size_t compressLimit);
+                                    std::size_t compressLimit,
+                                    const std::vector<std::string>& contentCodings);
 
-// Compress the response body in place using the given encoding ("zstd" or "gzip")
-// and set the Content-Encoding header accordingly.
+// Compress the response body in place using the given encoding ("zstd" or "gzip"),
+// set the Content-Encoding header accordingly, and mark the response's entity-tag
+// as identifying the encoded variant.
 void compress_response(SmartMet::Spine::HTTP::Response& response, const std::string& encoding);
 
 std::string makeDateString();
