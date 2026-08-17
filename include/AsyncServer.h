@@ -104,6 +104,10 @@ class AsyncServer : public Server
   // completion handler (which might schedule onto an executor) when the executors are torn
   // down. Set before the workers are spawned, decremented as each leaves io_service::run().
   std::atomic<std::size_t> itsRunningWorkers{0};
+
+  // True while the connection limit is being hit, so the log gets one line per
+  // episode instead of one per refused connection.
+  std::atomic<bool> itsConnectionLimitReported{false};
 };
 
 }  // namespace Server

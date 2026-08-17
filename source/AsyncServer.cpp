@@ -3,6 +3,7 @@
 #include <fmt/format.h>
 #include <macgyver/Exception.h>
 #include <macgyver/ThreadName.h>
+#include <spine/Convenience.h>
 #include <algorithm>
 #include <chrono>
 #include <thread>
@@ -45,14 +46,26 @@ void AsyncServer::run()
       workerThreads.add_thread(new boost::thread(&AsyncServer::serverThreadFunction, this, i));
     }
 
-    // Start the Admin Thread Pool Executor
-    itsAdminExecutor->start();
+    {
+      // shutdown() destroys the executors, and it can already have run by the
+      // time we get here: the run task waits before calling run(), so a SIGTERM
+      // during startup tears them down first and starting them would then
+      // dereference a null unique_ptr. Take the lock so the check and the
+      // start() calls cannot straddle that teardown.
+      std::lock_guard<std::mutex> lock(itsExecutorMutex);
 
-    // Start the Slow Thread Pool Executor
-    itsSlowExecutor->start();
+      if (!*itsShutdownRequested && itsAdminExecutor)
+      {
+        // Start the Admin Thread Pool Executor
+        itsAdminExecutor->start();
 
-    // Start the Fast Thread Pool Executor
-    itsFastExecutor->start();
+        // Start the Slow Thread Pool Executor
+        itsSlowExecutor->start();
+
+        // Start the Fast Thread Pool Executor
+        itsFastExecutor->start();
+      }
+    }
 
     // Wait for all threads in the pool to exit.
     // Main thread waits here
@@ -82,24 +95,34 @@ void AsyncServer::shutdown()
     for (int waited = 0; itsRunningWorkers.load() > 0 && waited < 2000; ++waited)
       std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-    // Shutdown the thread pools
-    itsAdminExecutor->setGracefulShutdown(true);
-    itsSlowExecutor->setGracefulShutdown(true);
-    itsFastExecutor->setGracefulShutdown(true);
-    itsAdminExecutor->shutdown();
-    itsSlowExecutor->shutdown();
-    itsFastExecutor->shutdown();
+    {
+      // Serialised against run() starting them, and skipped when they are gone
+      // already: shutdownServer() can be reached more than once, from a signal
+      // and from the reactor reporting itself finished.
+      std::lock_guard<std::mutex> lock(itsExecutorMutex);
 
-    // Destroy the pools before the reactor unloads the plugins. Destroying a pool also
-    // destroys its task queue, dropping any request task still queued there. Each such task
-    // pins an AsyncConnection -> Response -> plugin-created response streamer; releasing them
-    // now, while the plugins' shared libraries are still mapped, avoids destroying that
-    // plugin code after it has been dlclose()'d (which crashed at process exit otherwise).
-    // Safe because the io_service workers have stopped, so nothing can schedule onto the
-    // pools anymore.
-    itsAdminExecutor.reset();
-    itsSlowExecutor.reset();
-    itsFastExecutor.reset();
+      if (itsAdminExecutor)
+      {
+        // Shutdown the thread pools
+        itsAdminExecutor->setGracefulShutdown(true);
+        itsSlowExecutor->setGracefulShutdown(true);
+        itsFastExecutor->setGracefulShutdown(true);
+        itsAdminExecutor->shutdown();
+        itsSlowExecutor->shutdown();
+        itsFastExecutor->shutdown();
+
+        // Destroy the pools before the reactor unloads the plugins. Destroying a pool also
+        // destroys its task queue, dropping any request task still queued there. Each such task
+        // pins an AsyncConnection -> Response -> plugin-created response streamer; releasing them
+        // now, while the plugins' shared libraries are still mapped, avoids destroying that
+        // plugin code after it has been dlclose()'d (which crashed at process exit otherwise).
+        // Safe because the io_service workers have stopped, so nothing can schedule onto the
+        // pools anymore.
+        itsAdminExecutor.reset();
+        itsSlowExecutor.reset();
+        itsFastExecutor.reset();
+      }
+    }
 
     // Shutdown the reactor (i.e. plugins and engines)
     itsReactor.shutdown();
@@ -114,7 +137,7 @@ void AsyncServer::startAccept()
 {
   try
   {
-    if (itsShutdownRequested)
+    if (*itsShutdownRequested)
       return;
 
     // Make a new connection object and let it wait for an incoming connection
@@ -181,13 +204,33 @@ void AsyncServer::handleAccept(const boost::system::error_code& e)
 {
   try
   {
-    if (itsShutdownRequested)
+    if (*itsShutdownRequested)
       return;
 
     if (!e)
     {
-      // Start processing the new connection
-      itsNewConnection->start();
+      if (itsMaxConnections > 0 && *itsConnectionCount >= itsMaxConnections)
+      {
+        // At the connection limit. Persistent connections are held open between
+        // requests, so without this a slow or hostile client population would
+        // keep accumulating sockets until the process runs out of descriptors.
+        // The connection is answered with a framed 503 and closed rather than
+        // just dropped, so a legitimate client backs off instead of seeing an
+        // unexplained reset.
+        if (!itsConnectionLimitReported.exchange(true))
+        {
+          std::cout << Spine::log_time_str() << " Connection limit " << itsMaxConnections
+                    << " reached, refusing new connections\n";
+        }
+        itsNewConnection->rejectConnection();
+      }
+      else
+      {
+        itsConnectionLimitReported = false;
+
+        // Start processing the new connection
+        itsNewConnection->start();
+      }
     }
 
     // Go back to listen for the next connection
