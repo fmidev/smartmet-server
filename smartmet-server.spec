@@ -2,8 +2,8 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.7.30
-Release: 2%{?dist}.fmi
+Version: 26.8.17
+Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -108,6 +108,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Mon Aug 17 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.8.17-1.fmi
+- Add HTTP 1.1 keep-alive support
+
 * Thu Jul 30 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.7.30-2.fmi
 - Destroy thread pools before unloading plugins on shutdown
 
