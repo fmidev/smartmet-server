@@ -160,13 +160,22 @@ bytes it consumed. `parseRequest()` is still there and unchanged, but it ends it
   `handleCompletedRead()` rather than started, so the plugin's streamer is never pulled. The cost
   of the rewrite: a HEAD appears as a GET in the per-handler access log.
 
-Still open, in `smartmet-plugin-frontend`: the backend connection pool, framing of forwarded
-requests, consuming each backend response body before returning a connection to the pool, and
-hop-by-hop stripping on the proxy side.
+### When this server is a backend
 
-> **This server now requires a `smartmet-library-spine` that has `parseOneRequest()`.** The
-> `BuildRequires`/`Requires` lines in `smartmet-server.spec` still name the older version and must
-> be bumped when that spine is released.
+`smartmet-plugin-frontend` now pools its connections to backends, so a backend server's
+persistent connections are no longer only client-facing:
+
+- **A backend's `keepalive.timeout` bounds the frontend's `backend.keepalive.idle_timeout`,**
+  which must be set lower (it defaults to 20 s against this server's 30 s). If it is not, the
+  frontend picks up connections this server has already closed. That is not a failure — the
+  frontend checks liveness and replays the request on a fresh connection — but it wastes the
+  reuse entirely.
+- **`maxconnections` now has to allow for connections that are held rather than in use.** Each
+  frontend keeps up to its `backend.keepalive.max_idle_connections` (32 by default) open per
+  backend, on top of the requests actually in flight.
+- Requests arriving from a frontend are ordinary HTTP/1.1 requests with no `Connection` field,
+  so they are kept alive by the same code path as any other client's. The frontend still sends
+  `Connection: close` when it has pooling switched off, or when the client spoke HTTP/1.0.
 
 ### Tests
 
