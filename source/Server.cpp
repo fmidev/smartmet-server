@@ -52,12 +52,19 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
       itsAcceptor(itsIoService),
       itsMemoryLogTimer(itsIoService),
       itsReactor(theReactor),
+      // Named, so that a profile or a "top -H" can tell the three pools apart.
+      // Unnamed workers inherit the name of whatever thread started them, which
+      // put all request handling under one name and made it look like the work of
+      // a single thread.
       itsAdminExecutor(std::make_unique<ThreadPoolType>(theOptions.adminpool.minsize,
-                                                        theOptions.adminpool.maxrequeuesize)),
+                                                        theOptions.adminpool.maxrequeuesize,
+                                                        "srv-admin")),
       itsSlowExecutor(std::make_unique<ThreadPoolType>(theOptions.slowpool.minsize,
-                                                       theOptions.slowpool.maxrequeuesize)),
+                                                       theOptions.slowpool.maxrequeuesize,
+                                                       "srv-slow")),
       itsFastExecutor(std::make_unique<ThreadPoolType>(theOptions.fastpool.minsize,
-                                                       theOptions.fastpool.maxrequeuesize)),
+                                                       theOptions.fastpool.maxrequeuesize,
+                                                       "srv-fast")),
       itsCanGzip(theOptions.compress),
       itsCompressLimit(theOptions.compresslimit),
       itsMaxRequestSize(theOptions.maxrequestsize),

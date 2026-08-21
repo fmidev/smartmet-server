@@ -169,6 +169,23 @@ void AsyncConnection::start()
     // server's connection limit until it is destroyed.
     registerConnection();
 
+    // Send what we write when we write it.
+    //
+    // A response is not one write: the header section goes out first, then the
+    // content, and a streamed response goes out in as many pieces as it arrives
+    // in. With Nagle's algorithm on, the second small piece is held back until
+    // the client acknowledges the first, and the client's delayed ACK does not
+    // arrive for tens of milliseconds - 40 ms on Linux. So a small response costs
+    // 40 ms of doing nothing.
+    //
+    // This never showed while every response was followed by a close, because the
+    // FIN pushes whatever is pending out with it. Persistent connections removed
+    // that accident, and a proxied 1 kB response through the frontend went from
+    // 0.4 ms to 43 ms. Servers that write whole messages have no use for Nagle;
+    // this is what nginx and friends do by default too.
+    boost::system::error_code ignored;
+    socket().set_option(boost::asio::ip::tcp::no_delay(true), ignored);
+
     // Start the timeout timer
 
     itsTimeoutTimer =

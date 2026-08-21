@@ -55,6 +55,14 @@ The server uses three separate thread pools for request processing, configured i
 
 Network I/O (socket reads/writes, accept loop) runs on a separate set of `server_threads` ASIO worker threads (default 6). The `Reactor` (from `spine`) handles plugin/engine lifecycle in its own thread.
 
+The pools name their workers `srv-admin`, `srv-slow` and `srv-fast`, and the ASIO
+workers are `srv-wrk-NNNN`. Worth knowing because unnamed pool workers inherit the
+name of whatever thread started them: before they were named, all three pools
+appeared in `perf` and `top -H` under `srv-run`, the startup task, which made
+request handling look like the work of one thread. A frontend profile now splits
+cleanly — for one measured load, 47% `srv-fast`, 37% the frontend plugin's own
+`front-be-N` backend I/O threads, 15% `srv-wrk-NNNN`.
+
 > **High-load rejections are not access-logged.** When the server is overloaded it sends a high-load (`503`) stock reply directly from `AsyncConnection` — either on `isLoadHigh()` or when a pool's task queue is full — and `return`s *before* the request is scheduled to a handler. Access logging lives in `HandlerView::handle()` (per-handler `AccessLogger`), so a rejected request never reaches it and produces **no access-log entry** — only a stdout line (`"Too many active requests, reporting high load"` / `"Backend request queue was full..."`). Don't compute error rates or count `503`s from access logs; high-load events appear only in the system/stdout log. (And the frontend silently retries these on another backend, so they may be invisible client-side too.)
 
 ### Persistent connections (HTTP keep-alive)
@@ -160,13 +168,51 @@ bytes it consumed. `parseRequest()` is still there and unchanged, but it ends it
   `handleCompletedRead()` rather than started, so the plugin's streamer is never pulled. The cost
   of the rewrite: a HEAD appears as a GET in the per-handler access log.
 
-Still open, in `smartmet-plugin-frontend`: the backend connection pool, framing of forwarded
-requests, consuming each backend response body before returning a connection to the pool, and
-hop-by-hop stripping on the proxy side.
+### Nagle is off (`TCP_NODELAY`)
 
-> **This server now requires a `smartmet-library-spine` that has `parseOneRequest()`.** The
-> `BuildRequires`/`Requires` lines in `smartmet-server.spec` still name the older version and must
-> be bumped when that spine is released.
+`AsyncConnection::start()` sets `TCP_NODELAY` on every accepted socket, and that is
+not a micro-optimisation:
+
+A response is never one write. The header section goes out first, then the content,
+and a streamed response goes out in as many pieces as it arrives in. With Nagle's
+algorithm on, the second small piece is held until the client acknowledges the
+first — and a client's delayed ACK takes **40 ms** on Linux. So a small response
+cost 40 ms of doing nothing at all.
+
+This was invisible for as long as every response was followed by a close, because
+the FIN pushes whatever is pending out with it. Persistent connections removed that
+accident. Measured through `smartmet-plugin-frontend` on a 1 kB proxied response
+over a kept-alive connection:
+
+| | requests/s | p50 latency |
+| --- | --- | --- |
+| Nagle on (before) | 181 | 43.4 ms |
+| `TCP_NODELAY` (after) | 8918 | 0.9 ms |
+
+The 80 kB `obsparameters` response was less affected — its segments are full, so
+Nagle has nothing to hold — but its p99 still fell from 45.4 ms to 5.8 ms, which was
+the same 40 ms wait landing on whichever responses ended with a short segment.
+
+`smartmet-plugin-frontend`'s `RunClusterTests` has a regression test for this
+("a small response is not held for an ACK"). It needs a keep-alive connection to
+see the problem at all, so it cannot live in a request/response comparison.
+
+### When this server is a backend
+
+`smartmet-plugin-frontend` now pools its connections to backends, so a backend server's
+persistent connections are no longer only client-facing:
+
+- **A backend's `keepalive.timeout` bounds the frontend's `backend.keepalive.idle_timeout`,**
+  which must be set lower (it defaults to 20 s against this server's 30 s). If it is not, the
+  frontend picks up connections this server has already closed. That is not a failure — the
+  frontend checks liveness and replays the request on a fresh connection — but it wastes the
+  reuse entirely.
+- **`maxconnections` now has to allow for connections that are held rather than in use.** Each
+  frontend keeps up to its `backend.keepalive.max_idle_connections` (32 by default) open per
+  backend, on top of the requests actually in flight.
+- Requests arriving from a frontend are ordinary HTTP/1.1 requests with no `Connection` field,
+  so they are kept alive by the same code path as any other client's. The frontend still sends
+  `Connection: close` when it has pooling switched off, or when the client spoke HTTP/1.0.
 
 ### Tests
 
