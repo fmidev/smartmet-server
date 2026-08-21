@@ -8,3 +8,4 @@ dist/
 .circleci/tmp.*
 smartmetd
 obj/
+/tmp
