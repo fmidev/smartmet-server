@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.8.17
+Version: 26.8.21
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -108,6 +108,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Fri Aug 21 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.8.21-1.fmi
+- Set TCP_NODELAY on accepted connections
+
 * Mon Aug 17 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.8.17-1.fmi
 - Add HTTP 1.1 keep-alive support
 
