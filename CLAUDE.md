@@ -160,6 +160,35 @@ bytes it consumed. `parseRequest()` is still there and unchanged, but it ends it
   `handleCompletedRead()` rather than started, so the plugin's streamer is never pulled. The cost
   of the rewrite: a HEAD appears as a GET in the per-handler access log.
 
+### Nagle is off (`TCP_NODELAY`)
+
+`AsyncConnection::start()` sets `TCP_NODELAY` on every accepted socket, and that is
+not a micro-optimisation:
+
+A response is never one write. The header section goes out first, then the content,
+and a streamed response goes out in as many pieces as it arrives in. With Nagle's
+algorithm on, the second small piece is held until the client acknowledges the
+first — and a client's delayed ACK takes **40 ms** on Linux. So a small response
+cost 40 ms of doing nothing at all.
+
+This was invisible for as long as every response was followed by a close, because
+the FIN pushes whatever is pending out with it. Persistent connections removed that
+accident. Measured through `smartmet-plugin-frontend` on a 1 kB proxied response
+over a kept-alive connection:
+
+| | requests/s | p50 latency |
+| --- | --- | --- |
+| Nagle on (before) | 181 | 43.4 ms |
+| `TCP_NODELAY` (after) | 8918 | 0.9 ms |
+
+The 80 kB `obsparameters` response was less affected — its segments are full, so
+Nagle has nothing to hold — but its p99 still fell from 45.4 ms to 5.8 ms, which was
+the same 40 ms wait landing on whichever responses ended with a short segment.
+
+`smartmet-plugin-frontend`'s `RunClusterTests` has a regression test for this
+("a small response is not held for an ACK"). It needs a keep-alive connection to
+see the problem at all, so it cannot live in a request/response comparison.
+
 ### When this server is a backend
 
 `smartmet-plugin-frontend` now pools its connections to backends, so a backend server's
