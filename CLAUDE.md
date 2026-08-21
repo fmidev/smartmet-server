@@ -55,6 +55,14 @@ The server uses three separate thread pools for request processing, configured i
 
 Network I/O (socket reads/writes, accept loop) runs on a separate set of `server_threads` ASIO worker threads (default 6). The `Reactor` (from `spine`) handles plugin/engine lifecycle in its own thread.
 
+The pools name their workers `srv-admin`, `srv-slow` and `srv-fast`, and the ASIO
+workers are `srv-wrk-NNNN`. Worth knowing because unnamed pool workers inherit the
+name of whatever thread started them: before they were named, all three pools
+appeared in `perf` and `top -H` under `srv-run`, the startup task, which made
+request handling look like the work of one thread. A frontend profile now splits
+cleanly — for one measured load, 47% `srv-fast`, 37% the frontend plugin's own
+`front-be-N` backend I/O threads, 15% `srv-wrk-NNNN`.
+
 > **High-load rejections are not access-logged.** When the server is overloaded it sends a high-load (`503`) stock reply directly from `AsyncConnection` — either on `isLoadHigh()` or when a pool's task queue is full — and `return`s *before* the request is scheduled to a handler. Access logging lives in `HandlerView::handle()` (per-handler `AccessLogger`), so a rejected request never reaches it and produces **no access-log entry** — only a stdout line (`"Too many active requests, reporting high load"` / `"Backend request queue was full..."`). Don't compute error rates or count `503`s from access logs; high-load events appear only in the system/stdout log. (And the frontend silently retries these on another backend, so they may be invisible client-side too.)
 
 ### Persistent connections (HTTP keep-alive)
