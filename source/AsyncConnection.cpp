@@ -879,6 +879,44 @@ void AsyncConnection::startGatewayReply()
 }
 
 // start chunked write. This function is always called from within the thread pool
+void AsyncConnection::preparePendingHeaders()
+{
+  try
+  {
+    itsPendingHeaders = itsResponse->headersToString();
+  }
+  catch (const std::runtime_error&)
+  {
+    reportInfo("Response status not set, defaulting to 501 Not Implemented");
+    itsResponse->setStatus(SmartMet::Spine::HTTP::Status::not_implemented, true);
+    itsPendingHeaders = itsResponse->headersToString();
+  }
+}
+
+bool AsyncConnection::flushPendingHeaders()
+{
+  if (itsPendingHeaders.empty())
+    return true;
+
+  boost::system::error_code e;
+  if (itsEncryptionEnabled)
+    boost::asio::write(itsSocket, boost::asio::buffer(itsPendingHeaders), e);
+  else
+    boost::asio::write(socket(), boost::asio::buffer(itsPendingHeaders), e);
+
+  itsPendingHeaders.clear();
+
+  if (e)
+  {
+    reportInfo("Unable to send stream response headers to " + itsRequest->getClientIP() +
+               ". Reason: " + e.message());
+    itsFinalStatus = e;
+    return false;
+  }
+
+  return true;
+}
+
 void AsyncConnection::startChunkedReply()
 {
   try
@@ -890,46 +928,9 @@ void AsyncConnection::startChunkedReply()
     itsResponse->setHeader("Transfer-Encoding", "chunked");
     itsResponse->removeHeader("Content-Length");
 
-    // Headers are currently written synchronously
-    try
-    {
-      boost::system::error_code e;
-      auto headerbuffer = itsResponse->headersToBuffer();
-      // Write headers
-      if (itsEncryptionEnabled)
-        boost::asio::write(itsSocket, headerbuffer, e);
-      else
-        boost::asio::write(socket(), headerbuffer, e);
-
-      if (e)
-      {
-        reportInfo("Unable to send chunk response headers to " + itsRequest->getClientIP() +
-                   ". Reason: " + e.message());
-        itsFinalStatus = e;
-        return;
-      }
-    }
-    catch (const std::runtime_error&)
-    {
-      boost::system::error_code e;
-      reportInfo("Response status not set, defaulting to 501 Not Implemented");
-      itsResponse->setStatus(SmartMet::Spine::HTTP::Status::not_implemented, true);
-
-      auto headerbuffer = itsResponse->headersToBuffer();
-      // Write headers
-      if (itsEncryptionEnabled)
-        boost::asio::write(itsSocket, headerbuffer, e);
-      else
-        boost::asio::write(socket(), headerbuffer, e);
-
-      if (e)
-      {
-        reportInfo("Unable to send chunk response headers to " + itsRequest->getClientIP() +
-                   ". Reason: " + e.message());
-        itsFinalStatus = e;
-        return;
-      }
-    }
+    // The header section is not written here: getNextChunkedChunk() sends it with
+    // the first chunk when there is one ready, which is one packet rather than two.
+    preparePendingHeaders();
 
     // Get first chunk
     this->getNextChunkedChunk();
@@ -954,46 +955,9 @@ void AsyncConnection::startStreamReply()
         "Content-Length",
         std::to_string(static_cast<long long unsigned int>(itsDeclaredContentLength)));
 
-    // Currently headers a written syncronously
-    try
-    {
-      boost::system::error_code e;
-      auto headerbuffer = itsResponse->headersToBuffer();
-      // Write headers
-      if (itsEncryptionEnabled)
-        boost::asio::write(itsSocket, headerbuffer, e);
-      else
-        boost::asio::write(socket(), headerbuffer, e);
-
-      if (e)
-      {
-        reportInfo("Unable to send stream response headers to " + itsRequest->getClientIP() +
-                   ". Reason: " + e.message());
-        itsFinalStatus = e;
-        return;
-      }
-    }
-    catch (const std::runtime_error&)
-    {
-      boost::system::error_code e;
-      reportInfo("Response status not set, defaulting to 501 Not Implemented");
-      itsResponse->setStatus(SmartMet::Spine::HTTP::Status::not_implemented, true);
-
-      auto headerbuffer = itsResponse->headersToBuffer();
-      // Write headers
-      if (itsEncryptionEnabled)
-        boost::asio::write(itsSocket, headerbuffer, e);
-      else
-        boost::asio::write(socket(), headerbuffer, e);
-
-      if (e)
-      {
-        reportInfo("Unable to send stream response headers to " + itsRequest->getClientIP() +
-                   ". Reason: " + e.message());
-        itsFinalStatus = e;
-        return;
-      }
-    }
+    // The header section is not written here: getNextChunk() sends it with the
+    // first chunk when there is one ready, which is one packet rather than two.
+    preparePendingHeaders();
 
     // Get first chunk
 
@@ -1137,11 +1101,14 @@ void AsyncConnection::getNextChunk()
 
       if (!contentstring.empty())
       {
-        // Account this chunk's body bytes for the deferred access log.
+        // Account this chunk's body bytes for the deferred access log. The header
+        // section rides along on the wire but is not body, so it is not counted.
         itsTotalStreamedBytes += contentstring.size();
 
-        // Send received data
-        itsResponseString = contentstring;
+        // Send received data, with the header section in front of it when this is
+        // the first chunk: one write, and so one packet, instead of two.
+        itsResponseString = itsPendingHeaders + contentstring;
+        itsPendingHeaders.clear();
 
         // Reset sent bytes counter, this is a new chunk
         itsSentBytes = 0;
@@ -1164,12 +1131,22 @@ void AsyncConnection::getNextChunk()
       }
       else
       {
+        // Nothing to send yet. The head is not held back waiting for a stream that
+        // may take seconds to produce its first bytes, so it goes on its own.
+        if (!flushPendingHeaders())
+          return;
+
         // Empty chunk but stream is ok, reschedule for later
         scheduleChunkGetter();
       }
     }
     else
     {
+      // A stream that ended without ever producing a chunk still owes the client
+      // its header section.
+      if (!flushPendingHeaders())
+        return;
+
       // Stream status is EXIT, finalize the send. The streamed response is
       // complete: write the deferred access-log entry with the real size.
       finalizeStreamLogging();
@@ -1226,10 +1203,12 @@ void AsyncConnection::getNextChunkedChunk()
         itsTotalStreamedBytes += length;
 
         std::string hexlength = convertToHex(length);
-        std::string responsestring = hexlength + "\r\n" + contentstring + "\r\n";
 
-        // This is new chunk, zero the counter and set response string
-        itsResponseString = responsestring;
+        // This is new chunk, zero the counter and set response string. The header
+        // section goes in front of it when this is the first chunk: one write, and
+        // so one packet, instead of two.
+        itsResponseString = itsPendingHeaders + hexlength + "\r\n" + contentstring + "\r\n";
+        itsPendingHeaders.clear();
 
         itsSentBytes = 0;
 
@@ -1251,17 +1230,21 @@ void AsyncConnection::getNextChunkedChunk()
       }
       else
       {
+        // Nothing to send yet, so the head goes on its own rather than waiting for
+        // a stream that may take seconds to produce its first bytes.
+        if (!flushPendingHeaders())
+          return;
+
         // Empty chunk received but stream is ok, reschedule for later
         scheduleChunkedChunkGetter();
       }
     }
     else
     {
-      // Finalize the chunked send
-      std::string endstring("0\r\n\r\n");
-
-      // This is new, final chunk. zero the counter and set response string
-      itsResponseString = endstring;
+      // Finalize the chunked send. A stream that ended without ever producing a
+      // chunk still owes its header section, so it goes out with the terminator.
+      itsResponseString = itsPendingHeaders + "0\r\n\r\n";
+      itsPendingHeaders.clear();
 
       itsSentBytes = 0;
 

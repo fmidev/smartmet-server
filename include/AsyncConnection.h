@@ -293,6 +293,26 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
    */
   // ======================================================================
 
+  // ------------------------------------------------------------------
+  /*!
+   * \brief Build the header section of a streamed response into itsPendingHeaders
+   *
+   * Defaults the status to 501 if the plugin left none, as writing it used to.
+   */
+  // ------------------------------------------------------------------
+  void preparePendingHeaders();
+
+  // ------------------------------------------------------------------
+  /*!
+   * \brief Send the header section on its own
+   *
+   * Used when there is no first chunk to attach it to: an empty first chunk from
+   * a stream that is not ready yet, or one that ended without producing anything.
+   * Returns false if the write failed, in which case the caller must stop.
+   */
+  // ------------------------------------------------------------------
+  bool flushPendingHeaders();
+
   void startChunkedReply();
 
   // ======================================================================

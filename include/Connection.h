@@ -125,6 +125,13 @@ class Connection
   /// Response string to be written to socket
   std::string itsResponseString;
 
+  /// Header section of a streamed response, held until there is a first chunk to
+  /// send it with. A response is written in more than one piece and every piece
+  /// is a packet of its own now that Nagle is off, so the head rides along with
+  /// the first chunk whenever that chunk is already available. It is sent on its
+  /// own if it is not, rather than delaying the head of a slow stream.
+  std::string itsPendingHeaders;
+
   /// Flag to say if we can (attempt to) gzip response
   bool itsCanGzipResponse = false;
 
