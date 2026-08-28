@@ -217,11 +217,17 @@ for the status line. Measured on the client connection, through the frontend:
 
 | response | segments before | after |
 | --- | --- | --- |
-| 625 B | 2.00 | 1.00 |
-| 272 kB | 3.34 | 2.74 |
+| 625 B, length-framed | 2.00 | 1.00 |
+| 272 kB, length-framed | 3.34 | 2.74 |
+| 256 kB, chunked | 8.07 | 3.33 |
 
-A direct backend request costs 1.00 and 2.06 respectively, so a small proxied
+A direct backend request costs 1.00 and 2.06 for the first two, so a small proxied
 response now costs exactly what a direct one does.
+
+The chunked half of that is covered by `/streamtest` in the frontend's test plugin
+(`test/test_plugin/Plugin.cpp`), which streams without announcing a length and is
+the only chunked response either repo can produce — see `RunClusterTests`'s
+"a chunked response survives the proxy".
 
 ### When this server is a backend
 
