@@ -15,6 +15,7 @@
 #include <macgyver/ThreadPool.h>
 #include <spine/Reactor.h>
 #include <spine/Thread.h>
+#include <cstdint>
 #include <memory>
 
 using ssl_socket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
@@ -106,6 +107,12 @@ class Connection
 
   /// Connection timeout timer
   std::unique_ptr<DeadlineTimer> itsTimeoutTimer;
+
+  /// Generation stamp of the currently armed timeout wait. Bumped under itsMutex
+  /// every time the timer is armed or deliberately cancelled, so that a timer
+  /// firing dequeued on another io thread just before a re-arm or cancel can
+  /// recognise itself as stale instead of timing out a healthy connection.
+  std::uint64_t itsTimerGeneration = 0;
 
   /// Socket reads into this buffer
   std::array<char, 8192> itsSocketBuffer;
