@@ -78,6 +78,14 @@ std::string select_content_encoding(const SmartMet::Spine::HTTP::Request& reques
 {
   try
   {
+    // Never compress a body that is already content-coded: the header still
+    // names one coding, so stacking a second one silently corrupts the response
+    // (gzip-of-gzip decoded once). The frontend's response cache serves bodies
+    // with the backend's Content-Encoding already applied, which is exactly the
+    // path that hit this.
+    if (response.getHeader("Content-Encoding"))
+      return "";
+
     std::vector<std::string> non_compressable_mimes = {
         "image/png", "image/webp", "application/pdf"};
 
