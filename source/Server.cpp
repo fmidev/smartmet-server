@@ -163,6 +163,20 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
     int maxHeaderSize = static_cast<int>(itsMaxHeaderSize);
     if (theOptions.itsConfig.lookupValue("maxheadersize", maxHeaderSize) && maxHeaderSize >= 0)
       itsMaxHeaderSize = static_cast<std::size_t>(maxHeaderSize);
+
+    // Socket peer addresses of trusted reverse proxies. Only from these is an
+    // X-Forwarded-For header believed; see AsyncConnection::handleRead. Without this
+    // any client could spoof its source IP and defeat admin/plugin IP filters.
+    if (theOptions.itsConfig.exists("trustedproxies"))
+    {
+      const auto& arr = theOptions.itsConfig.lookup("trustedproxies");
+      for (int i = 0; i < arr.getLength(); ++i)
+      {
+        const char* value = arr[i];
+        if (value != nullptr)
+          itsTrustedProxies.insert(value);
+      }
+    }
   }
   catch (...)
   {

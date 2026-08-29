@@ -16,6 +16,7 @@
 #include <spine/Reactor.h>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -69,6 +70,14 @@ class Server
 
   /// Maximum size of a request's header section in bytes (0 = unlimited)
   std::size_t getMaxHeaderSize() const { return itsMaxHeaderSize; }
+
+  /// True if the given socket peer address is a configured trusted reverse proxy,
+  /// i.e. an X-Forwarded-For header it sends may be believed. Empty configuration
+  /// means no proxy is trusted (X-Forwarded-For is then ignored for every peer).
+  bool isTrustedProxy(const std::string& ip) const
+  {
+    return itsTrustedProxies.find(ip) != itsTrustedProxies.end();
+  }
 
   /// Number of client connections currently open. Heap allocated and co-owned by
   /// the connections for the same reason as the shutdown flag below: a connection
@@ -178,6 +187,13 @@ class Server
   /// Maximum size of a request's header section in bytes (0 = unlimited). Bounds
   /// how long a client can hold a connection open without completing a request.
   std::size_t itsMaxHeaderSize = 16384;
+
+  /// Socket peer addresses of trusted reverse proxies. An X-Forwarded-For header
+  /// is believed only when it arrives from one of these; otherwise the socket peer
+  /// address is used as the client IP for logging and access control. Empty by
+  /// default, so a spoofed X-Forwarded-For cannot impersonate another client or
+  /// bypass admin/plugin IP filters unless a proxy is explicitly configured.
+  std::set<std::string> itsTrustedProxies;
 
   /// Period in minutes for logging memory usage to stdout (0 = disabled)
   unsigned int itsMemoryLogPeriod = 0;

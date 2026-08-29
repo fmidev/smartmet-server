@@ -290,27 +290,30 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         itsBuffer.erase(0, parsedRequest.consumed);
         itsReceivedBytes = itsBuffer.size();
 
-        // Set client ip
+        // Set client ip. The real socket peer address is taken first; an
+        // X-Forwarded-For header is believed only when that peer is a configured
+        // trusted reverse proxy (Server::isTrustedProxy). Otherwise any client
+        // could spoof its source IP by sending X-Forwarded-For and thereby defeat
+        // the admin and plugin IP filters (and impersonate other clients in the
+        // request logs).
+        std::string peerIP;
+        try
+        {
+          peerIP = socket().remote_endpoint().address().to_string();
+        }
+        catch (...)
+        {
+          Fmi::Exception exception(BCP, "Operation failed!", nullptr);
+          reportError(std::string("Failed to obtain remote endpoint IP address:\n") +
+                      exception.what());
+          return;
+        }
+
         auto forwardHeader = itsRequest->getHeader("X-Forwarded-For");
-        if (forwardHeader)
-        {
-          // Should we validate this?
+        if (forwardHeader && itsServer != nullptr && itsServer->isTrustedProxy(peerIP))
           itsRequest->setClientIP(parseXForwardedFor(*forwardHeader));
-        }
         else
-        {
-          try
-          {
-            itsRequest->setClientIP(socket().remote_endpoint().address().to_string());
-          }
-          catch (...)
-          {
-            Fmi::Exception exception(BCP, "Operation failed!", nullptr);
-            reportError(std::string("Failed to obtain remote endpoint IP address:\n") +
-                        exception.what());
-            return;
-          }
-        }
+          itsRequest->setClientIP(peerIP);
 
 #ifndef NDEBUG
         // DEBUGGIN OUTPUT************************************

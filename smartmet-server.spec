@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.8.21
+Version: 26.8.30
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -108,6 +108,11 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Sat Aug 30 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> 26.8.30-1.fmi
+- Security: do not trust a client-supplied X-Forwarded-For header for the client
+  IP unless the socket peer is a configured trusted reverse proxy (new
+  "trustedproxies" list). Prevents spoofing the source IP to bypass admin/plugin
+  IP filters and to impersonate other clients in the request logs.
 * Fri Aug 21 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.8.21-1.fmi
 - Set TCP_NODELAY on accepted connections
 
