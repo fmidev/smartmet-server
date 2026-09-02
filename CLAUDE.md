@@ -195,6 +195,38 @@ the same 40 ms wait landing on whichever responses ended with a short segment.
 ("a small response is not held for an ACK"). It needs a keep-alive connection to
 see the problem at all, so it cannot live in a request/response comparison.
 
+**The other half of switching Nagle off is coalescing at this end**, since every
+write is now a packet. Two places already did the right thing and one did not:
+
+- A buffered response is written as `headers + content`, one write, and always was.
+- The download plugin's streamer collects grids until 64 kB (`minChunkLengthInBytes`)
+  or 4 MB, explicitly "to avoid small chunk transfer overhead", so its writes are
+  far above any MSS. The other plugins answer in a single response.
+- `startStreamReply()` and `startChunkedReply()` wrote the header section in a
+  synchronous write of its own and then let the first chunk go out separately.
+  That cost one extra packet on **every** streamed response — which, through the
+  frontend, is every proxied response.
+
+The head is now held in `itsPendingHeaders` and `getNextChunk()` /
+`getNextChunkedChunk()` put it in front of the first chunk. Not unconditionally:
+if that chunk is not ready yet the head is flushed on its own, because a download
+streamer can take seconds to produce its first bytes and the client should not wait
+for the status line. Measured on the client connection, through the frontend:
+
+| response | segments before | after |
+| --- | --- | --- |
+| 625 B, length-framed | 2.00 | 1.00 |
+| 272 kB, length-framed | 3.34 | 2.74 |
+| 256 kB, chunked | 8.07 | 3.33 |
+
+A direct backend request costs 1.00 and 2.06 for the first two, so a small proxied
+response now costs exactly what a direct one does.
+
+The chunked half of that is covered by `/streamtest` in the frontend's test plugin
+(`test/test_plugin/Plugin.cpp`), which streams without announcing a length and is
+the only chunked response either repo can produce — see `RunClusterTests`'s
+"a chunked response survives the proxy".
+
 ### When this server is a backend
 
 `smartmet-plugin-frontend` now pools its connections to backends, so a backend server's
