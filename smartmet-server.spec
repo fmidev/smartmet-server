@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.8.21
+Version: 26.8.29
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -108,6 +108,14 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Sat Aug 29 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> 26.8.29-1.fmi
+- Close the connection without the terminal chunk when a chunked stream fails mid-body,
+  so a backend dying mid-response is not framed as a complete message
+- Never re-compress a response that already carries a Content-Encoding header
+- Fix a race where a timeout-timer firing could overtake a concurrent re-arm and
+  inject a spurious 408 into a healthy persistent connection
+- Report chunked stream completion to the backend heartbeat hooks
+
 * Fri Aug 21 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.8.21-1.fmi
 - Set TCP_NODELAY on accepted connections
 

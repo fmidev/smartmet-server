@@ -106,13 +106,32 @@ AsyncConnection::~AsyncConnection()
   }
 }
 
-void AsyncConnection::handleTimer(const boost::system::error_code& err)
+// Arm (or re-arm) the connection timeout timer. The generation stamp ties the
+// wait to this particular arming: handleTimer ignores a firing whose stamp no
+// longer matches. Without it, a firing dequeued on one io thread at the same
+// moment as another thread re-arms or cancels the timer would still run and
+// inject a spurious 408 into - and then close - a healthy connection.
+void AsyncConnection::armTimer(long theSeconds)
+{
+  SmartMet::Spine::WriteLock lock(itsMutex);
+  const std::uint64_t generation = ++itsTimerGeneration;
+  itsTimeoutTimer->expires_after(std::chrono::seconds(theSeconds));
+  itsTimeoutTimer->async_wait(
+      [me = shared_from_this(), generation](const boost::system::error_code& err)
+      { me->handleTimer(err, generation); });
+}
+
+void AsyncConnection::handleTimer(const boost::system::error_code& err,
+                                  std::uint64_t theGeneration)
 {
   try
   {
-    SmartMet::Spine::WriteLock lock(itsMutex);  // Lock here, just in case
+    SmartMet::Spine::WriteLock lock(itsMutex);
     if (err == boost::asio::error::operation_aborted)
       return;
+
+    if (theGeneration != itsTimerGeneration)
+      return;  // A stale firing that lost the race against a cancel or re-arm
 
     hasTimedOut = true;
 
@@ -188,11 +207,8 @@ void AsyncConnection::start()
 
     // Start the timeout timer
 
-    itsTimeoutTimer =
-        std::make_unique<DeadlineTimer>(itsIoService, std::chrono::seconds(itsTimeout));
-
-    itsTimeoutTimer->async_wait([me = shared_from_this()](const boost::system::error_code& err)
-                                { me->handleTimer(err); });
+    itsTimeoutTimer = std::make_unique<DeadlineTimer>(itsIoService);
+    armTimer(itsTimeout);
 
     if (itsEncryptionEnabled)
     {
@@ -254,9 +270,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         // client on a slow uplink gets the same time to deliver a request as it would
         // on a fresh connection - and so that an expiry from here on is reported as a
         // request timeout instead of quietly dropping the socket.
-        itsTimeoutTimer->expires_after(std::chrono::seconds(itsTimeout));
-        itsTimeoutTimer->async_wait([me = shared_from_this()](const boost::system::error_code& err)
-                                    { me->handleTimer(err); });
+        armTimer(itsTimeout);
       }
 
       itsReceivedBytes += bytes_transferred;
@@ -729,10 +743,7 @@ void AsyncConnection::finishResponse()
     // The timer was cancelled when the request was handed to a plugin, so that a slow
     // plugin is not killed by the request timeout. Rearm it for whichever wait comes
     // next.
-    itsTimeoutTimer->expires_after(
-        std::chrono::seconds(pipelined ? itsTimeout : itsKeepAliveTimeout));
-    itsTimeoutTimer->async_wait([me = shared_from_this()](const boost::system::error_code& err)
-                                { me->handleTimer(err); });
+    armTimer(pipelined ? itsTimeout : itsKeepAliveTimeout);
 
     if (pipelined)
     {
@@ -761,8 +772,14 @@ void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandl
 {
   try
   {
-    // Read was successful, cancel timeout
-    itsTimeoutTimer->cancel();
+    // Read was successful, cancel timeout. The generation bump invalidates a
+    // firing that was already dequeued on another io thread, which cancel()
+    // alone cannot stop.
+    {
+      SmartMet::Spine::WriteLock lock(itsMutex);
+      ++itsTimerGeneration;
+      itsTimeoutTimer->cancel();
+    }
 
     // See if client has prematurely disconnected
     {
@@ -1019,6 +1036,7 @@ void AsyncConnection::writeChunkedReply(const boost::system::error_code& e,
                  ". Reason: " + e.message() + ". Code: " + Fmi::to_string(e.value()));
       // Log the aborted stream with the bytes delivered so far.
       finalizeStreamLogging();
+      notifyBackendFinished(itsResponse->getStreamingStatus());
     }
   }
   catch (...)
@@ -1241,6 +1259,37 @@ void AsyncConnection::getNextChunkedChunk()
     }
     else
     {
+      // The stream has ended, one way or the other. Tell the backend heartbeat
+      // hooks how the backend conversation went - the Content-Length stream path
+      // does the same in getNextChunk(), and without this a backend that keeps
+      // dying mid-chunked-body would never be flagged through the hooks.
+      notifyBackendFinished(streamStatus);
+
+      if (streamStatus != SmartMet::Spine::HTTP::ContentStreamer::StreamerStatus::EXIT_OK)
+      {
+        // The streamer failed mid-body. Sending the terminal chunk now would
+        // frame the truncated content as a complete chunked message, and
+        // neither the client nor any cache between here and it could tell it
+        // apart from success. Leave the body unterminated and close the
+        // connection, so the truncation stays visible - the equivalent of the
+        // announced-length check on the Content-Length stream path.
+        //
+        // The header section is sent first if it is still pending, which it is
+        // when the stream failed before producing a single chunk. That leaves the
+        // client looking at a chunked response that stops without terminating -
+        // exactly what it saw back when the head was written up front, rather
+        // than a connection that closed having said nothing at all.
+        (void)flushPendingHeaders();
+
+        finalizeStreamLogging();
+        reportInfo("Chunked response stream failed mid-body, closing the connection unterminated");
+        itsKeepAlive = false;
+        boost::system::error_code ignored_ec;
+        socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+        socket().close(ignored_ec);
+        return;
+      }
+
       // Finalize the chunked send. A stream that ended without ever producing a
       // chunk still owes its header section, so it goes out with the terminator.
       itsResponseString = itsPendingHeaders + "0\r\n\r\n";
