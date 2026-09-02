@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.8.29
+Version: 26.9.2
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -108,6 +108,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Wed Sep  2 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.9.2-1.fmi
+- Send a streamed response's headers with its first chunk in case of chunked response
+
 * Sat Aug 29 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> 26.8.29-1.fmi
 - Close the connection without the terminal chunk when a chunked stream fails mid-body,
   so a backend dying mid-response is not framed as a complete message
