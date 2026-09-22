@@ -39,6 +39,8 @@ else
   sbindir = $(SBINDIR)
 endif
 
+sysconfdir ?= $(or $(SYSCONFDIR), /etc)
+
 # Compilation directories
 
 vpath %.cpp source main
