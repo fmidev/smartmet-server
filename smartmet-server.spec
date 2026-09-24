@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.9.2
+Version: 26.9.24
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -31,8 +31,8 @@ BuildRequires: elfutils-devel
 BuildRequires: %{smartmet_fmt_devel}
 BuildRequires: openssl-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 26.7.29
-BuildRequires: smartmet-library-spine-devel >= 26.8.4
+BuildRequires: smartmet-library-macgyver-devel >= 26.9.23
+BuildRequires: smartmet-library-spine-devel >= 26.9.24
 Requires: %{smartmet_boost}-iostreams
 Requires: %{smartmet_boost}-program-options
 Requires: %{smartmet_boost}-regex
@@ -42,8 +42,8 @@ Requires: %{smartmet_fmt}
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 26.7.29
-Requires: smartmet-library-spine >= 26.8.4
+Requires: smartmet-library-macgyver >= 26.9.23
+Requires: smartmet-library-spine >= 26.9.24
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -108,6 +108,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Thu Sep 24 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.9.24-1.fmi
+- Repackaged due to base library changes
+
 * Wed Sep  2 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.9.2-1.fmi
 - Send a streamed response's headers with its first chunk in case of chunked response
 
