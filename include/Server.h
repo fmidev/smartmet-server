@@ -12,11 +12,11 @@
 
 #include "Connection.h"
 #include <boost/asio.hpp>
+#include <spine/IPFilter.h>
 #include <spine/Options.h>
 #include <spine/Reactor.h>
 #include <memory>
 #include <mutex>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -71,12 +71,10 @@ class Server
   /// Maximum size of a request's header section in bytes (0 = unlimited)
   std::size_t getMaxHeaderSize() const { return itsMaxHeaderSize; }
 
-  /// True if the given socket peer address is a configured trusted reverse proxy,
-  /// i.e. an X-Forwarded-For header it sends may be believed. Empty configuration
-  /// means no proxy is trusted (X-Forwarded-For is then ignored for every peer).
-  bool isTrustedProxy(const std::string& ip) const
+  /// Reverse proxies trusted to report the client IP in an X-Forwarded-For header
+  const SmartMet::Spine::IPFilter::IPFilter& getTrustedProxies() const
   {
-    return itsTrustedProxies.find(ip) != itsTrustedProxies.end();
+    return *itsTrustedProxies;
   }
 
   /// Number of client connections currently open. Heap allocated and co-owned by
@@ -188,12 +186,12 @@ class Server
   /// how long a client can hold a connection open without completing a request.
   std::size_t itsMaxHeaderSize = 16384;
 
-  /// Socket peer addresses of trusted reverse proxies. An X-Forwarded-For header
-  /// is believed only when it arrives from one of these; otherwise the socket peer
-  /// address is used as the client IP for logging and access control. Empty by
-  /// default, so a spoofed X-Forwarded-For cannot impersonate another client or
-  /// bypass admin/plugin IP filters unless a proxy is explicitly configured.
-  std::set<std::string> itsTrustedProxies;
+  /// Trusted reverse proxies ('trustedproxies' setting). An X-Forwarded-For header
+  /// is believed only when the socket peer matches, and the header is then walked
+  /// from the right skipping trusted hops; otherwise the socket peer address is the
+  /// client IP used for logging and access control. The default trusts every IPv4
+  /// peer for backward compatibility, which allows spoofing the client IP.
+  std::shared_ptr<SmartMet::Spine::IPFilter::IPFilter> itsTrustedProxies;
 
   /// Period in minutes for logging memory usage to stdout (0 = disabled)
   unsigned int itsMemoryLogPeriod = 0;

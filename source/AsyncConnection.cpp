@@ -306,9 +306,10 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
 
         // Set client ip. The real socket peer address is taken first; an
         // X-Forwarded-For header is believed only when that peer is a configured
-        // trusted reverse proxy (Server::isTrustedProxy). Otherwise any client
-        // could spoof its source IP by sending X-Forwarded-For and thereby defeat
-        // the admin and plugin IP filters (and impersonate other clients in the
+        // trusted reverse proxy, and then the right-most untrusted hop in it is the
+        // client (Spine::IPFilter::resolveClientIP). Otherwise any client could
+        // spoof its source IP by sending X-Forwarded-For and thereby defeat the
+        // admin and plugin IP filters (and impersonate other clients in the
         // request logs).
         std::string peerIP;
         try
@@ -323,9 +324,9 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
           return;
         }
 
-        auto forwardHeader = itsRequest->getHeader("X-Forwarded-For");
-        if (forwardHeader && itsServer != nullptr && itsServer->isTrustedProxy(peerIP))
-          itsRequest->setClientIP(parseXForwardedFor(*forwardHeader));
+        if (itsServer != nullptr)
+          itsRequest->setClientIP(SmartMet::Spine::IPFilter::resolveClientIP(
+              peerIP, itsRequest->getHeader("X-Forwarded-For"), itsServer->getTrustedProxies()));
         else
           itsRequest->setClientIP(peerIP);
 

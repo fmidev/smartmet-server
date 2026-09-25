@@ -164,18 +164,19 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
     if (theOptions.itsConfig.lookupValue("maxheadersize", maxHeaderSize) && maxHeaderSize >= 0)
       itsMaxHeaderSize = static_cast<std::size_t>(maxHeaderSize);
 
-    // Socket peer addresses of trusted reverse proxies. Only from these is an
-    // X-Forwarded-For header believed; see AsyncConnection::handleRead. Without this
-    // any client could spoof its source IP and defeat admin/plugin IP filters.
-    if (theOptions.itsConfig.exists("trustedproxies"))
+    // Reverse proxies trusted to report the client IP in X-Forwarded-For; see
+    // AsyncConnection::handleRead. Without a proper setting any client can spoof its
+    // source IP and defeat admin/plugin IP filters.
+    itsTrustedProxies =
+        SmartMet::Spine::IPFilter::IPFilter::fromConfig(theOptions.itsConfig, "trustedproxies");
+    if (!itsTrustedProxies)
     {
-      const auto& arr = theOptions.itsConfig.lookup("trustedproxies");
-      for (int i = 0; i < arr.getLength(); ++i)
-      {
-        const char* value = arr[i];
-        if (value != nullptr)
-          itsTrustedProxies.insert(value);
-      }
+      // Backward compatible default: X-Forwarded-For is believed from every IPv4 peer
+      itsTrustedProxies = std::make_shared<SmartMet::Spine::IPFilter::IPFilter>(
+          std::vector<std::string>{"*.*.*.*"});
+      std::cout << "Warning: 'trustedproxies' is not set, X-Forwarded-For is trusted from all "
+                   "IPv4 clients and the client IP can be spoofed to bypass IP filters"
+                << std::endl;
     }
   }
   catch (...)
