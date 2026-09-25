@@ -106,13 +106,32 @@ AsyncConnection::~AsyncConnection()
   }
 }
 
-void AsyncConnection::handleTimer(const boost::system::error_code& err)
+// Arm (or re-arm) the connection timeout timer. The generation stamp ties the
+// wait to this particular arming: handleTimer ignores a firing whose stamp no
+// longer matches. Without it, a firing dequeued on one io thread at the same
+// moment as another thread re-arms or cancels the timer would still run and
+// inject a spurious 408 into - and then close - a healthy connection.
+void AsyncConnection::armTimer(long theSeconds)
+{
+  SmartMet::Spine::WriteLock lock(itsMutex);
+  const std::uint64_t generation = ++itsTimerGeneration;
+  itsTimeoutTimer->expires_after(std::chrono::seconds(theSeconds));
+  itsTimeoutTimer->async_wait(
+      [me = shared_from_this(), generation](const boost::system::error_code& err)
+      { me->handleTimer(err, generation); });
+}
+
+void AsyncConnection::handleTimer(const boost::system::error_code& err,
+                                  std::uint64_t theGeneration)
 {
   try
   {
-    SmartMet::Spine::WriteLock lock(itsMutex);  // Lock here, just in case
+    SmartMet::Spine::WriteLock lock(itsMutex);
     if (err == boost::asio::error::operation_aborted)
       return;
+
+    if (theGeneration != itsTimerGeneration)
+      return;  // A stale firing that lost the race against a cancel or re-arm
 
     hasTimedOut = true;
 
@@ -188,11 +207,8 @@ void AsyncConnection::start()
 
     // Start the timeout timer
 
-    itsTimeoutTimer =
-        std::make_unique<DeadlineTimer>(itsIoService, std::chrono::seconds(itsTimeout));
-
-    itsTimeoutTimer->async_wait([me = shared_from_this()](const boost::system::error_code& err)
-                                { me->handleTimer(err); });
+    itsTimeoutTimer = std::make_unique<DeadlineTimer>(itsIoService);
+    armTimer(itsTimeout);
 
     if (itsEncryptionEnabled)
     {
@@ -254,9 +270,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         // client on a slow uplink gets the same time to deliver a request as it would
         // on a fresh connection - and so that an expiry from here on is reported as a
         // request timeout instead of quietly dropping the socket.
-        itsTimeoutTimer->expires_after(std::chrono::seconds(itsTimeout));
-        itsTimeoutTimer->async_wait([me = shared_from_this()](const boost::system::error_code& err)
-                                    { me->handleTimer(err); });
+        armTimer(itsTimeout);
       }
 
       itsReceivedBytes += bytes_transferred;
@@ -732,10 +746,7 @@ void AsyncConnection::finishResponse()
     // The timer was cancelled when the request was handed to a plugin, so that a slow
     // plugin is not killed by the request timeout. Rearm it for whichever wait comes
     // next.
-    itsTimeoutTimer->expires_after(
-        std::chrono::seconds(pipelined ? itsTimeout : itsKeepAliveTimeout));
-    itsTimeoutTimer->async_wait([me = shared_from_this()](const boost::system::error_code& err)
-                                { me->handleTimer(err); });
+    armTimer(pipelined ? itsTimeout : itsKeepAliveTimeout);
 
     if (pipelined)
     {
@@ -764,8 +775,14 @@ void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandl
 {
   try
   {
-    // Read was successful, cancel timeout
-    itsTimeoutTimer->cancel();
+    // Read was successful, cancel timeout. The generation bump invalidates a
+    // firing that was already dequeued on another io thread, which cancel()
+    // alone cannot stop.
+    {
+      SmartMet::Spine::WriteLock lock(itsMutex);
+      ++itsTimerGeneration;
+      itsTimeoutTimer->cancel();
+    }
 
     // See if client has prematurely disconnected
     {
@@ -882,6 +899,44 @@ void AsyncConnection::startGatewayReply()
 }
 
 // start chunked write. This function is always called from within the thread pool
+void AsyncConnection::preparePendingHeaders()
+{
+  try
+  {
+    itsPendingHeaders = itsResponse->headersToString();
+  }
+  catch (const std::runtime_error&)
+  {
+    reportInfo("Response status not set, defaulting to 501 Not Implemented");
+    itsResponse->setStatus(SmartMet::Spine::HTTP::Status::not_implemented, true);
+    itsPendingHeaders = itsResponse->headersToString();
+  }
+}
+
+bool AsyncConnection::flushPendingHeaders()
+{
+  if (itsPendingHeaders.empty())
+    return true;
+
+  boost::system::error_code e;
+  if (itsEncryptionEnabled)
+    boost::asio::write(itsSocket, boost::asio::buffer(itsPendingHeaders), e);
+  else
+    boost::asio::write(socket(), boost::asio::buffer(itsPendingHeaders), e);
+
+  itsPendingHeaders.clear();
+
+  if (e)
+  {
+    reportInfo("Unable to send stream response headers to " + itsRequest->getClientIP() +
+               ". Reason: " + e.message());
+    itsFinalStatus = e;
+    return false;
+  }
+
+  return true;
+}
+
 void AsyncConnection::startChunkedReply()
 {
   try
@@ -893,46 +948,9 @@ void AsyncConnection::startChunkedReply()
     itsResponse->setHeader("Transfer-Encoding", "chunked");
     itsResponse->removeHeader("Content-Length");
 
-    // Headers are currently written synchronously
-    try
-    {
-      boost::system::error_code e;
-      auto headerbuffer = itsResponse->headersToBuffer();
-      // Write headers
-      if (itsEncryptionEnabled)
-        boost::asio::write(itsSocket, headerbuffer, e);
-      else
-        boost::asio::write(socket(), headerbuffer, e);
-
-      if (e)
-      {
-        reportInfo("Unable to send chunk response headers to " + itsRequest->getClientIP() +
-                   ". Reason: " + e.message());
-        itsFinalStatus = e;
-        return;
-      }
-    }
-    catch (const std::runtime_error&)
-    {
-      boost::system::error_code e;
-      reportInfo("Response status not set, defaulting to 501 Not Implemented");
-      itsResponse->setStatus(SmartMet::Spine::HTTP::Status::not_implemented, true);
-
-      auto headerbuffer = itsResponse->headersToBuffer();
-      // Write headers
-      if (itsEncryptionEnabled)
-        boost::asio::write(itsSocket, headerbuffer, e);
-      else
-        boost::asio::write(socket(), headerbuffer, e);
-
-      if (e)
-      {
-        reportInfo("Unable to send chunk response headers to " + itsRequest->getClientIP() +
-                   ". Reason: " + e.message());
-        itsFinalStatus = e;
-        return;
-      }
-    }
+    // The header section is not written here: getNextChunkedChunk() sends it with
+    // the first chunk when there is one ready, which is one packet rather than two.
+    preparePendingHeaders();
 
     // Get first chunk
     this->getNextChunkedChunk();
@@ -957,46 +975,9 @@ void AsyncConnection::startStreamReply()
         "Content-Length",
         std::to_string(static_cast<long long unsigned int>(itsDeclaredContentLength)));
 
-    // Currently headers a written syncronously
-    try
-    {
-      boost::system::error_code e;
-      auto headerbuffer = itsResponse->headersToBuffer();
-      // Write headers
-      if (itsEncryptionEnabled)
-        boost::asio::write(itsSocket, headerbuffer, e);
-      else
-        boost::asio::write(socket(), headerbuffer, e);
-
-      if (e)
-      {
-        reportInfo("Unable to send stream response headers to " + itsRequest->getClientIP() +
-                   ". Reason: " + e.message());
-        itsFinalStatus = e;
-        return;
-      }
-    }
-    catch (const std::runtime_error&)
-    {
-      boost::system::error_code e;
-      reportInfo("Response status not set, defaulting to 501 Not Implemented");
-      itsResponse->setStatus(SmartMet::Spine::HTTP::Status::not_implemented, true);
-
-      auto headerbuffer = itsResponse->headersToBuffer();
-      // Write headers
-      if (itsEncryptionEnabled)
-        boost::asio::write(itsSocket, headerbuffer, e);
-      else
-        boost::asio::write(socket(), headerbuffer, e);
-
-      if (e)
-      {
-        reportInfo("Unable to send stream response headers to " + itsRequest->getClientIP() +
-                   ". Reason: " + e.message());
-        itsFinalStatus = e;
-        return;
-      }
-    }
+    // The header section is not written here: getNextChunk() sends it with the
+    // first chunk when there is one ready, which is one packet rather than two.
+    preparePendingHeaders();
 
     // Get first chunk
 
@@ -1058,6 +1039,7 @@ void AsyncConnection::writeChunkedReply(const boost::system::error_code& e,
                  ". Reason: " + e.message() + ". Code: " + Fmi::to_string(e.value()));
       // Log the aborted stream with the bytes delivered so far.
       finalizeStreamLogging();
+      notifyBackendFinished(itsResponse->getStreamingStatus());
     }
   }
   catch (...)
@@ -1140,11 +1122,14 @@ void AsyncConnection::getNextChunk()
 
       if (!contentstring.empty())
       {
-        // Account this chunk's body bytes for the deferred access log.
+        // Account this chunk's body bytes for the deferred access log. The header
+        // section rides along on the wire but is not body, so it is not counted.
         itsTotalStreamedBytes += contentstring.size();
 
-        // Send received data
-        itsResponseString = contentstring;
+        // Send received data, with the header section in front of it when this is
+        // the first chunk: one write, and so one packet, instead of two.
+        itsResponseString = itsPendingHeaders + contentstring;
+        itsPendingHeaders.clear();
 
         // Reset sent bytes counter, this is a new chunk
         itsSentBytes = 0;
@@ -1167,12 +1152,22 @@ void AsyncConnection::getNextChunk()
       }
       else
       {
+        // Nothing to send yet. The head is not held back waiting for a stream that
+        // may take seconds to produce its first bytes, so it goes on its own.
+        if (!flushPendingHeaders())
+          return;
+
         // Empty chunk but stream is ok, reschedule for later
         scheduleChunkGetter();
       }
     }
     else
     {
+      // A stream that ended without ever producing a chunk still owes the client
+      // its header section.
+      if (!flushPendingHeaders())
+        return;
+
       // Stream status is EXIT, finalize the send. The streamed response is
       // complete: write the deferred access-log entry with the real size.
       finalizeStreamLogging();
@@ -1229,10 +1224,12 @@ void AsyncConnection::getNextChunkedChunk()
         itsTotalStreamedBytes += length;
 
         std::string hexlength = convertToHex(length);
-        std::string responsestring = hexlength + "\r\n" + contentstring + "\r\n";
 
-        // This is new chunk, zero the counter and set response string
-        itsResponseString = responsestring;
+        // This is new chunk, zero the counter and set response string. The header
+        // section goes in front of it when this is the first chunk: one write, and
+        // so one packet, instead of two.
+        itsResponseString = itsPendingHeaders + hexlength + "\r\n" + contentstring + "\r\n";
+        itsPendingHeaders.clear();
 
         itsSentBytes = 0;
 
@@ -1254,17 +1251,52 @@ void AsyncConnection::getNextChunkedChunk()
       }
       else
       {
+        // Nothing to send yet, so the head goes on its own rather than waiting for
+        // a stream that may take seconds to produce its first bytes.
+        if (!flushPendingHeaders())
+          return;
+
         // Empty chunk received but stream is ok, reschedule for later
         scheduleChunkedChunkGetter();
       }
     }
     else
     {
-      // Finalize the chunked send
-      std::string endstring("0\r\n\r\n");
+      // The stream has ended, one way or the other. Tell the backend heartbeat
+      // hooks how the backend conversation went - the Content-Length stream path
+      // does the same in getNextChunk(), and without this a backend that keeps
+      // dying mid-chunked-body would never be flagged through the hooks.
+      notifyBackendFinished(streamStatus);
 
-      // This is new, final chunk. zero the counter and set response string
-      itsResponseString = endstring;
+      if (streamStatus != SmartMet::Spine::HTTP::ContentStreamer::StreamerStatus::EXIT_OK)
+      {
+        // The streamer failed mid-body. Sending the terminal chunk now would
+        // frame the truncated content as a complete chunked message, and
+        // neither the client nor any cache between here and it could tell it
+        // apart from success. Leave the body unterminated and close the
+        // connection, so the truncation stays visible - the equivalent of the
+        // announced-length check on the Content-Length stream path.
+        //
+        // The header section is sent first if it is still pending, which it is
+        // when the stream failed before producing a single chunk. That leaves the
+        // client looking at a chunked response that stops without terminating -
+        // exactly what it saw back when the head was written up front, rather
+        // than a connection that closed having said nothing at all.
+        (void)flushPendingHeaders();
+
+        finalizeStreamLogging();
+        reportInfo("Chunked response stream failed mid-body, closing the connection unterminated");
+        itsKeepAlive = false;
+        boost::system::error_code ignored_ec;
+        socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+        socket().close(ignored_ec);
+        return;
+      }
+
+      // Finalize the chunked send. A stream that ended without ever producing a
+      // chunk still owes its header section, so it goes out with the terminator.
+      itsResponseString = itsPendingHeaders + "0\r\n\r\n";
+      itsPendingHeaders.clear();
 
       itsSentBytes = 0;
 

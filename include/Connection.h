@@ -15,6 +15,7 @@
 #include <macgyver/ThreadPool.h>
 #include <spine/Reactor.h>
 #include <spine/Thread.h>
+#include <cstdint>
 #include <memory>
 
 using ssl_socket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
@@ -107,6 +108,12 @@ class Connection
   /// Connection timeout timer
   std::unique_ptr<DeadlineTimer> itsTimeoutTimer;
 
+  /// Generation stamp of the currently armed timeout wait. Bumped under itsMutex
+  /// every time the timer is armed or deliberately cancelled, so that a timer
+  /// firing dequeued on another io thread just before a re-arm or cancel can
+  /// recognise itself as stale instead of timing out a healthy connection.
+  std::uint64_t itsTimerGeneration = 0;
+
   /// Socket reads into this buffer
   std::array<char, 8192> itsSocketBuffer;
 
@@ -124,6 +131,13 @@ class Connection
 
   /// Response string to be written to socket
   std::string itsResponseString;
+
+  /// Header section of a streamed response, held until there is a first chunk to
+  /// send it with. A response is written in more than one piece and every piece
+  /// is a packet of its own now that Nagle is off, so the head rides along with
+  /// the first chunk whenever that chunk is already available. It is sent on its
+  /// own if it is not, rather than delaying the head of a slow stream.
+  std::string itsPendingHeaders;
 
   /// Flag to say if we can (attempt to) gzip response
   bool itsCanGzipResponse = false;

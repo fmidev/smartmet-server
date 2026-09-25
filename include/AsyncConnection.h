@@ -14,6 +14,7 @@
 #include <spine/HandlerView.h>
 #include <spine/Reactor.h>
 #include <array>
+#include <cstdint>
 #include <memory>
 
 namespace SmartMet
@@ -265,13 +266,26 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
 
   // ======================================================================
   /*!
-   * \brief Function to handle timeout timer asynchronously
+   * \brief Arm (or re-arm) the connection timeout timer
    *
-   * This will be called if timeout fires.
+   * Stamps the wait with a new generation under itsMutex so that a firing
+   * belonging to an earlier arming is recognised as stale in handleTimer.
    */
   // ======================================================================
 
-  void handleTimer(const boost::system::error_code& err);
+  void armTimer(long theSeconds);
+
+  // ======================================================================
+  /*!
+   * \brief Function to handle timeout timer asynchronously
+   *
+   * This will be called if timeout fires. A firing whose generation stamp no
+   * longer matches itsTimerGeneration lost a race against a concurrent cancel
+   * or re-arm and does nothing.
+   */
+  // ======================================================================
+
+  void handleTimer(const boost::system::error_code& err, std::uint64_t theGeneration);
 
   // ======================================================================
   /*!
@@ -292,6 +306,26 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
    * and the content size is unknown.
    */
   // ======================================================================
+
+  // ------------------------------------------------------------------
+  /*!
+   * \brief Build the header section of a streamed response into itsPendingHeaders
+   *
+   * Defaults the status to 501 if the plugin left none, as writing it used to.
+   */
+  // ------------------------------------------------------------------
+  void preparePendingHeaders();
+
+  // ------------------------------------------------------------------
+  /*!
+   * \brief Send the header section on its own
+   *
+   * Used when there is no first chunk to attach it to: an empty first chunk from
+   * a stream that is not ready yet, or one that ended without producing anything.
+   * Returns false if the write failed, in which case the caller must stop.
+   */
+  // ------------------------------------------------------------------
+  bool flushPendingHeaders();
 
   void startChunkedReply();
 
