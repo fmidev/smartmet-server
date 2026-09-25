@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is `smartmet-server` — the HTTP server daemon (`smartmetd`) for the SmartMet ecosystem. It is a thin networking layer built on Boost.ASIO that delegates all request handling to dynamically-loaded engines and plugins. The actual content logic lives in `spine` (the core framework library) and the engine/plugin shared objects; this repo owns only the async I/O, connection management, signal handling, and thread pool orchestration.
 
+Full developer documentation: `docs/developer-guide.md`.
+
 ## Build and test
 
 ```bash
@@ -259,7 +261,7 @@ will not produce, so curl cannot drive them.
 3. Create `Spine::Reactor` (the plugin/engine container)
 4. Create `AsyncServer` (binds port, starts accept loop)
 5. Launch two async tasks: reactor init (loads engines/plugins) and server run (starts thread pools)
-6. Main thread enters `select()` loop, handling signals (SIGTERM/SIGINT = shutdown, SIGBUS/SIGWINCH = ignore)
+6. Main thread enters a once-per-second loop, handling recorded signals (SIGTERM/SIGINT = orderly shutdown, SIGBUS/SIGWINCH = ignore, SIGHUP = leave the loop *without* orderly shutdown and return 666)
 
 ### Configuration
 

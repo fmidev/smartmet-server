@@ -109,6 +109,7 @@ Plugins handle HTTP requests and provide the server's external interfaces.
 
 ## Documentation
 
+- [Developer guide](docs/developer-guide.md) — process lifecycle, threads, connection handling, reply paths, compression, limits
 - [Admin Requests](docs/Admin-Requests.md)
 - [Test Environment Setup](docs/SmartMet-Server-Test-Environment.md)
 
