@@ -92,8 +92,6 @@ signal:
   60 s, or more than five further SIGINT/SIGTERM arrive in quick succession, it
   `abort()`s.
 * **SIGBUS, SIGWINCH**: logged and ignored.
-* **SIGHUP** (or any other recorded signal): the loop is left without the orderly
-  shutdown, and `main()` returns 666.
 * If the Reactor reports that its shutdown has finished (for example after a fatal
   initialisation error), the server is shut down and the process exits 0.
 
@@ -244,9 +242,6 @@ server-level keys are `port`, `server_threads`, `encryption.*` (`enabled`,
 
 ## 11. Known pitfalls
 
-* **SIGHUP does not shut down cleanly.** It leaves the main loop without stopping the
-  server or the Reactor, and `main()` returns 666. Use SIGTERM (systemd's default) to stop
-  the server.
 * **SIGBUS is "ignored".** The handler only records it. A SIGBUS raised by a memory fault
   (for example a memory-mapped file truncated or deleted on NFS) cannot be survived that
   way: returning from the handler repeats the faulting access. Treat SIGBUS in the logs
@@ -254,10 +249,6 @@ server-level keys are `port`, `server_threads`, `encryption.*` (`enabled`,
 * **The server accepts requests before the plugins are ready.** Load balancers must use a
   readiness check (the backend plugin's `/` text, or `what=waitforready`), not the open
   port.
-* **Content-coding negotiation is a substring match.** `Accept-Encoding` is searched for
-  `zstd` and `gzip`; q-values are ignored, so `gzip;q=0` still gets gzip. `gzip=1` in the
-  URL forces gzip even for a client that did not ask for it.
 * **Overload is not in the access logs.** Count high-load and queue-full replies from the
   stdout log, not the access logs.
-* **HEAD is logged as GET** in the per-handler access log, because the handler sees a GET.
 * **Streamed responses are never compressed.**

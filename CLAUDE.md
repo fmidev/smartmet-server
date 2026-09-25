@@ -261,7 +261,7 @@ will not produce, so curl cannot drive them.
 3. Create `Spine::Reactor` (the plugin/engine container)
 4. Create `AsyncServer` (binds port, starts accept loop)
 5. Launch two async tasks: reactor init (loads engines/plugins) and server run (starts thread pools)
-6. Main thread enters a once-per-second loop, handling recorded signals (SIGTERM/SIGINT = orderly shutdown, SIGBUS/SIGWINCH = ignore, SIGHUP = leave the loop *without* orderly shutdown and return 666)
+6. Main thread enters a once-per-second loop, handling recorded signals (SIGTERM/SIGINT = orderly shutdown, SIGBUS/SIGWINCH = ignore)
 
 ### Configuration
 
