@@ -71,6 +71,15 @@ keepalive:
 
 // maxheadersize = 16384;
 
+// Reverse proxies (for example the frontends in front of backends) trusted to report
+// the client IP in an X-Forwarded-For header. The header is ignored from other peers,
+// and the client IP is the right-most address in it which is not a trusted proxy.
+// Accepts patterns like 192.168.1-10.*, exact addresses and CIDR blocks (IPv4/IPv6).
+// If not set, every IPv4 peer is trusted for backward compatibility, which lets any
+// client spoof its IP and bypass admin/plugin ip_filters. The default will change.
+
+// trustedproxies = ["127.0.0.1", "10.0.0.0/8"];
+
 lazylinking = false;
 
 defaultlogging = true;

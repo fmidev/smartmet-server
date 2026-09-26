@@ -12,6 +12,7 @@
 
 #include "Connection.h"
 #include <boost/asio.hpp>
+#include <spine/IPFilter.h>
 #include <spine/Options.h>
 #include <spine/Reactor.h>
 #include <memory>
@@ -69,6 +70,12 @@ class Server
 
   /// Maximum size of a request's header section in bytes (0 = unlimited)
   std::size_t getMaxHeaderSize() const { return itsMaxHeaderSize; }
+
+  /// Reverse proxies trusted to report the client IP in an X-Forwarded-For header
+  const SmartMet::Spine::IPFilter::IPFilter& getTrustedProxies() const
+  {
+    return *itsTrustedProxies;
+  }
 
   /// Number of client connections currently open. Heap allocated and co-owned by
   /// the connections for the same reason as the shutdown flag below: a connection
@@ -178,6 +185,13 @@ class Server
   /// Maximum size of a request's header section in bytes (0 = unlimited). Bounds
   /// how long a client can hold a connection open without completing a request.
   std::size_t itsMaxHeaderSize = 16384;
+
+  /// Trusted reverse proxies ('trustedproxies' setting). An X-Forwarded-For header
+  /// is believed only when the socket peer matches, and the header is then walked
+  /// from the right skipping trusted hops; otherwise the socket peer address is the
+  /// client IP used for logging and access control. The default trusts every IPv4
+  /// peer for backward compatibility, which allows spoofing the client IP.
+  std::shared_ptr<SmartMet::Spine::IPFilter::IPFilter> itsTrustedProxies;
 
   /// Period in minutes for logging memory usage to stdout (0 = disabled)
   unsigned int itsMemoryLogPeriod = 0;

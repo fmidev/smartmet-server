@@ -44,7 +44,7 @@ All source is in `SmartMet::Server` namespace.
 - **`AsyncConnection`** — Concrete connection using half-sync/half-async pattern. Created via `AsyncConnection::create()` factory (private constructor + `enable_shared_from_this`). Handles the full async lifecycle: SSL handshake, chunked/unchunked/gateway reads and writes, gzip compression, client disconnect detection.
 - **`Server`** — Abstract server base. Binds the TCP acceptor, initializes SSL context, creates three `ThreadPoolType` executors (admin/slow/fast), stores server-wide options (gzip, timeout, max request size).
 - **`AsyncServer`** — Concrete server. Runs `numThreads` ASIO worker threads for network I/O. On accept, creates an `AsyncConnection` and calls `start()`. Shutdown sequence: close acceptor, stop io_service, gracefully shut down thread pools, then shut down Reactor.
-- **`Utility`** — Free functions: gzip compression, HTTP date formatting, X-Forwarded-For parsing, request dumping.
+- **`Utility`** — Free functions: gzip compression, HTTP date formatting, request dumping.
 - **`Names`** — Extract engine/plugin names from shared object filenames.
 
 ### Threading model
@@ -143,6 +143,9 @@ cosmetic. Implemented in this repo:
   keep-alive negotiation, which reads `Connection`.
 - **Header section bounded** by `maxheadersize` (16 kB default) → 431, so a client cannot hold a
   connection — and a slot against `maxconnections` — open by dribbling header bytes.
+- **Client IP** is the socket peer unless the peer matches `trustedproxies`; then the right-most
+  untrusted `X-Forwarded-For` hop is used (`Spine::IPFilter::resolveClientIP`). The unset default
+  trusts every IPv4 peer for backward compatibility, which makes the client IP spoofable.
 
 ### Pipelining, chunked request bodies, HEAD
 

@@ -26,8 +26,6 @@ void compress_response(SmartMet::Spine::HTTP::Response& response, const std::str
 
 std::string makeDateString();
 
-std::string parseXForwardedFor(const std::string& input);
-
 // ======================================================================
 /*!
  * \brief Test whether a comma separated HTTP header value contains a token

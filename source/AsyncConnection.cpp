@@ -304,27 +304,31 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         itsBuffer.erase(0, parsedRequest.consumed);
         itsReceivedBytes = itsBuffer.size();
 
-        // Set client ip
-        auto forwardHeader = itsRequest->getHeader("X-Forwarded-For");
-        if (forwardHeader)
+        // Set client ip. The real socket peer address is taken first; an
+        // X-Forwarded-For header is believed only when that peer is a configured
+        // trusted reverse proxy, and then the right-most untrusted hop in it is the
+        // client (Spine::IPFilter::resolveClientIP). Otherwise any client could
+        // spoof its source IP by sending X-Forwarded-For and thereby defeat the
+        // admin and plugin IP filters (and impersonate other clients in the
+        // request logs).
+        std::string peerIP;
+        try
         {
-          // Should we validate this?
-          itsRequest->setClientIP(parseXForwardedFor(*forwardHeader));
+          peerIP = socket().remote_endpoint().address().to_string();
         }
+        catch (...)
+        {
+          Fmi::Exception exception(BCP, "Operation failed!", nullptr);
+          reportError(std::string("Failed to obtain remote endpoint IP address:\n") +
+                      exception.what());
+          return;
+        }
+
+        if (itsServer != nullptr)
+          itsRequest->setClientIP(SmartMet::Spine::IPFilter::resolveClientIP(
+              peerIP, itsRequest->getHeader("X-Forwarded-For"), itsServer->getTrustedProxies()));
         else
-        {
-          try
-          {
-            itsRequest->setClientIP(socket().remote_endpoint().address().to_string());
-          }
-          catch (...)
-          {
-            Fmi::Exception exception(BCP, "Operation failed!", nullptr);
-            reportError(std::string("Failed to obtain remote endpoint IP address:\n") +
-                        exception.what());
-            return;
-          }
-        }
+          itsRequest->setClientIP(peerIP);
 
 #ifndef NDEBUG
         // DEBUGGIN OUTPUT************************************

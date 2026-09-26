@@ -164,23 +164,6 @@ void compress_response(SmartMet::Spine::HTTP::Response& response, const std::str
   }
 }
 
-std::string parseXForwardedFor(const std::string& input)
-{
-  try
-  {
-    std::size_t loc = input.find(',');
-
-    if (loc == std::string::npos)
-      return input;  // No comma, ip is the entre token
-
-    return input.substr(0, loc);
-  }
-  catch (...)
-  {
-    throw Fmi::Exception::Trace(BCP, "Operation failed!");
-  }
-}
-
 bool hasHeaderToken(const std::string& headerValue, const std::string& token)
 {
   try
