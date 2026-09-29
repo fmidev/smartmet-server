@@ -20,6 +20,28 @@ The short version:
 Following these rules makes your application faster, reduces your bandwidth
 and keeps the shared service responsive for everyone.
 
+## Contents
+
+- [The headers the server sends](#the-headers-the-server-sends)
+  - [How the Expires time is chosen](#how-the-expires-time-is-chosen)
+- [Conditional requests: `If-None-Match`](#conditional-requests-if-none-match)
+  - [Compressed responses](#compressed-responses)
+  - [API keys](#api-keys)
+- [Checking for new data without downloading it](#checking-for-new-data-without-downloading-it)
+  - [WMS GetCapabilities](#wms-getcapabilities)
+  - [Querydata origin times: `/info?what=qengine`](#querydata-origin-times-infowhatqengine)
+  - [Grid producers: `/info?what=gridproducers`](#grid-producers-infowhatgridproducers)
+  - [How to poll these](#how-to-poll-these)
+- [What the server does on its side](#what-the-server-does-on-its-side)
+- [Why cache busting does not work](#why-cache-busting-does-not-work)
+- [Recommendations by client type](#recommendations-by-client-type)
+  - [Browsers and JavaScript](#browsers-and-javascript)
+  - [curl](#curl)
+  - [Python](#python)
+  - [Other languages and tools](#other-languages-and-tools)
+- [Checklist](#checklist)
+- [References](#references)
+
 ## The headers the server sends
 
 The main data-producing endpoints (`timeseries`, `edr`, `wms` with its
