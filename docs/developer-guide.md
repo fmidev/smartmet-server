@@ -14,8 +14,9 @@ Related documents in this repository:
   obligations that come with them, pipelining, and why Nagle is off, with measurements.
 * [HTTP-KeepAlive-Design.md](HTTP-KeepAlive-Design.md): the original keep-alive design.
 * [Admin-Requests.md](Admin-Requests.md): the admin requests from the user's side.
-* [HTTP-Caching-Guide.md](HTTP-Caching-Guide.md): for clients, how to use the cache
-  headers, why cache busting does not work, and how to check for new data cheaply.
+* [HTTP-Client-Guide.md](HTTP-Client-Guide.md): for clients, how to use the cache
+  headers, connections, compression and error responses, why cache busting does not
+  work, and how to check for new data cheaply.
 * [SmartMet-Server-Test-Environment.md](SmartMet-Server-Test-Environment.md).
 
 ## Contents
