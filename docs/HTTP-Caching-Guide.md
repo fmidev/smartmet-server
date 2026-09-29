@@ -123,6 +123,25 @@ header (for example `gzip`, `br` or `zstd`). Always send the same
 default. It lets both your cache and the server's cache reuse the same
 representation.
 
+### API keys
+
+If you use an API key provided by FMI, send it in the `fmi-apikey` request
+header rather than as the `fmi-apikey` query parameter:
+
+```sh
+curl -sS -H "fmi-apikey: $APIKEY" "$url"
+```
+
+The server accepts both, but the header is the better choice:
+
+- **The URL stays the same for everyone.** Browsers, HTTP libraries and
+  proxies store responses by URL. A key in the URL makes a separate cache
+  entry for every key, so a shared proxy cannot reuse one user's response
+  for another.
+- **The key stays out of URLs.** URLs end up in browser history, proxy and
+  server access logs, `Referer` headers and copied links, and a key in the
+  URL goes wherever the URL goes.
+
 ## What the server does on its side
 
 Understanding this explains why the recommendations above work, and why cache
@@ -276,6 +295,7 @@ Remember to also wait until the `Expires` time before polling again.
 - [ ] Handle `304 Not Modified` by reusing the stored body.
 - [ ] Do not request again before the `Expires` time.
 - [ ] Send a consistent `Accept-Encoding` and accept compressed responses.
+- [ ] Send an FMI API key in the `fmi-apikey` header, not in the URL.
 - [ ] Never append random, timestamp or otherwise unrecognised parameters.
 
 ## References
