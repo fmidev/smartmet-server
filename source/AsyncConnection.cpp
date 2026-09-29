@@ -1499,6 +1499,18 @@ void AsyncConnection::startRegularReply()
         compress_response(*itsResponse, encoding);
     }
 
+    // A 304 tells a cache which of its stored variants to use, and the variants
+    // differ in their content coding. Plugins know only the entity-tag of the
+    // data, and a 304 has no body to encode, so name the variant the client
+    // said it holds. Echoing the tag of the data instead makes a cache holding
+    // several variants serve one the request did not ask for.
+    if (itsResponse->getStatus() == SmartMet::Spine::HTTP::Status::not_modified)
+    {
+      auto etag = itsResponse->getHeader("ETag");
+      if (etag)
+        itsResponse->setHeader("ETag", SmartMet::Spine::HTTP::notModifiedETag(*itsRequest, *etag));
+    }
+
     if (statusHasNoBody(itsResponse->getStatus()))
     {
       // 1xx, 204 and 304 are framed by the status code itself: the message ends
