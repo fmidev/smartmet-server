@@ -142,6 +142,116 @@ The server accepts both, but the header is the better choice:
   server access logs, `Referer` headers and copied links, and a key in the
   URL goes wherever the URL goes.
 
+## Checking for new data without downloading it
+
+Many clients download a product just to find out whether anything has changed.
+There are cheaper ways to ask that question. Use them first, and fetch the
+product only when the answer is yes.
+
+### WMS GetCapabilities
+
+The capabilities document carries the same cache headers as the maps
+themselves: an `ETag`, an `Expires` and a `Last-Modified`. The `ETag` is a
+hash of the document, so it changes when a layer gains a new time step or
+model run, when a layer is added or removed, or when the configuration
+changes. Poll it with `If-None-Match` like any other resource, and re-read
+the layer list only on a `200 OK`.
+
+A full capabilities document can be large, and its `ETag` changes whenever
+*any* layer changes. Restrict the request to the layers you use with the
+`NAMESPACE` parameter, so the document stays small and its `ETag` only
+changes when your layers change:
+
+```
+GET /wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetCapabilities&NAMESPACE=fmi:ecmwf HTTP/1.1
+Host: opendata.fmi.fi
+If-None-Match: "1b7e4d9a"
+```
+
+`NAMESPACE` takes either a namespace prefix or a regular expression enclosed
+in slashes, matched case-insensitively against the full layer names. The
+regex form lets you name exactly the layers you use:
+
+```
+NAMESPACE=/fmi:ecmwf:pop:rain|fmi:wwi:pop:snow/
+```
+
+`FORMAT=application/json` returns the same information as JSON, which is
+easier to compare programmatically than the XML. The `Last-Modified` header
+reflects the newest data change across all layers, not only the listed ones,
+so use the `ETag` for change detection and `Last-Modified` for information.
+
+Note that the WMTS and OGC API Tiles interfaces build on the same layer
+metadata, so a change in the WMS `ETag` also means new tiles.
+
+### Querydata origin times: `/info?what=qengine`
+
+For forecast data served from querydata, the question "is there a new model
+run?" is answered directly by the querydata engine's status page. Use the
+`producer` option to get only the producer you are interested in, and
+`format=json` for a machine-readable answer:
+
+```sh
+curl -sS 'https://smartmet.fmi.fi/info?what=qengine&producer=pal_skandinavia&format=json&timeformat=iso'
+```
+
+The response has one entry per loaded data file, oldest first. Each entry
+includes the file's `OriginTime` (the model run time), `MinTime` and
+`MaxTime` (the valid time range) and `LoadTime` (when the server loaded it).
+The last entry is the newest run:
+
+```json
+[{"Producer":"pal_skandinavia","OriginTime":"20260929T060000",
+  "MinTime":"20260929T060000","MaxTime":"20261009T060000",
+  "LoadTime":"20260929T083012", ...}]
+```
+
+Remember the newest `OriginTime`. When it changes, the products for that
+producer have changed. Until then, requesting them again only returns what
+you already have. The `producer` value must match the producer name exactly.
+
+Other options: `timeformat` accepts `iso`, `sql` (the default), `xml`,
+`epoch`, `timestamp` and `http`. Without `format` the page is meant for
+browsers. Omitting `producer` lists every producer, which is much larger and
+rarely what a polling client wants.
+
+### Grid producers: `/info?what=gridproducers`
+
+Data served through the grid engine (GRIB and NetCDF sources) is organised
+into generations, one per model run. The grid producer listing reports the
+newest one:
+
+```sh
+curl -sS 'https://smartmet.fmi.fi/info?what=gridproducers&producer=ECG&format=json&timeformat=iso'
+```
+
+```json
+[{"#":1,"ProducerName":"ECG","ProducerId":1,"Title":"...","Description":"...",
+  "NumOfGenerations":4,"NewestGeneration":"20260929T000000",
+  "OldestGeneration":"20260928T000000"}]
+```
+
+`NewestGeneration` is the analysis time of the latest complete model run.
+Poll it the same way as the querydata origin time above. Here the `producer`
+match is case-insensitive. The `timeformat` option works as for `qengine`.
+
+### How to poll these
+
+The status pages carry no `ETag` or `Expires`, so the rules above do not
+apply to them. They are cheap, but they are not free, and the answer cannot
+change faster than the model runs behind it. A sensible pattern is:
+
+1. Read the newest origin time or generation once, and store it.
+2. Fetch the products you need with their `ETag`s, as described above.
+3. Poll the status page no more often than the data can change. Once an
+   hour is plenty for a model that runs four times a day. When the value
+   changes, fetch the products with `If-None-Match` and let the `ETag`
+   confirm what actually changed.
+
+Do not poll a status page every few seconds on the off chance that data has
+arrived. The `Expires` header on the products already tells you when to
+expect the next run.
+
 ## What the server does on its side
 
 Understanding this explains why the recommendations above work, and why cache
@@ -294,6 +404,9 @@ Remember to also wait until the `Expires` time before polling again.
 - [ ] Send `If-None-Match` with the stored `ETag` on every repeat request.
 - [ ] Handle `304 Not Modified` by reusing the stored body.
 - [ ] Do not request again before the `Expires` time.
+- [ ] Poll a cheap status page (WMS `GetCapabilities` with `NAMESPACE`,
+      `/info?what=qengine&producer=...` or `/info?what=gridproducers`)
+      before re-fetching products, and no more often than the data updates.
 - [ ] Send a consistent `Accept-Encoding` and accept compressed responses.
 - [ ] Send an FMI API key in the `fmi-apikey` header, not in the URL.
 - [ ] Never append random, timestamp or otherwise unrecognised parameters.
