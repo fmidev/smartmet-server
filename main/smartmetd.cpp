@@ -305,7 +305,7 @@ int main(int argc, char* argv[])
                     << '\n';
           last_signal = 0;
         }
-        else if (sig == SIGTERM)
+        else if (sig == SIGTERM || sig == SIGHUP)
         {
           std::cout << " - shutting down!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
                     << '\n';
@@ -361,13 +361,18 @@ int main(int argc, char* argv[])
         }
         else
         {
+          // Not expected: only the signals above are handled. Still stop the
+          // server and the Reactor properly instead of leaving main() with
+          // everything running.
           std::cout << " - exiting!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT << '\n';
-          break;
+
+          tasks->stop();
+          server->shutdownServer();
+          tasks->wait();
+          return 1;
         }
       }
     }
-
-    return 666;
   }
   catch (...)
   {
