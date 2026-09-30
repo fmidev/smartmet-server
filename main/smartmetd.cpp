@@ -182,6 +182,11 @@ int main(int argc, char* argv[])
     // Use the system locale or autocomplete may not work properly (iconv requirement)
     static_cast<void>(std::setlocale(LC_ALL, ""));  // NOLINT - no threads yet
 
+    // Numbers are always read and written with a decimal point. This must be
+    // set here before any threads start: setlocale() changes the whole process,
+    // and engines initialized in parallel must not change it.
+    static_cast<void>(std::setlocale(LC_NUMERIC, "C"));  // NOLINT - no threads yet
+
     // Set new_handler
     set_new_handler(options.new_handler);
 
