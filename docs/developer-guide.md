@@ -90,7 +90,7 @@ make test            # test/startup-test.sh + test/conformance-test.sh
 **Main loop.** Every second, the main thread collects finished tasks and checks the last
 signal:
 
-* **SIGTERM**: orderly shutdown (below), exit 0.
+* **SIGTERM, SIGHUP**: orderly shutdown (below), exit 0.
 * **SIGINT**: the same, plus a watchdog: if the shutdown has not finished within
   60 s, or more than five further SIGINT/SIGTERM arrive in quick succession, it
   `abort()`s.
@@ -141,7 +141,9 @@ pending handlers). Then:
    `Content-Length` / `Transfer-Encoding`) with 400 and decodes a chunked request body.
 3. **Validate**: HTTP/1.1 without `Host` → 400 and close. Decide keep-alive
    (`evaluateKeepAlive()`), then strip hop-by-hop headers (`stripHopByHopHeaders()`). A
-   HEAD request is handed on **as a GET** and only remembered in `itsHeadRequest`.
+   HEAD request is handed on **as a GET** and remembered in `itsHeadRequest`; the internal
+   `X-SmartMet-Original-Method: HEAD` header (removed from every client request first)
+   lets the access log record it as HEAD.
 4. **Dispatch**: find the `HandlerView` (404 if none). If the load is high and the request
    is not an admin query → high-load reply. Otherwise schedule
    `handleCompletedRead()` on the chosen pool (queue full → 503).
