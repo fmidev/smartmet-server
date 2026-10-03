@@ -381,11 +381,17 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         // RFC 9110 9.3.2: the response to HEAD is the response to GET with the
         // content left out. The plugins do not know the method - several answer
         // only GET and POST and would reject it - so the request is handed on as
-        // a GET and the body is dropped when the reply is written. The cost is
-        // that a HEAD shows up as a GET in the per-handler access log.
+        // a GET and the body is dropped when the reply is written. The original
+        // method is passed in the internal X-SmartMet-Original-Method header so
+        // that the per-handler access log can report HEAD. The header is never
+        // accepted from the client.
+        itsRequest->removeHeader("X-SmartMet-Original-Method");
         itsHeadRequest = (itsRequest->getMethod() == SmartMet::Spine::HTTP::RequestMethod::HEAD);
         if (itsHeadRequest)
+        {
           itsRequest->setMethod(SmartMet::Spine::HTTP::RequestMethod::GET);
+          itsRequest->setHeader("X-SmartMet-Original-Method", "HEAD");
+        }
 
         // Check whether we have 'OPTIONS' request
         if (itsRequest->getMethodString() == "OPTIONS" && itsRequest->getResource() == "*")

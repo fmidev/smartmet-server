@@ -182,6 +182,11 @@ int main(int argc, char* argv[])
     // Use the system locale or autocomplete may not work properly (iconv requirement)
     static_cast<void>(std::setlocale(LC_ALL, ""));  // NOLINT - no threads yet
 
+    // Numbers are always read and written with a decimal point. This must be
+    // set here before any threads start: setlocale() changes the whole process,
+    // and engines initialized in parallel must not change it.
+    static_cast<void>(std::setlocale(LC_NUMERIC, "C"));  // NOLINT - no threads yet
+
     // Set new_handler
     set_new_handler(options.new_handler);
 
@@ -305,7 +310,7 @@ int main(int argc, char* argv[])
                     << '\n';
           last_signal = 0;
         }
-        else if (sig == SIGTERM)
+        else if (sig == SIGTERM || sig == SIGHUP)
         {
           std::cout << " - shutting down!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
                     << '\n';
@@ -361,13 +366,18 @@ int main(int argc, char* argv[])
         }
         else
         {
+          // Not expected: only the signals above are handled. Still stop the
+          // server and the Reactor properly instead of leaving main() with
+          // everything running.
           std::cout << " - exiting!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT << '\n';
-          break;
+
+          tasks->stop();
+          server->shutdownServer();
+          tasks->wait();
+          return 1;
         }
       }
     }
-
-    return 666;
   }
   catch (...)
   {
