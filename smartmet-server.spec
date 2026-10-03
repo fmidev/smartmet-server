@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.9.29
+Version: 26.10.3
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -31,8 +31,8 @@ BuildRequires: elfutils-devel
 BuildRequires: %{smartmet_fmt_devel}
 BuildRequires: openssl-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 26.9.23
-BuildRequires: smartmet-library-spine-devel >= 26.9.29-2
+BuildRequires: smartmet-library-macgyver-devel >= 26.10.3
+BuildRequires: smartmet-library-spine-devel >= 26.10.3
 Requires: %{smartmet_boost}-iostreams
 Requires: %{smartmet_boost}-program-options
 Requires: %{smartmet_boost}-regex
@@ -42,8 +42,8 @@ Requires: %{smartmet_fmt}
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 26.9.23
-Requires: smartmet-library-spine >= 26.9.29-2
+Requires: smartmet-library-macgyver >= 26.10.3
+Requires: smartmet-library-spine >= 26.10.3
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -108,6 +108,11 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Sat Oct 03 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.10.3-1.fmi
+- Set LC_NUMERIC once at startup
+- Pass the original HEAD method to the access log
+- Shut down in order on SIGHUP
+
 * Tue Sep 29 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.9.29-1.fmi
 - Content encoding negotiation now honours quality values. A response is no
   longer compressed with a coding the client refused: "Accept-Encoding: gzip,
