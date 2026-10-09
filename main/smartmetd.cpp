@@ -18,6 +18,7 @@
 #include <memory>
 #include <new>
 #include <thread>
+#include <gdal.h>
 
 // libdw from elfutils-devel provides more details than libbfd
 #define BACKWARD_HAS_DW 1
@@ -172,6 +173,8 @@ int main(int argc, char* argv[])
   {
     // Ensure that the registrated static object cleanup is done before the exit
     Fmi::StaticCleanup::AtExit cleanup;
+
+    GDALAllRegister();
 
     // Parse options
 
