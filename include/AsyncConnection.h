@@ -227,6 +227,9 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
 
   void finishResponse();
 
+  // Shut down and close the socket, ignoring errors
+  void closeSocket();
+
   // ======================================================================
   /*!
    * \brief Handle completed request

@@ -11,6 +11,7 @@
 #include <macgyver/Exception.h>
 #include <spine/Convenience.h>
 #include <sstream>
+#include <tuple>
 #include <vector>
 
 namespace SmartMet
@@ -100,10 +101,18 @@ AsyncConnection::~AsyncConnection()
 {
   if (!hasTimedOut)
   {
-    boost::system::error_code ignored_ec;
-    socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-    socket().close(ignored_ec);
+    closeSocket();
   }
+}
+
+// Shut the socket down in both directions and close it. The errors are ignored
+// on purpose: the peer may already be gone (ENOTCONN), and nothing more can be
+// done with a socket that is being discarded anyway.
+void AsyncConnection::closeSocket()
+{
+  boost::system::error_code ignored;
+  std::ignore = socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored);
+  std::ignore = socket().close(ignored);
 }
 
 // Arm (or re-arm) the connection timeout timer. The generation stamp ties the
@@ -142,9 +151,7 @@ void AsyncConnection::handleTimer(const boost::system::error_code& err,
       // time (RFC 9112 9.6), and it must do so silently here: the client may be
       // writing a request at this very moment, in which case an unsolicited 408 would
       // arrive in the middle of a request it still expects an answer to.
-      boost::system::error_code ignored_ec;
-      socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-      socket().close(ignored_ec);
+      closeSocket();
       return;
     }
 
@@ -202,8 +209,10 @@ void AsyncConnection::start()
     // that accident, and a proxied 1 kB response through the frontend went from
     // 0.4 ms to 43 ms. Servers that write whole messages have no use for Nagle;
     // this is what nginx and friends do by default too.
-    boost::system::error_code ignored;
-    socket().set_option(boost::asio::ip::tcp::no_delay(true), ignored);
+    boost::system::error_code ec;
+    if (socket().set_option(boost::asio::ip::tcp::no_delay(true), ec))
+      std::cerr << Spine::log_time_str()
+                << " Server info: failed to disable Nagle's algorithm: " << ec.message() << '\n';
 
     // Start the timeout timer
 
@@ -242,9 +251,7 @@ void AsyncConnection::handleHandshake(const boost::system::error_code& error)
     // std::cout << error << "\n";
 
     // Handshake error. Closing the connection.
-    boost::system::error_code ignored_ec;
-    socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-    socket().close(ignored_ec);
+    closeSocket();
   }
 }
 
@@ -1294,9 +1301,7 @@ void AsyncConnection::getNextChunkedChunk()
         finalizeStreamLogging();
         reportInfo("Chunked response stream failed mid-body, closing the connection unterminated");
         itsKeepAlive = false;
-        boost::system::error_code ignored_ec;
-        socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-        socket().close(ignored_ec);
+        closeSocket();
         return;
       }
 
@@ -1763,9 +1768,7 @@ void AsyncConnection::sendSimpleReply()
     }
 
     // Shutdown immediately to avoid lingering CLOSE_WAIT sockets
-    boost::system::error_code ignored_ec;
-    socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-    socket().close(ignored_ec);
+    closeSocket();
   }
   catch (...)
   {
