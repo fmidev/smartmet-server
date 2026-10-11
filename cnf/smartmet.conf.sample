@@ -84,6 +84,11 @@ lazylinking = false;
 
 defaultlogging = true;
 
+// /robots.txt is served from this file, read at startup. Without the setting the
+// server does not serve /robots.txt. robots.txt.sample allows crawlers the API
+// definitions, landing pages and collection listings, but no data requests.
+// robots_txt = "/etc/smartmet/robots.txt";
+
 // Response compression. compresscodings lists the content codings offered, in
 // preference order; only codings the server can produce are accepted (zstd, gzip)
 // and an unknown name stops the server at startup. Narrowing the list is how a

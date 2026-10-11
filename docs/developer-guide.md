@@ -241,6 +241,7 @@ server-level keys are `port`, `server_threads`, `encryption.*` (`enabled`,
 `activerequests.*`, `keepalive.*`, `maxconnections`, `maxheadersize`, `maxrequestsize`,
 `timeout`, `compress`, `compresslimit`, `stalewhilerevalidate`, `staleiferror`,
 `dns.*` (client host name resolution), `accesslogdir`, `defaultlogging`,
+`robots_txt` (file served as /robots.txt, see cnf/robots.txt.sample),
 `logrequests`, `lazylinking`, `stacktrace`, `new_handler`, `logmemoryuse`,
 `logmemoryfields`, `debug`, `verbose`, and the `engines` and `plugins` groups
 (spine guide §4).
