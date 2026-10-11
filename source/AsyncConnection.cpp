@@ -6,6 +6,7 @@
 #include "AsyncConnection.h"
 #include "AsyncServer.h"
 #include "Utility.h"
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/bind/bind.hpp>
 #include <boost/move/make_unique.hpp>
 #include <macgyver/Exception.h>
@@ -1604,7 +1605,12 @@ void AsyncConnection::setServerHeaders()
   {
     // Put additional server-based headers here
     itsResponse->setHeader("Server", "SmartMet Server (" __TIME__ " " __DATE__ ")");
-    itsResponse->setHeader("Vary", "Accept-Encoding");
+    // Keep the request headers the plugin itself declared the response to vary on
+    auto vary = itsResponse->getHeader("Vary");
+    if (!vary || vary->empty())
+      itsResponse->setHeader("Vary", "Accept-Encoding");
+    else if (!boost::algorithm::icontains(*vary, "Accept-Encoding"))
+      itsResponse->setHeader("Vary", *vary + ", Accept-Encoding");
     itsResponse->setHeader("Date", makeDateString());
 
     // --- Persistent connection (keep-alive) negotiation --------------------------
