@@ -18,7 +18,6 @@ AsyncServer::AsyncServer(SmartMet::Spine::Options& theOptions,
                          SmartMet::Spine::Reactor& theReactor,
                          std::size_t numThreads)
     : Server(theOptions, theReactor),
-      itsConnections(0),
       numThreads(std::max(numThreads, std::size_t{1U}))
 {
   try

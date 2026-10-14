@@ -101,7 +101,7 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
                               ThreadPoolType& slowExecutor,
                               ThreadPoolType& fastExecutor);
 
-  inline ConnectionPtr get_ptr() { return shared_from_this(); }
+  ConnectionPtr get_ptr() { return shared_from_this(); }
 
   // ======================================================================
   /*!

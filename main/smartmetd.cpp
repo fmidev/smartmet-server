@@ -85,7 +85,7 @@ class MaxEventFreq
     const auto now = std::chrono::steady_clock::now();
     const auto oldest = now - std::chrono::seconds(itsTimeWindowInSec);
 
-    std::size_t i;
+    std::size_t i = 0;
     for (i = 0; i < itsCount && itsTimePoints[i] < oldest; ++i)
     {
     }
