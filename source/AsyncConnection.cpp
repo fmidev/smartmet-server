@@ -35,7 +35,7 @@ bool statusHasNoBody(SmartMet::Spine::HTTP::Status status)
 }
 }  // namespace
 
-AsyncConnection::AsyncConnection(Private,
+AsyncConnection::AsyncConnection(Private /*unused*/,
                                  AsyncServer* serverInstance,
                                  bool sslEnabled,
                                  boost::asio::ssl::context& sslContext,

@@ -45,7 +45,7 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
   };
 
  public:
-  explicit AsyncConnection(Private,
+  explicit AsyncConnection(Private /*unused*/,
                            AsyncServer* serverInstance,
                            bool sslEnabled,
                            boost::asio::ssl::context& sslContext,
