@@ -81,7 +81,7 @@ class MaxEventFreq
 
   void check()
   {
-    std::lock_guard<std::mutex> lock(itsMutex);
+    std::scoped_lock lock(itsMutex);
     const auto now = std::chrono::steady_clock::now();
     const auto oldest = now - std::chrono::seconds(itsTimeWindowInSec);
 

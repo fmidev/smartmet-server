@@ -51,7 +51,7 @@ void AsyncServer::run()
       // during startup tears them down first and starting them would then
       // dereference a null unique_ptr. Take the lock so the check and the
       // start() calls cannot straddle that teardown.
-      std::lock_guard<std::mutex> lock(itsExecutorMutex);
+      std::scoped_lock lock(itsExecutorMutex);
 
       if (!*itsShutdownRequested && itsAdminExecutor)
       {
@@ -98,7 +98,7 @@ void AsyncServer::shutdown()
       // Serialised against run() starting them, and skipped when they are gone
       // already: shutdownServer() can be reached more than once, from a signal
       // and from the reactor reporting itself finished.
-      std::lock_guard<std::mutex> lock(itsExecutorMutex);
+      std::scoped_lock lock(itsExecutorMutex);
 
       if (itsAdminExecutor)
       {
