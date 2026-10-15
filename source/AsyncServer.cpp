@@ -183,6 +183,9 @@ void AsyncServer::serverThreadFunction(unsigned index)
   {
     std::atomic<std::size_t>& count;
     ~WorkerExitGuard() { --count; }
+    explicit WorkerExitGuard(std::atomic<std::size_t>& theCount) : count(theCount) {}
+    WorkerExitGuard(const WorkerExitGuard&) = delete;
+    WorkerExitGuard& operator=(const WorkerExitGuard&) = delete;
   } guard{itsRunningWorkers};
 
   try

@@ -106,7 +106,7 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
     {
       itsAcceptor.bind(endpoint);
     }
-    catch (const boost::system::system_error& err)
+    catch (const boost::system::system_error&)
     {
       std::cout << "Error: Unable to bind listening socket to port " << theOptions.port << '\n';
       throw;
@@ -300,7 +300,7 @@ void appendJemallocStats(std::ostream& out)
   {
     const double frag =
         100.0 * static_cast<double>(active - allocated) / static_cast<double>(active);
-    std::array<char, 32> buf;
+    std::array<char, 32> buf{};
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
     std::snprintf(buf.data(), buf.size(), "%.1f%%", frag);
     out << " jemalloc.fragmentation=" << buf.data();

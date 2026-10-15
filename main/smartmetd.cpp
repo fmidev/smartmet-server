@@ -304,6 +304,7 @@ int main(int argc, char* argv[])
       if (sig != 0)
       {
         std::cout << "\n"
+                  // NOLINTNEXTLINE(concurrency-mt-unsafe): only used when the server is about to terminate on a fatal signal
                   << ANSI_BG_RED << ANSI_BOLD_ON << ANSI_FG_WHITE << "Signal '" << strsignal(sig)
                   << "' (" << sig << ") received ";
 
