@@ -16,6 +16,7 @@
 #include <csignal>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <new>
 #include <thread>
 #include <gdal.h>
@@ -165,6 +166,132 @@ void set_new_handler(const std::string& name)
     throw Fmi::Exception(BCP, "Unknown new_handler").addParameter("name", name);
 }
 
+// Block signals before starting new threads and set the signal handlers
+void init_signals()
+{
+  // Block signals before starting new threads
+
+  block_signals();
+
+  // Set special SIGTERM, SIGBUS and SIGWINCH handlers
+
+  struct sigaction action;             // NOLINT(cppcoreguidelines-pro-type-member-init)
+  action.sa_handler = signal_handler;  // NOLINT(cppcoreguidelines-pro-type-union-access)
+  sigemptyset(&action.sa_mask);
+  action.sa_flags = 0;
+  sigaction(SIGBUS, &action, nullptr);
+  sigaction(SIGTERM, &action, nullptr);
+  sigaction(SIGWINCH, &action, nullptr);
+
+  // We also want to record other common non-core dumping signals
+  sigaction(SIGHUP, &action, nullptr);
+  sigaction(SIGINT, &action, nullptr);
+
+  struct sigaction action2;                   // NOLINT(cppcoreguidelines-pro-type-member-init)
+  action2.sa_handler = crash_signal_handler;  // NOLINT(cppcoreguidelines-pro-type-union-access)
+  sigemptyset(&action2.sa_mask);
+  action2.sa_flags = 0;
+  sigaction(SIGSEGV, &action2, nullptr);
+}
+
+// The number of server threads
+unsigned get_server_threads(SmartMet::Spine::Options& options)
+{
+  unsigned server_threads = SmartMet::Server::AsyncServer::DEFAULT_ASYNC_THREAD_SIZE;
+  if (options.itsConfig.exists("server_threads"))
+  {
+    options.itsConfig.lookupValue("server_threads", server_threads);
+    if (server_threads < 1)
+      server_threads = SmartMet::Server::AsyncServer::DEFAULT_ASYNC_THREAD_SIZE;
+  }
+  return server_threads;
+}
+
+// Stop the tasks and the server
+void stop_server()
+{
+  tasks->stop();
+  server->shutdownServer();
+  tasks->wait();
+}
+
+// Abort if the server does not shut down in time after SIGINT, or if more signals arrive
+void sigint_watchdog(double& sigint_cnt)
+{
+  for (int i = 0; i < 1200; i++)
+  {
+    boost::this_thread::sleep_for(boost::chrono::milliseconds(50));
+    if (last_signal == SIGINT || last_signal == SIGTERM)
+    {
+      last_signal = 0;
+      sigint_cnt++;
+      if (sigint_cnt > 5)
+      {
+        std::cout << "*** Too many SIGINT or SIGTERM signals after first SIGINT. "
+                     "Commiting suicide\n";
+        abort();
+      }
+    }
+    else
+    {
+      sigint_cnt = std::max(0.0, sigint_cnt - 0.05);
+    }
+  }
+  std::cout << "*** Timed out waiting for server to shut down after SIGINT\n";
+  abort();
+}
+
+// Handle a received signal. Returns the exit code if the server is to exit.
+std::optional<int> handle_signal(int sig, double& sigint_cnt)
+{
+  std::cout << "\n"
+            // NOLINTNEXTLINE(concurrency-mt-unsafe): only used when the server is about to terminate on a fatal signal
+            << ANSI_BG_RED << ANSI_BOLD_ON << ANSI_FG_WHITE << "Signal '" << strsignal(sig)
+            << "' (" << sig << ") received ";
+
+  if (sig == SIGBUS || sig == SIGWINCH)
+  {
+    std::cout << " - ignoring it!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
+              << '\n';
+    last_signal = 0;
+    return {};
+  }
+  if (sig == SIGTERM || sig == SIGHUP)
+  {
+    std::cout << " - shutting down!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
+              << '\n';
+
+    stop_server();
+
+    // Save heap profile if it has been enabled
+    // mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
+    return 0;
+  }
+  if (sig == SIGINT)
+  {
+    last_signal = 0;
+    Fmi::AsyncTask shutdown_timer("Shutdown timer",
+                                  [&sigint_cnt]() { sigint_watchdog(sigint_cnt); });
+    std::cout << " - shutting down!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
+              << '\n';
+
+    stop_server();
+    shutdown_timer.cancel();
+
+    // Save heap profile if it has been enabled
+    // mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
+    return 0;
+  }
+
+  // Not expected: only the signals above are handled. Still stop the
+  // server and the Reactor properly instead of leaving main() with
+  // everything running.
+  std::cout << " - exiting!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT << '\n';
+
+  stop_server();
+  return 1;
+}
+
 }  // anonymous namespace
 
 int main(int argc, char* argv[])
@@ -193,33 +320,6 @@ int main(int argc, char* argv[])
     // Set new_handler
     set_new_handler(options.new_handler);
 
-    const auto signals_init = []()
-    {
-      // Block signals before starting new threads
-
-      block_signals();
-
-      // Set special SIGTERM, SIGBUS and SIGWINCH handlers
-
-      struct sigaction action;             // NOLINT(cppcoreguidelines-pro-type-member-init)
-      action.sa_handler = signal_handler;  // NOLINT(cppcoreguidelines-pro-type-union-access)
-      sigemptyset(&action.sa_mask);
-      action.sa_flags = 0;
-      sigaction(SIGBUS, &action, nullptr);
-      sigaction(SIGTERM, &action, nullptr);
-      sigaction(SIGWINCH, &action, nullptr);
-
-      // We also want to record other common non-core dumping signals
-      sigaction(SIGHUP, &action, nullptr);
-      sigaction(SIGINT, &action, nullptr);
-
-      struct sigaction action2;                   // NOLINT(cppcoreguidelines-pro-type-member-init)
-      action2.sa_handler = crash_signal_handler;  // NOLINT(cppcoreguidelines-pro-type-union-access)
-      sigemptyset(&action2.sa_mask);
-      action2.sa_flags = 0;
-      sigaction(SIGSEGV, &action2, nullptr);
-    };
-
     std::unique_ptr<backward::SignalHandling> sh;
     if (options.stacktrace)
       sh.reset(new backward::SignalHandling(core_signals));
@@ -232,13 +332,7 @@ int main(int argc, char* argv[])
     //
     reactor->onShutdownTimedOut([]() -> void { kill(getpid(), SIGKILL); });
 
-    unsigned server_threads = SmartMet::Server::AsyncServer::DEFAULT_ASYNC_THREAD_SIZE;
-    if (options.itsConfig.exists("server_threads"))
-    {
-      options.itsConfig.lookupValue("server_threads", server_threads);
-      if (server_threads < 1)
-        server_threads = SmartMet::Server::AsyncServer::DEFAULT_ASYNC_THREAD_SIZE;
-    }
+    unsigned server_threads = get_server_threads(options);
 
     server.reset(new SmartMet::Server::AsyncServer(options, *reactor, server_threads));
 
@@ -256,16 +350,16 @@ int main(int argc, char* argv[])
     tasks->stop_on_error(true);
 
     tasks->add("ini-reactor",
-               [signals_init]()
+               []()
                {
-                 signals_init();
+                 init_signals();
                  reactor->init();
                });
 
     tasks->add("srv-run",
-               [signals_init]()
+               []()
                {
-                 signals_init();
+                 init_signals();
                  std::this_thread::sleep_for(std::chrono::seconds(3));
                  std::cout << ANSI_BG_GREEN << ANSI_BOLD_ON << ANSI_FG_WHITE
                            << "Launched Synapse server" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF
@@ -295,91 +389,15 @@ int main(int argc, char* argv[])
 
       if (SmartMet::Spine::Reactor::isShutdownFinished())
       {
-        tasks->stop();
-        server->shutdownServer();
-        tasks->wait();
+        stop_server();
         return 0;
       }
 
       if (sig != 0)
       {
-        std::cout << "\n"
-                  // NOLINTNEXTLINE(concurrency-mt-unsafe): only used when the server is about to terminate on a fatal signal
-                  << ANSI_BG_RED << ANSI_BOLD_ON << ANSI_FG_WHITE << "Signal '" << strsignal(sig)
-                  << "' (" << sig << ") received ";
-
-        if (sig == SIGBUS || sig == SIGWINCH)
-        {
-          std::cout << " - ignoring it!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
-                    << '\n';
-          last_signal = 0;
-        }
-        else if (sig == SIGTERM || sig == SIGHUP)
-        {
-          std::cout << " - shutting down!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
-                    << '\n';
-
-          tasks->stop();
-          server->shutdownServer();
-          tasks->wait();
-
-          // Save heap profile if it has been enabled
-          // mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
-          return 0;
-        }
-        else if (sig == SIGINT)
-        {
-          last_signal = 0;
-          Fmi::AsyncTask shutdown_timer(
-              "Shutdown timer",
-              [&sigint_cnt]()
-              {
-                for (int i = 0; i < 1200; i++)
-                {
-                  boost::this_thread::sleep_for(boost::chrono::milliseconds(50));
-                  if (last_signal == SIGINT || last_signal == SIGTERM)
-                  {
-                    last_signal = 0;
-                    sigint_cnt++;
-                    if (sigint_cnt > 5)
-                    {
-                      std::cout << "*** Too many SIGINT or SIGTERM signals after first SIGINT. "
-                                   "Commiting suicide\n";
-                      abort();
-                    }
-                  }
-                  else
-                  {
-                    sigint_cnt = std::max(0.0, sigint_cnt - 0.05);
-                  }
-                }
-                std::cout << "*** Timed out waiting for server to shut down after SIGINT\n";
-                abort();
-              });
-          std::cout << " - shutting down!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT
-                    << '\n';
-
-          tasks->stop();
-          server->shutdownServer();
-          tasks->wait();
-          shutdown_timer.cancel();
-
-          // Save heap profile if it has been enabled
-          // mallctl("prof.dump", nullptr, nullptr, nullptr, 0);
-          return 0;
-        }
-        else
-        {
-          // Not expected: only the signals above are handled. Still stop the
-          // server and the Reactor properly instead of leaving main() with
-          // everything running.
-          std::cout << " - exiting!" << ANSI_FG_DEFAULT << ANSI_BOLD_OFF << ANSI_BG_DEFAULT << '\n';
-
-          tasks->stop();
-          server->shutdownServer();
-          tasks->wait();
-          return 1;
-        }
+        auto exitcode = handle_signal(sig, sigint_cnt);
+        if (exitcode)
+          return *exitcode;
       }
     }
   }
