@@ -156,6 +156,13 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
 
   void handleRead(const boost::system::error_code& e, std::size_t bytes_transferred);
 
+  // Parts of handleRead
+  void handleParsedRequest();
+  bool resolveClientIP();
+  void scheduleRequest(SmartMet::Spine::HandlerView* handlerView);
+  void handleIncompleteRequest();
+  void handleReadError(const boost::system::error_code& e);
+
   // ======================================================================
   /*!
    * \brief Decide whether the connection may be reused after this request

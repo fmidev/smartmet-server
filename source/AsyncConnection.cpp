@@ -33,6 +33,31 @@ bool statusHasNoBody(SmartMet::Spine::HTTP::Status status)
   const int code = static_cast<int>(status);
   return (code >= 100 && code < 200) || code == 204 || code == 304;
 }
+
+#ifndef NDEBUG
+// Debugging output of an incoming request
+void print_request(const SmartMet::Spine::HTTP::Request& theRequest)
+{
+  std::cout << "Incoming request from " << theRequest.getClientIP() << '\n';
+  std::cout << "Method: " << theRequest.getMethodString() << '\n';
+  std::cout << "URI: " << theRequest.getURI() << '\n';
+  std::cout << "Query string: " << theRequest.getQueryString() << '\n';
+  std::cout << "Headers: \n";
+  auto hmappi = theRequest.getHeaders();
+  for (const auto& header : hmappi)
+  {
+    std::cout << header.first << " : " << header.second << '\n';
+  }
+
+  std::cout << "Parsed parameters: \n";
+  auto mappi = theRequest.getParameterMap();
+  for (const auto& elem : mappi)
+  {
+    std::cout << elem.first << " : " << elem.second << '\n';
+  }
+  std::cout << "Content: \"" << theRequest.getContent() << "\"\n\n";
+}
+#endif
 }  // namespace
 
 AsyncConnection::AsyncConnection(Private /*unused*/,
@@ -312,174 +337,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         itsBuffer.erase(0, parsedRequest.consumed);
         itsReceivedBytes = itsBuffer.size();
 
-        // Set client ip. The real socket peer address is taken first; an
-        // X-Forwarded-For header is believed only when that peer is a configured
-        // trusted reverse proxy, and then the right-most untrusted hop in it is the
-        // client (Spine::IPFilter::resolveClientIP). Otherwise any client could
-        // spoof its source IP by sending X-Forwarded-For and thereby defeat the
-        // admin and plugin IP filters (and impersonate other clients in the
-        // request logs).
-        std::string peerIP;
-        try
-        {
-          peerIP = socket().remote_endpoint().address().to_string();
-        }
-        catch (...)
-        {
-          Fmi::Exception exception(BCP, "Operation failed!", nullptr);
-          reportError(std::string("Failed to obtain remote endpoint IP address:\n") +
-                      exception.what());
-          return;
-        }
-
-        if (itsServer != nullptr)
-          itsRequest->setClientIP(SmartMet::Spine::IPFilter::resolveClientIP(
-              peerIP, itsRequest->getHeader("X-Forwarded-For"), itsServer->getTrustedProxies()));
-        else
-          itsRequest->setClientIP(peerIP);
-
-#ifndef NDEBUG
-        // DEBUGGIN OUTPUT************************************
-
-        std::cout << "Incoming request from " << itsRequest->getClientIP() << '\n';
-        std::cout << "Method: " << itsRequest->getMethodString() << '\n';
-        std::cout << "URI: " << itsRequest->getURI() << '\n';
-        std::cout << "Query string: " << itsRequest->getQueryString() << '\n';
-        std::cout << "Headers: \n";
-        auto hmappi = itsRequest->getHeaders();
-        for (const auto& header : hmappi)
-        {
-          std::cout << header.first << " : " << header.second << '\n';
-        }
-
-        std::cout << "Parsed parameters: \n";
-        auto mappi = itsRequest->getParameterMap();
-        for (const auto& elem : mappi)
-        {
-          std::cout << elem.first << " : " << elem.second << '\n';
-        }
-        std::cout << "Content: \"" << itsRequest->getContent() << "\"\n\n";
-
-// DEBUGGIN OUTPUT************************************
-#endif
-
-        ++itsRequestCount;
-
-        // Answer in the client's own HTTP version and negotiate the persistence of
-        // the connection for this request/response cycle.
-        itsResponseVersion = negotiateVersion(itsRequest->getVersion());
-        itsKeepAlive = evaluateKeepAlive();
-
-        // RFC 9112 3.2: an HTTP/1.1 request without a Host header cannot be
-        // routed to a target resource and must be rejected. The check lives here
-        // rather than in the parser because HTTP/1.0 requests legitimately have
-        // no Host. The connection is closed: a client that gets this wrong is
-        // not one whose framing should be trusted for a second request.
-        if (itsResponseVersion == "1.1" && !itsRequest->getHeader("Host"))
-        {
-          reportError("400 Missing Host header on an HTTP/1.1 request");
-          itsKeepAlive = false;
-          sendStockReply(SmartMet::Spine::HTTP::Status::bad_request);
-          return;
-        }
-
-        // Must come after the keep-alive negotiation, which reads Connection
-        stripHopByHopHeaders();
-
-        // RFC 9110 9.3.2: the response to HEAD is the response to GET with the
-        // content left out. The plugins do not know the method - several answer
-        // only GET and POST and would reject it - so the request is handed on as
-        // a GET and the body is dropped when the reply is written. The original
-        // method is passed in the internal X-SmartMet-Original-Method header so
-        // that the per-handler access log can report HEAD. The header is never
-        // accepted from the client.
-        itsRequest->removeHeader("X-SmartMet-Original-Method");
-        itsHeadRequest = (itsRequest->getMethod() == SmartMet::Spine::HTTP::RequestMethod::HEAD);
-        if (itsHeadRequest)
-        {
-          itsRequest->setMethod(SmartMet::Spine::HTTP::RequestMethod::GET);
-          itsRequest->setHeader("X-SmartMet-Original-Method", "HEAD");
-        }
-
-        // Check whether we have 'OPTIONS' request
-        if (itsRequest->getMethodString() == "OPTIONS" && itsRequest->getResource() == "*")
-        {
-          *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
-          setServerHeaders();
-          sendSimpleReply();
-          return;
-        }
-
-        // Determine where to put the handler function
-        auto* handlerView = itsReactor.getHandlerView(*itsRequest);
-        if (!handlerView)
-        {
-          // Couldn't find handler for the request
-          sendStockReply(SmartMet::Spine::HTTP::Status::not_found);
-          return;
-        }
-
-        itsAdminQuery = (!handlerView->isCatchNoMatch() && handlerView->isAdminQuery(*itsRequest) &&
-                         itsAdminExecutor.getPoolSize() > 0);
-
-        // Handle high load situations
-        if (!itsAdminQuery && itsReactor.isLoadHigh())
-        {
-          std::cout << Spine::log_time_str() << " Too many active requests, reporting high load\n";
-          sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
-          return;
-        }
-
-        bool scheduled = false;
-
-        // Handle frontends and backends separately
-
-        if (handlerView->isCatchNoMatch())
-        {
-          // frontend always uses the fast executor
-          itsQueryIsFast = true;
-          itsAdminQuery = false;
-          scheduled = itsFastExecutor.schedule([me = shared_from_this(), handlerView]()
-                                               { me->handleCompletedRead(*handlerView); });
-
-          if (!scheduled)
-          {
-            // Task queue was full, send busy response
-            sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
-            reportInfo("Frontend request queue was full");
-          }
-        }
-
-        else
-        {
-          // backend
-
-          itsQueryIsFast =
-              (itsSlowExecutor.getPoolSize() == 0 || handlerView->queryIsFast(*itsRequest));
-
-          if (itsAdminQuery)
-          {
-            scheduled = itsAdminExecutor.schedule([me = shared_from_this(), handlerView]()
-                                                  { me->handleCompletedRead(*handlerView); });
-          }
-          else if (itsQueryIsFast)
-          {
-            scheduled = itsFastExecutor.schedule([me = shared_from_this(), handlerView]()
-                                                 { me->handleCompletedRead(*handlerView); });
-          }
-          else
-          {
-            scheduled = itsSlowExecutor.schedule([me = shared_from_this(), handlerView]()
-                                                 { me->handleCompletedRead(*handlerView); });
-          }
-
-          if (!scheduled)
-          {
-            // Task queue was full, send high load response to frontend
-            sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
-            reportInfo("Backend request queue was full, returning high load notification");
-          }
-        }
+        handleParsedRequest();
       }
       else if (parsedRequest.status == SmartMet::Spine::HTTP::ParsingStatus::FAILED)
       {
@@ -487,56 +345,258 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         sendStockReply(SmartMet::Spine::HTTP::Status::bad_request);
       }
       else
-      {
-        // Bound the header section. Without this a client can hold a connection
-        // - and a slot against the connection limit - open indefinitely by
-        // dribbling header bytes that never reach the terminating blank line.
-        if (itsMaxHeaderSize > 0 && itsBuffer.size() > itsMaxHeaderSize &&
-            itsBuffer.find("\r\n\r\n") == std::string::npos)
-        {
-          reportError("431 Request header fields too large");
-          itsKeepAlive = false;
-          sendStockReply(SmartMet::Spine::HTTP::Status::request_header_fields_too_large);
-          return;
-        }
-
-        // Request is not succesfully parsed, attempt to get more data from socket and try
-        // again - unless the client is waiting for us to accept its body first.
-        if (handleExpectContinue())
-          startRead();
-      }
-    }
-    else if (e == boost::asio::error::eof)
-    {
-      // Peer closed the socket or timeout has occurred
-      // Abort this connection
-      return;
-    }
-    else if (itsIdle)
-    {
-      // An idle persistent connection went away: either the client closed it, or the
-      // keep-alive timeout reaped it here. Both are the expected end of a reused
-      // connection and are not worth a log entry.
-      return;
-    }
-    else if (e == boost::asio::error::operation_aborted)
-    {
-      // This connection has been timed out
-      reportInfo("Connection timeout");
+        handleIncompleteRequest();
     }
     else
-    {
-      // Some other error occurred in reading, handle it somehow
-      std::stringstream ss;
-      ss << e.message();
-      reportInfo("Error occurred while reading socket: " + ss.str());
-    }
+      handleReadError(e);
   }
   catch (...)
   {
     Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::handleRead aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::handleRead aborted\n";
+  }
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Process a completely parsed request
+ */
+// ----------------------------------------------------------------------
+
+void AsyncConnection::handleParsedRequest()
+{
+  if (!resolveClientIP())
+    return;
+
+#ifndef NDEBUG
+  print_request(*itsRequest);
+#endif
+
+  ++itsRequestCount;
+
+  // Answer in the client's own HTTP version and negotiate the persistence of
+  // the connection for this request/response cycle.
+  itsResponseVersion = negotiateVersion(itsRequest->getVersion());
+  itsKeepAlive = evaluateKeepAlive();
+
+  // RFC 9112 3.2: an HTTP/1.1 request without a Host header cannot be
+  // routed to a target resource and must be rejected. The check lives here
+  // rather than in the parser because HTTP/1.0 requests legitimately have
+  // no Host. The connection is closed: a client that gets this wrong is
+  // not one whose framing should be trusted for a second request.
+  if (itsResponseVersion == "1.1" && !itsRequest->getHeader("Host"))
+  {
+    reportError("400 Missing Host header on an HTTP/1.1 request");
+    itsKeepAlive = false;
+    sendStockReply(SmartMet::Spine::HTTP::Status::bad_request);
+    return;
+  }
+
+  // Must come after the keep-alive negotiation, which reads Connection
+  stripHopByHopHeaders();
+
+  // RFC 9110 9.3.2: the response to HEAD is the response to GET with the
+  // content left out. The plugins do not know the method - several answer
+  // only GET and POST and would reject it - so the request is handed on as
+  // a GET and the body is dropped when the reply is written. The original
+  // method is passed in the internal X-SmartMet-Original-Method header so
+  // that the per-handler access log can report HEAD. The header is never
+  // accepted from the client.
+  itsRequest->removeHeader("X-SmartMet-Original-Method");
+  itsHeadRequest = (itsRequest->getMethod() == SmartMet::Spine::HTTP::RequestMethod::HEAD);
+  if (itsHeadRequest)
+  {
+    itsRequest->setMethod(SmartMet::Spine::HTTP::RequestMethod::GET);
+    itsRequest->setHeader("X-SmartMet-Original-Method", "HEAD");
+  }
+
+  // Check whether we have 'OPTIONS' request
+  if (itsRequest->getMethodString() == "OPTIONS" && itsRequest->getResource() == "*")
+  {
+    *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
+    setServerHeaders();
+    sendSimpleReply();
+    return;
+  }
+
+  // Determine where to put the handler function
+  auto* handlerView = itsReactor.getHandlerView(*itsRequest);
+  if (!handlerView)
+  {
+    // Couldn't find handler for the request
+    sendStockReply(SmartMet::Spine::HTTP::Status::not_found);
+    return;
+  }
+
+  itsAdminQuery = (!handlerView->isCatchNoMatch() && handlerView->isAdminQuery(*itsRequest) &&
+                   itsAdminExecutor.getPoolSize() > 0);
+
+  // Handle high load situations
+  if (!itsAdminQuery && itsReactor.isLoadHigh())
+  {
+    std::cout << Spine::log_time_str() << " Too many active requests, reporting high load\n";
+    sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
+    return;
+  }
+
+  scheduleRequest(handlerView);
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Set the client IP of the parsed request, returns false on failure
+ */
+// ----------------------------------------------------------------------
+
+bool AsyncConnection::resolveClientIP()
+{
+  // Set client ip. The real socket peer address is taken first; an
+  // X-Forwarded-For header is believed only when that peer is a configured
+  // trusted reverse proxy, and then the right-most untrusted hop in it is the
+  // client (Spine::IPFilter::resolveClientIP). Otherwise any client could
+  // spoof its source IP by sending X-Forwarded-For and thereby defeat the
+  // admin and plugin IP filters (and impersonate other clients in the
+  // request logs).
+  std::string peerIP;
+  try
+  {
+    peerIP = socket().remote_endpoint().address().to_string();
+  }
+  catch (...)
+  {
+    Fmi::Exception exception(BCP, "Operation failed!", nullptr);
+    reportError(std::string("Failed to obtain remote endpoint IP address:\n") + exception.what());
+    return false;
+  }
+
+  if (itsServer != nullptr)
+    itsRequest->setClientIP(SmartMet::Spine::IPFilter::resolveClientIP(
+        peerIP, itsRequest->getHeader("X-Forwarded-For"), itsServer->getTrustedProxies()));
+  else
+    itsRequest->setClientIP(peerIP);
+  return true;
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Schedule the parsed request to the proper executor
+ */
+// ----------------------------------------------------------------------
+
+void AsyncConnection::scheduleRequest(SmartMet::Spine::HandlerView* handlerView)
+{
+  bool scheduled = false;
+
+  // Handle frontends and backends separately
+
+  if (handlerView->isCatchNoMatch())
+  {
+    // frontend always uses the fast executor
+    itsQueryIsFast = true;
+    itsAdminQuery = false;
+    scheduled = itsFastExecutor.schedule([me = shared_from_this(), handlerView]()
+                                         { me->handleCompletedRead(*handlerView); });
+
+    if (!scheduled)
+    {
+      // Task queue was full, send busy response
+      sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
+      reportInfo("Frontend request queue was full");
+    }
+  }
+
+  else
+  {
+    // backend
+
+    itsQueryIsFast = (itsSlowExecutor.getPoolSize() == 0 || handlerView->queryIsFast(*itsRequest));
+
+    if (itsAdminQuery)
+    {
+      scheduled = itsAdminExecutor.schedule([me = shared_from_this(), handlerView]()
+                                            { me->handleCompletedRead(*handlerView); });
+    }
+    else if (itsQueryIsFast)
+    {
+      scheduled = itsFastExecutor.schedule([me = shared_from_this(), handlerView]()
+                                           { me->handleCompletedRead(*handlerView); });
+    }
+    else
+    {
+      scheduled = itsSlowExecutor.schedule([me = shared_from_this(), handlerView]()
+                                           { me->handleCompletedRead(*handlerView); });
+    }
+
+    if (!scheduled)
+    {
+      // Task queue was full, send high load response to frontend
+      sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
+      reportInfo("Backend request queue was full, returning high load notification");
+    }
+  }
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Handle a request which has not been completely received yet
+ */
+// ----------------------------------------------------------------------
+
+void AsyncConnection::handleIncompleteRequest()
+{
+  // Bound the header section. Without this a client can hold a connection
+  // - and a slot against the connection limit - open indefinitely by
+  // dribbling header bytes that never reach the terminating blank line.
+  if (itsMaxHeaderSize > 0 && itsBuffer.size() > itsMaxHeaderSize &&
+      itsBuffer.find("\r\n\r\n") == std::string::npos)
+  {
+    reportError("431 Request header fields too large");
+    itsKeepAlive = false;
+    sendStockReply(SmartMet::Spine::HTTP::Status::request_header_fields_too_large);
+    return;
+  }
+
+  // Request is not succesfully parsed, attempt to get more data from socket and try
+  // again - unless the client is waiting for us to accept its body first.
+  if (handleExpectContinue())
+    startRead();
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Handle a socket read error
+ */
+// ----------------------------------------------------------------------
+
+void AsyncConnection::handleReadError(const boost::system::error_code& e)
+{
+  if (e == boost::asio::error::eof)
+  {
+    // Peer closed the socket or timeout has occurred
+    // Abort this connection
+    return;
+  }
+
+  if (itsIdle)
+  {
+    // An idle persistent connection went away: either the client closed it, or the
+    // keep-alive timeout reaped it here. Both are the expected end of a reused
+    // connection and are not worth a log entry.
+    return;
+  }
+
+  if (e == boost::asio::error::operation_aborted)
+  {
+    // This connection has been timed out
+    reportInfo("Connection timeout");
+  }
+  else
+  {
+    // Some other error occurred in reading, handle it somehow
+    std::stringstream ss;
+    ss << e.message();
+    reportInfo("Error occurred while reading socket: " + ss.str());
   }
 }
 
