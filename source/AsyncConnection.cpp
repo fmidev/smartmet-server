@@ -1613,111 +1613,122 @@ void AsyncConnection::setServerHeaders()
       itsResponse->setHeader("Vary", *vary + ", Accept-Encoding");
     itsResponse->setHeader("Date", makeDateString());
 
-    // --- Persistent connection (keep-alive) negotiation --------------------------
-    //
-    // The reply is sent in the client's own HTTP version, because the two versions
-    // disagree on what a missing Connection header means:
-    //
-    //   HTTP/1.1  Connections are persistent by default (RFC 9112 9.3). Only the end
-    //             of persistence has to be announced, with "Connection: close". The
-    //             response version matters: answering an HTTP/1.1 request with an
-    //             HTTP/1.0 status line would make the client assume a non-persistent
-    //             connection no matter what we do with the headers.
-    //
-    //   HTTP/1.0  Has no persistent connections at all; keep-alive is an extension
-    //             (RFC 1945 appendix D.1.1). The client asks for it with
-    //             "Connection: keep-alive" and the server MUST echo the same header
-    //             to confirm, otherwise the client reads the body until EOF and
-    //             would hang on our reused socket.
-    //
-    // A chunked response is HTTP/1.1 by definition (Spine forces the version when a
-    // stream of unknown length is set as the content), so its version is left alone.
-    // Chunked transfer encoding does not exist in HTTP/1.0, so an HTTP/1.0 client
-    // cannot be given a reusable connection in that case.
-    if (itsResponse->getChunked())
-    {
-      if (itsResponseVersion != "1.1")
-        itsKeepAlive = false;
-    }
-    else
-    {
-      itsResponse->setVersion(itsResponseVersion);
-    }
-
-    // A plugin may veto the reuse of the connection on its own terms
-    auto connectionHeader = itsResponse->getHeader("Connection");
-    if (connectionHeader && hasHeaderToken(*connectionHeader, "close"))
-      itsKeepAlive = false;
-
-    if (!itsKeepAlive)
-    {
-      itsResponse->setHeader("Connection", "close");
-      itsResponse->removeHeader("Keep-Alive");
-    }
-    else if (itsResponseVersion == "1.1")
-    {
-      // Persistence is the default, saying so would only waste bytes
-      itsResponse->removeHeader("Connection");
-      itsResponse->removeHeader("Keep-Alive");
-    }
-    else
-    {
-      itsResponse->setHeader("Connection", "keep-alive");
-
-      // The Keep-Alive header is informational: it tells an HTTP/1.0 client how long the
-      // socket will be held and how many more requests it may still send. "max" is left
-      // out entirely when the number of requests is unlimited, since "max=0" would read
-      // as "no more requests allowed".
-      std::string keepAlive = "timeout=" + Fmi::to_string(itsKeepAliveTimeout);
-      if (itsMaxKeepAliveRequests > 0)
-        keepAlive += ", max=" + Fmi::to_string(itsMaxKeepAliveRequests - itsRequestCount);
-      itsResponse->setHeader("Keep-Alive", keepAlive);
-    }
-
-    // Append stale-while-revalidate and stale-if-error to cacheable responses.
-    //
-    // Why here rather than in each individual plugin:
-    //
-    //   This method is the single post-plugin hook that runs on every response before it is
-    //   written to the socket. Plugins (~10 of them) already independently construct their
-    //   Cache-Control header with a plugin-specific max-age, but none of them add the stale
-    //   directives because those values are a server-level policy concern, not a
-    //   data-product concern.  Adding the directives here means:
-    //
-    //   1. One code change covers all existing plugins and every future plugin automatically.
-    //   2. The stale durations are tuned server-wide in smartmet.conf alongside other
-    //      server-level knobs (timeout, compress, etc.), keeping operator config cohesive.
-    //   3. The frontend plugin's ResponseCache stores Cache-Control verbatim and replays it
-    //      on cache hits, so the stale directives propagate to CDN/browser caches with no
-    //      extra code.
-    //
-    // Guard: only touch headers that already carry "max-age" (i.e. genuinely cacheable
-    // responses).  Responses with "no-cache" or no Cache-Control header at all are left
-    // unchanged.  A plugin that needs different stale values can set its own stale-*
-    // directives before returning; the second guard prevents double-appending.
-    //
-    // Rationale for default values (configurable via smartmet.conf):
-    //   stalewhilerevalidate = 60     -- serve at most 60 s stale while fetching fresh data
-    //   staleiferror         = 86400  -- serve up to 24 h stale when the backend is down
-    //
-    const auto& opts = itsReactor.getOptions();
-    if (opts.staleWhileRevalidate > 0 || opts.staleIfError > 0)
-    {
-      auto cc = itsResponse->getHeader("Cache-Control");
-      if (cc && cc->find("max-age") != std::string::npos && cc->find("stale-") == std::string::npos)
-      {
-        std::string updated = *cc;
-        if (opts.staleWhileRevalidate > 0)
-          updated += ", stale-while-revalidate=" + std::to_string(opts.staleWhileRevalidate);
-        if (opts.staleIfError > 0)
-          updated += ", stale-if-error=" + std::to_string(opts.staleIfError);
-        itsResponse->setHeader("Cache-Control", updated);
-      }
-    }
+    setConnectionHeaders();
+    appendStaleDirectives();
   }
   catch (...)
   {
     std::cerr << "Operation failed! AsyncConnection::setServerHeaders aborted\n";
+  }
+}
+
+// Negotiates the persistence of the connection, see the comments below
+void AsyncConnection::setConnectionHeaders()
+{
+  // --- Persistent connection (keep-alive) negotiation --------------------------
+  //
+  // The reply is sent in the client's own HTTP version, because the two versions
+  // disagree on what a missing Connection header means:
+  //
+  //   HTTP/1.1  Connections are persistent by default (RFC 9112 9.3). Only the end
+  //             of persistence has to be announced, with "Connection: close". The
+  //             response version matters: answering an HTTP/1.1 request with an
+  //             HTTP/1.0 status line would make the client assume a non-persistent
+  //             connection no matter what we do with the headers.
+  //
+  //   HTTP/1.0  Has no persistent connections at all; keep-alive is an extension
+  //             (RFC 1945 appendix D.1.1). The client asks for it with
+  //             "Connection: keep-alive" and the server MUST echo the same header
+  //             to confirm, otherwise the client reads the body until EOF and
+  //             would hang on our reused socket.
+  //
+  // A chunked response is HTTP/1.1 by definition (Spine forces the version when a
+  // stream of unknown length is set as the content), so its version is left alone.
+  // Chunked transfer encoding does not exist in HTTP/1.0, so an HTTP/1.0 client
+  // cannot be given a reusable connection in that case.
+  if (itsResponse->getChunked())
+  {
+    if (itsResponseVersion != "1.1")
+      itsKeepAlive = false;
+  }
+  else
+  {
+    itsResponse->setVersion(itsResponseVersion);
+  }
+
+  // A plugin may veto the reuse of the connection on its own terms
+  auto connectionHeader = itsResponse->getHeader("Connection");
+  if (connectionHeader && hasHeaderToken(*connectionHeader, "close"))
+    itsKeepAlive = false;
+
+  if (!itsKeepAlive)
+  {
+    itsResponse->setHeader("Connection", "close");
+    itsResponse->removeHeader("Keep-Alive");
+  }
+  else if (itsResponseVersion == "1.1")
+  {
+    // Persistence is the default, saying so would only waste bytes
+    itsResponse->removeHeader("Connection");
+    itsResponse->removeHeader("Keep-Alive");
+  }
+  else
+  {
+    itsResponse->setHeader("Connection", "keep-alive");
+
+    // The Keep-Alive header is informational: it tells an HTTP/1.0 client how long the
+    // socket will be held and how many more requests it may still send. "max" is left
+    // out entirely when the number of requests is unlimited, since "max=0" would read
+    // as "no more requests allowed".
+    std::string keepAlive = "timeout=" + Fmi::to_string(itsKeepAliveTimeout);
+    if (itsMaxKeepAliveRequests > 0)
+      keepAlive += ", max=" + Fmi::to_string(itsMaxKeepAliveRequests - itsRequestCount);
+    itsResponse->setHeader("Keep-Alive", keepAlive);
+  }
+}
+
+// Adds the server-wide stale-* directives to cacheable responses
+void AsyncConnection::appendStaleDirectives()
+{
+  // Append stale-while-revalidate and stale-if-error to cacheable responses.
+  //
+  // Why here rather than in each individual plugin:
+  //
+  //   This method is the single post-plugin hook that runs on every response before it is
+  //   written to the socket. Plugins (~10 of them) already independently construct their
+  //   Cache-Control header with a plugin-specific max-age, but none of them add the stale
+  //   directives because those values are a server-level policy concern, not a
+  //   data-product concern.  Adding the directives here means:
+  //
+  //   1. One code change covers all existing plugins and every future plugin automatically.
+  //   2. The stale durations are tuned server-wide in smartmet.conf alongside other
+  //      server-level knobs (timeout, compress, etc.), keeping operator config cohesive.
+  //   3. The frontend plugin's ResponseCache stores Cache-Control verbatim and replays it
+  //      on cache hits, so the stale directives propagate to CDN/browser caches with no
+  //      extra code.
+  //
+  // Guard: only touch headers that already carry "max-age" (i.e. genuinely cacheable
+  // responses).  Responses with "no-cache" or no Cache-Control header at all are left
+  // unchanged.  A plugin that needs different stale values can set its own stale-*
+  // directives before returning; the second guard prevents double-appending.
+  //
+  // Rationale for default values (configurable via smartmet.conf):
+  //   stalewhilerevalidate = 60     -- serve at most 60 s stale while fetching fresh data
+  //   staleiferror         = 86400  -- serve up to 24 h stale when the backend is down
+  //
+  const auto& opts = itsReactor.getOptions();
+  if (opts.staleWhileRevalidate > 0 || opts.staleIfError > 0)
+  {
+    auto cc = itsResponse->getHeader("Cache-Control");
+    if (cc && cc->find("max-age") != std::string::npos && cc->find("stale-") == std::string::npos)
+    {
+      std::string updated = *cc;
+      if (opts.staleWhileRevalidate > 0)
+        updated += ", stale-while-revalidate=" + std::to_string(opts.staleWhileRevalidate);
+      if (opts.staleIfError > 0)
+        updated += ", stale-if-error=" + std::to_string(opts.staleIfError);
+      itsResponse->setHeader("Cache-Control", updated);
+    }
   }
 }
 
