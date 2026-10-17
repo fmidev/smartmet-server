@@ -242,6 +242,8 @@ server-level keys are `port`, `server_threads`, `encryption.*` (`enabled`,
 `timeout`, `compress`, `compresslimit`, `stalewhilerevalidate`, `staleiferror`,
 `dns.*` (client host name resolution), `accesslogdir`, `defaultlogging`,
 `robots_txt` (file served as /robots.txt, see cnf/robots.txt.sample),
+`api_catalog` (the API catalog at /api and /.well-known/api-catalog: `enabled`, `ui`,
+`swagger_ui_dir`, `title`, `description`; spine guide §11),
 `logrequests`, `lazylinking`, `stacktrace`, `new_handler`, `logmemoryuse`,
 `logmemoryfields`, `debug`, `verbose`, and the `engines` and `plugins` groups
 (spine guide §4).

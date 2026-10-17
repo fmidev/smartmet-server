@@ -12,6 +12,12 @@
 
 User-agent: *
 
+# The API catalog of the server
+Allow: /.well-known/api-catalog$
+Allow: /api$
+Allow: /api?
+Allow: /api/docs
+
 # OpenAPI definitions, documentation pages and their files
 Allow: /*/api$
 Allow: /*/api?

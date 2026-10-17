@@ -89,6 +89,17 @@ defaultlogging = true;
 // definitions, landing pages and collection listings, but no data requests.
 // robots_txt = "/etc/smartmet/robots.txt";
 
+// The API catalog (RFC 9727) at /api, /.well-known/api-catalog and /api/docs, served
+// when some plugin publishes an OpenAPI definition (and always by the frontend plugin).
+// api_catalog:
+// {
+//   enabled        = true;
+//   ui             = true;
+//   swagger_ui_dir = "/usr/share/smartmet/swagger-ui";
+//   title          = "SmartMet Server APIs";
+//   description    = "Weather and climate data APIs";
+// };
+
 // Response compression. compresscodings lists the content codings offered, in
 // preference order; only codings the server can produce are accepted (zstd, gzip)
 // and an unknown name stops the server at startup. Narrowing the list is how a
