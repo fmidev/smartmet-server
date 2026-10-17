@@ -41,10 +41,10 @@ All source is in `SmartMet::Server` namespace.
 ### Class hierarchy
 
 - **`Connection`** — Abstract base for a single client connection. Owns the SSL socket, read buffer, request/response objects, timeout timer, and references to the three thread pools. Not instantiated directly.
-- **`AsyncConnection`** — Concrete connection using half-sync/half-async pattern. Created via `AsyncConnection::create()` factory (private constructor + `enable_shared_from_this`). Handles the full async lifecycle: SSL handshake, chunked/unchunked/gateway reads and writes, gzip compression, client disconnect detection.
-- **`Server`** — Abstract server base. Binds the TCP acceptor, initializes SSL context, creates three `ThreadPoolType` executors (admin/slow/fast), stores server-wide options (gzip, timeout, max request size).
+- **`AsyncConnection`** — Concrete connection using half-sync/half-async pattern. Created via `AsyncConnection::create()` factory (private constructor + `enable_shared_from_this`). Handles the full async lifecycle: SSL handshake, chunked/unchunked/gateway reads and writes, response compression (zstd/gzip), client disconnect detection.
+- **`Server`** — Abstract server base. Binds the TCP acceptor, initializes SSL context, creates three `ThreadPoolType` executors (admin/slow/fast), stores server-wide options (compression, timeout, max request size, keep-alive, connection cap, trusted proxies).
 - **`AsyncServer`** — Concrete server. Runs `numThreads` ASIO worker threads for network I/O. On accept, creates an `AsyncConnection` and calls `start()`. Shutdown sequence: close acceptor, stop io_service, gracefully shut down thread pools, then shut down Reactor.
-- **`Utility`** — Free functions: gzip compression, HTTP date formatting, request dumping.
+- **`Utility`** — Free functions: content-coding negotiation and zstd/gzip compression, HTTP date formatting, protocol-version negotiation, request dumping.
 - **`Names`** — Extract engine/plugin names from shared object filenames.
 
 ### Threading model
@@ -271,6 +271,9 @@ will not produce, so curl cannot drive them.
 Uses libconfig format (`.conf` files). The server config specifies:
 - `port`, `server_threads`, `defaultlogging`, `lazylinking`
 - `keepalive` block (`enabled`, `timeout`, `maxrequests`)
+- `compress`, `compresslimit`, `compresscodings` (codings offered, default `zstd,gzip`)
+- `maxconnections`, `maxheadersize`, `trustedproxies`
+- `robots_txt`, `api_catalog` (API catalog and data explorer)
 - `encryption` block (SSL/TLS cert, key, password)
 - `adminpool`, `slowpool`, `fastpool` (thread counts, queue sizes)
 - `engines` and `plugins` blocks listing modules to load with their config file paths

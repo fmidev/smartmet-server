@@ -1,6 +1,19 @@
 # HTTP keep-alive support — design
 
-Status: **proposal** (not yet implemented)
+Status: **implemented**. This is the original proposal, kept for its reasoning. The
+implementation differs from it in these respects; for the current behaviour see
+[developer-guide.md](developer-guide.md) §8, [CLAUDE.md](../CLAUDE.md) and
+`cnf/smartmet.conf.sample`:
+
+- Keep-alive is **on** by default (`keepalive.enabled = true`), the idle `keepalive.timeout`
+  defaults to **30** s, and `keepalive.maxrequests` to 1000.
+- There are no command line flags and no `KeepAliveOptions` in spine: `Server`'s constructor
+  reads the `keepalive` group straight from the configuration file.
+- The connection cap is the top-level `maxconnections` setting, not
+  `keepalive.maxconnections`. It defaults to three quarters of the soft `RLIMIT_NOFILE`
+  (0 = unlimited), and connections over it get a framed 503.
+- Pipelining, chunked request bodies, `Expect: 100-continue`, HEAD and the `maxheadersize`
+  limit were added along with it.
 Scope: `smartmet-server` only (`AsyncConnection`, `Connection`, `Options`, config)
 
 ## Motivation

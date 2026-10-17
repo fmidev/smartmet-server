@@ -44,7 +44,7 @@ Related documents in this repository:
 | `source/AsyncServer.cpp`, `include/AsyncServer.h` | The concrete server: `server_threads` Boost.ASIO worker threads, the accept loop, `shutdownServer()`. |
 | `source/Connection.cpp`, `include/Connection.h` | Connection base: socket (optionally TLS), read buffer, request and response, timer, pool references. |
 | `source/AsyncConnection.cpp`, `include/AsyncConnection.h` | Everything that happens on one connection (§5–§9). |
-| `source/Utility.cpp`, `include/Utility.h` | Content-encoding choice and compression, HTTP dates, `X-Forwarded-For` handling, protocol-version negotiation, request dumping. |
+| `source/Utility.cpp`, `include/Utility.h` | Content-encoding choice and compression, HTTP dates, protocol-version negotiation, the raw request head peek for `Expect: 100-continue`, request dumping. The `X-Forwarded-For` client IP is resolved in `AsyncConnection::resolveClientIP()` with spine's `IPFilter`. |
 | `include/backward.h` | Bundled stack-trace library for `stacktrace = true`. |
 
 ## 2. Building and testing
@@ -190,11 +190,21 @@ Only **buffered** responses are compressed, and only when `compress = true`.
 `application/pdf`. Otherwise:
 
 1. a request parameter `gzip=1` forces gzip;
-2. without `Accept-Encoding`, or when the body is smaller than `compresslimit`, nothing;
-3. if `Accept-Encoding` contains `zstd` → zstd (level 3);
-4. if it contains `gzip` → gzip.
+2. when the body is smaller than `compresslimit`, nothing;
+3. otherwise `Spine::HTTP::selectContentEncoding()` negotiates the coding from
+   `Accept-Encoding` among the codings offered by `compresscodings` (default
+   `zstd,gzip`, best first). Quality values are honoured (`zstd;q=0` refuses zstd), equal
+   qualities are broken by the `compresscodings` order, a coding accepted only through `*`
+   gets gzip, and without `Accept-Encoding` the response is not encoded.
 
-`Content-Length` is set after compression, and `Vary: Accept-Encoding` is always sent.
+zstd uses its default level 3 and gzip level 3. `Content-Length` is set after compression,
+and `Vary: Accept-Encoding` is always sent (appended to a `Vary` the plugin set itself).
+
+An encoded variant gets an entity-tag of its own (RFC 9110 4.3.4): the coding is appended
+to the plugin's `ETag` (`"abc"` becomes `"abc+zstd"`, `Spine::HTTP::contentCodedETag()`).
+A 304 answers with the `If-None-Match` tag that matched (`notModifiedETag()`), so a cache
+holding several variants is told which one to use.
+
 Streamed responses (downloads, proxied bodies) are sent as the plugin produced them.
 
 ## 8. Persistent connections
@@ -239,7 +249,8 @@ The main configuration file (libconfig, see `cnf/smartmet.conf.sample`) is read 
 server-level keys are `port`, `server_threads`, `encryption.*` (`enabled`,
 `certificatefile`, `privatekeyfile`, `passwordfile`, `password`), the three pools,
 `activerequests.*`, `keepalive.*`, `maxconnections`, `maxheadersize`, `maxrequestsize`,
-`timeout`, `compress`, `compresslimit`, `stalewhilerevalidate`, `staleiferror`,
+`timeout`, `compress`, `compresslimit`, `compresscodings`, `trustedproxies` (peers whose
+`X-Forwarded-For` is believed), `stalewhilerevalidate`, `staleiferror`,
 `dns.*` (client host name resolution), `accesslogdir`, `defaultlogging`,
 `robots_txt` (file served as /robots.txt, see cnf/robots.txt.sample),
 `api_catalog` (the API catalog at /api and /.well-known/api-catalog and the data explorer
@@ -247,7 +258,8 @@ at /api/explorer: `enabled`, `ui`, `swagger_ui_dir`, `title`, `description`, `ex
 `explorer_dir`, `uplot_dir`, `palette_dir`, `palette_config`, `explorer_defaults`; spine
 guide §11),
 `logrequests`, `lazylinking`, `stacktrace`, `new_handler`, `logmemoryuse`,
-`logmemoryfields`, `debug`, `verbose`, and the `engines` and `plugins` groups
+`logmemoryfields`, `user`, `libdir`, `locale`, `shutdownTimeout` (seconds before a
+hanging shutdown is killed, default 60), `debug`, `quiet`, `verbose`, and the `engines` and `plugins` groups
 (spine guide §4).
 
 ## 11. Known pitfalls
