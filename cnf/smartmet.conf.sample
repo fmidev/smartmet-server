@@ -90,7 +90,11 @@ defaultlogging = true;
 // robots_txt = "/etc/smartmet/robots.txt";
 
 // The API catalog (RFC 9727) at /api, /.well-known/api-catalog and /api/docs, served
-// when some plugin publishes an OpenAPI definition (and always by the frontend plugin).
+// when some plugin publishes an OpenAPI definition (and always by the frontend plugin),
+// and the data explorer at /api/explorer (explorer = false leaves it out). The
+// explorer_defaults are the first map view, the location examples, extra output
+// projections, the language, the clock and the units for the region of the server; the
+// explorer is neutral without them. See OpenApi.h of smartmet-library-spine.
 // api_catalog:
 // {
 //   enabled        = true;
@@ -98,6 +102,22 @@ defaultlogging = true;
 //   swagger_ui_dir = "/usr/share/smartmet/swagger-ui";
 //   title          = "SmartMet Server APIs";
 //   description    = "Weather and climate data APIs";
+//   explorer       = true;
+//   explorer_dir   = "/usr/share/smartmet/explorer";
+//   uplot_dir      = "/usr/share/smartmet/uplot";
+//   palette_dir    = "/usr/share/smartmet/qdless/palettes";
+//   palette_config = "/usr/share/smartmet/qdless/qdless.conf";
+//   explorer_defaults:
+//   {
+//     center      = [25.0, 62.0];
+//     zoom        = 4;
+//     language    = "fi";         // en, fi or sv
+//     clock       = "24";         // "24" or "12"
+//     examples:   { place = "Helsinki"; fmisid = "100971,101004"; wmo = "2963,2974";
+//                   keyword = "synop_fi"; area = "Uusimaa"; };
+//     projections = ["EPSG:3067 ETRS-TM35FIN", "EPSG:3035 ETRS89 LAEA Europe"];
+//     units:      { temperature = "C"; speed = "ms"; pressure = "hPa"; height = "m"; };
+//   };
 // };
 
 // Response compression. compresscodings lists the content codings offered, in
