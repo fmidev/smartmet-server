@@ -3,7 +3,7 @@
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
 Version: 26.10.17
-Release: 1%{?dist}.fmi
+Release: 2%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
 URL: https://github.com/fmidev/smartmet-server
@@ -108,6 +108,8 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Mon Oct 19 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.10.17-2.fmi
+- Repackaged: simultaneous CI runs corrupted the 26.10.17-1 RPMs
 * Sat Oct 17 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.10.17-1.fmi
 - Split functions with a cognitive complexity above 25 into smaller helpers, no functional changes
 
