@@ -147,7 +147,11 @@ temperatures there.
 ![Drawing a box and a radius: the producers not covering them drop out](images/explorer/map-selection.webp)
 
 The maps of the page draw the land, the lakes and the borders from Natural Earth data that
-comes with the server, so no online map service is needed.
+comes with the server, so no online map service is needed. The 1:50m map is drawn first;
+zoomed in closer, the map switches to the more detailed 1:10m data. The **enlarge** button
+below **Fit** opens the map over the page, with the 1:10m data from the scale of a country,
+for drawing a selection precisely; the button again, **Escape** or a click beside the map
+returns it to its place.
 
 ## The results
 
@@ -350,6 +354,18 @@ api_catalog:
     projections = ["EPSG:3067 ETRS-TM35FIN", "EPSG:3035 ETRS89 LAEA Europe"];
     units:      { temperature = "C"; speed = "ms"; pressure = "hPa"; height = "m"; };
   };
+
+  # The background maps from the data of the server instead of the files that come with
+  # the explorer (optional): any OGR data source with a layer and an attribute filter
+  basemap_detail:
+  {
+    land    = { source = "/smartmet/share/naturalearth/ne_10m_land.shp"; };
+    lakes   = { source = "PG:host=gis dbname=gis user=reader";
+                layer  = "natural_earth.ne_10m_lakes"; };
+    borders = { source = "PG:host=gis dbname=gis user=reader";
+                layer  = "natural_earth.ne_10m_admin_0_boundary_lines_land"; };
+  };
+  # basemap: the same for the 1:50m map
 };
 ```
 
@@ -359,6 +375,14 @@ language of each browser. The `examples` are the hints of the location fields, s
 should be places, stations, keywords and areas the server knows. The `projections` are
 offered for Coverages downloads in addition to the native grid, longitude and latitude and
 Web Mercator. A user's own choices in the settings override these defaults.
+
+The background maps are `basemap.json` (Natural Earth 1:50m) and `basemap-10m.json` (1:10m)
+of `explorer_dir` unless `basemap` or `basemap_detail` give the layers: a shapefile, a
+GeoJSON file or a PostGIS database (`PG:` connection string), the layer (the first one by
+default) and `where` (an attribute filter, all features by default). `land` is required,
+`lakes` and `borders` optional. The layers are read when the server starts, converted to
+longitude and latitude, and a source that cannot be read leaves the file in use with a
+warning.
 
 **Licences.** uPlot is MIT licensed and the Natural Earth map data is in the public domain;
 the settings menu of the page lists them.
