@@ -14,6 +14,7 @@ Table of Contents
     * [Cache statistics](#cachestats)
     * [Active requests](#active-requests)
     * [Loaded packages](#loaded-packages)
+    * [Changelog](#changelog)
     * [Querydata producers](#querydata-producers)
     * [GRID producers](#grid-producers)
     * [GRID generations](#grid-generations)
@@ -306,6 +307,29 @@ check that a CI test server runs the freshly built packages.
 SmartMet packages built with smartmet-utils 26.10.11 or later carry the SmartMet note with the
 version and git commit also on RHEL8. Older builds without any note are reported from the package
 database.
+
+## Changelog
+
+The recent changelog entries of the loaded SmartMet packages can be listed with
+
+    http://<backend_server>/admin?what=changelog
+
+The entries come from the package database for the installed versions of the packages listed by
+`what=packages`, newest first. Binary packages built from the same source package share one
+changelog, and are listed once under the source package name. Only `rpm` stores changelogs in the
+package database, on Debian based systems the list is empty.
+
+* The querystring option `days` limits the entries to the last N days. The default is 30, 0 lists all entries.
+* The querystring option `package` limits the output to one package.
+* The querystring option `format` can be used to change the output format.
+
+| Column | Content |
+|--------|---------|
+| Date | Date of the changelog entry |
+| Package | Source package name |
+| Version | Version given in the changelog entry header |
+| Author | Author of the entry |
+| Text | The changelog text, usually one line per change starting with `-` |
 
 ## Querydata producers
 
