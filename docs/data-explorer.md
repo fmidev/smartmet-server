@@ -46,7 +46,9 @@ production server shows its own data and descriptions.
 4. **API key**, for servers that require one. The key is sent with the requests of the page
    and kept in your browser.
 5. **Settings**: the clock, the units, the language, and the licences of the parts of the
-   page.
+   page. **Reset**, next to it, starts over: it clears the choices of the form and the
+   settings the page keeps in your browser, except the API key, and opens the interface in
+   its defaults. The browser's Back button returns to the previous request.
 6. **The request form**: *What* (parameters and the producer or collection), *When* (the
    period and the time step), *Where* (the locations) and *Output* (how areas are returned,
    the language of the names, extra columns).
