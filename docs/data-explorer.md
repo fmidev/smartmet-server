@@ -92,9 +92,11 @@ time step, model run, levels and area; **Change** chooses another one.
 
 ![A request from nothing: a parameter, a producer, a place and Run](images/explorer/timeseries-first.webp)
 
-For data on levels the card is followed by the levels (none chosen means all of them), and
-for grid data by the model runs, geometries, ensemble members and level types of the
-producer. Buttons such as **Meteogram** and **Skew-T log-p** add the parameters such a view
+For data on levels the card is followed by the levels (none chosen means all of them, for
+grid data the default level of each parameter), and for grid data by the model runs,
+geometries, ensemble members and level types of the producer. The chosen levels and members
+of grid data are counted as levels and members, not as locations, and three or more levels
+of one location give the vertical views. Buttons such as **Meteogram** and **Skew-T log-p** add the parameters such a view
 needs and run the request.
 
 ![The details of a grid model on 65 model levels](images/explorer/producer-details.png)
@@ -126,7 +128,13 @@ repeat it for consecutive periods, for fetching a long history piece by piece.
 | Keyword | a location keyword of the server | |
 | Station id | station numbers, or stations clicked on the map | `100971,101004` |
 | WMO id | WMO station numbers | `2963,2974` |
-| Area | an area name of the server | |
+| Area | an area name of the server | `uusimaa` |
+
+While a place or an area name is typed, the names the server knows are suggested: for a
+place the places whose names begin with the text, the largest first, and for an area the
+areas of the server. A place name shared by several places is completed with its area, such
+as `Portland,USA`. The suggestions come from `/timeseries/api/places` and
+`/timeseries/api/areas`; a server without them suggests nothing.
 
 The map draws the area of the chosen producer. A box or a radius drawn on the map also
 narrows the producers to those covering it: below, a box over Iberia leaves the 6 producers
