@@ -49,7 +49,7 @@ production server shows its own data and descriptions.
    page. **Reset**, next to it, starts over: it clears the choices of the form and the
    settings the page keeps in your browser, except the API key, and opens the interface in
    its defaults. The browser's Back button returns to the previous request.
-6. **The request form**: *What* (parameters and the producer or collection), *When* (the
+6. **The request form**: *What* (the producer or collection, and the parameters), *When* (the
    period and the time step), *Where* (the locations) and *Output* (how areas are returned,
    the language of the names, extra columns).
 7. **The request** as a URL. It is updated as you make choices, and it tells what is still
@@ -86,10 +86,11 @@ datasets covering it; **Anywhere** removes the point.
 The TimeSeries interface returns values of parameters at locations over a period, from model
 data, observations and other point data.
 
-**What.** Start typing in **Parameters** to find parameters by name or description; the
-suggestions tell how many producers have each one. The **Producer** search lists only the
-producers having all the chosen parameters, and the parameter search only the parameters of
-the chosen producer, so you can start from either end. A producer card shows its period,
+**What.** Start typing in **Producer** to find a model or other producer by name, then in
+**Parameters** to find its parameters by name or description. You can also start from the
+parameters: their suggestions tell how many producers have each one, and the **Producer**
+search then lists only the producers having all the chosen parameters, while the parameter
+search lists only the parameters of the chosen producer. A producer card shows its period,
 time step, model run, levels and area; **Change** chooses another one.
 
 ![A request from nothing: a parameter, a producer, a place and Run](images/explorer/timeseries-first.webp)
@@ -267,7 +268,7 @@ of the server are shown there too:
 ## EDR
 
 The OGC API - Environmental Data Retrieval module works on the collections of the EDR
-interface. The parameter and collection searches narrow each other as in TimeSeries, and the
+interface. The collection and parameter searches narrow each other as in TimeSeries, and the
 query types of the collection are offered: **Position**, **Radius**, **Area**, **Cube**,
 **Trajectory** and **Locations**. The times and levels come from the extents of the
 collection, and the output is CoverageJSON or GeoJSON. The results are drawn with the same
