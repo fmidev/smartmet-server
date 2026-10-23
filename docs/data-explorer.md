@@ -90,7 +90,10 @@ data, observations and other point data.
 **Parameters** to find its parameters by name or description. You can also start from the
 parameters: their suggestions tell how many producers have each one, and the **Producer**
 search then lists only the producers having all the chosen parameters, while the parameter
-search lists only the parameters of the chosen producer. The producer **default** leaves the
+search lists only the parameters of the chosen producer. **Parameter expressions** take
+parameters as written in a request, such as `nanpercentage[0.5:](PROB-SNOW) as snow` or the
+grid expressions of the server, which are sent as such and shown under their aliases. The
+producer **default** leaves the
 choice to the server, which takes for each location the first of its default producers
 covering it; it has the parameters of all the querydata producers. A producer card shows its period,
 time step, model run, levels and area; **Change** chooses another one.
