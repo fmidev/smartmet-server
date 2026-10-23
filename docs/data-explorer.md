@@ -90,7 +90,9 @@ data, observations and other point data.
 **Parameters** to find its parameters by name or description. You can also start from the
 parameters: their suggestions tell how many producers have each one, and the **Producer**
 search then lists only the producers having all the chosen parameters, while the parameter
-search lists only the parameters of the chosen producer. A producer card shows its period,
+search lists only the parameters of the chosen producer. The producer **default** leaves the
+choice to the server, which takes for each location the first of its default producers
+covering it; it has the parameters of all the querydata producers. A producer card shows its period,
 time step, model run, levels and area; **Change** chooses another one.
 
 ![A request from nothing: a parameter, a producer, a place and Run](images/explorer/timeseries-first.webp)
@@ -107,7 +109,10 @@ needs and run the request.
 **When.** The period is given as UTC times in the clock of the settings, with a date picker
 button. **Whole data**, **Next 24 h** and **Last 24 h** set the period from the data of the
 producer (for observations **Last 24 h**, **Last week** and **Last month**, as their
-history can go back a long time). The time step is that of the data or a fixed one. **Over
+history can go back a long time). The start and the end can also be relative, so that a link
+asks for the same period later too: the start now, the start of the data or an offset from now
+(`-1h`), and the end now, the end of the data, an offset (`+24h`) or a number of time steps.
+The time step is that of the data or a fixed one. **Over
 a period** asks for values aggregated over a period around each time (a maximum, a sum, a
 mean, ...), with the function recommended for each kind of parameter.
 
@@ -132,6 +137,7 @@ repeat it for consecutive periods, for fetching a long history piece by piece.
 | Keyword | a location keyword of the server | |
 | Station id | station numbers, or stations clicked on the map | `100971,101004` |
 | WMO id | WMO station numbers | `2963,2974` |
+| Geoid | GeoNames ids of places; a place name typed is completed to its geoid | `658225,653492` |
 | Area | an area name of the server | `uusimaa` |
 
 While a place or an area name is typed, the names the server knows are suggested: for a
