@@ -125,6 +125,11 @@ repeat it for consecutive periods, for fetching a long history piece by piece.
 
 ![The request as Python](images/explorer/request-code.png)
 
+**Other options**, under **Output**, takes options of the request written as in its query
+string, such as `hour=6,18&numberofstations=3&maxdistance=50km`. They are added to the request
+and replace the options the page sets, which the page tells; an empty value removes an option.
+The views need JSON, other formats are shown as text.
+
 ## Locations and maps
 
 **Where** chooses the locations:
