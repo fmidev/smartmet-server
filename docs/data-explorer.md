@@ -128,6 +128,7 @@ repeat it for consecutive periods, for fetching a long history piece by piece.
 | Radius | a point and a radius in km, or a drag on the map | `25,60.2:25` |
 | Box | west, south, east and north, or a drag on the map | `23,61,27,63` |
 | Path | points along a line, clicked on the map | `24.3,59.8,25,60.2,25.8,60.5` |
+| WKT | a POINT, MULTIPOINT, LINESTRING or POLYGON (or MULTILINESTRING, MULTIPOLYGON) in longitude and latitude | `MULTIPOINT(24.88 60.20,24.89 60.21)` |
 | Keyword | a location keyword of the server | |
 | Station id | station numbers, or stations clicked on the map | `100971,101004` |
 | WMO id | WMO station numbers | `2963,2974` |
@@ -138,6 +139,12 @@ place the places whose names begin with the text, the largest first, and for an 
 areas of the server. A place name shared by several places is completed with its area, such
 as `Portland,USA`. The suggestions come from `/timeseries/api/places` and
 `/timeseries/api/areas`; a server without them suggests nothing.
+
+A WKT geometry is typed or pasted, and the map is zoomed to it. A point, path, box or radius
+drawn in its own mode is kept when **WKT** is chosen next: a path becomes the MULTIPOINT of its
+marked points, or a LINESTRING when the points are taken along it, and a box or a radius a
+POLYGON. The server takes the points of a MULTIPOINT as they are, points about every kilometre
+along a LINESTRING, and the grid points inside a POLYGON.
 
 The map draws the area of the chosen producer. A box or a radius drawn on the map also
 narrows the producers to those covering it: below, a box over Iberia leaves the 6 producers
@@ -175,6 +182,12 @@ what is returned for them:
 * **Statistics** (the default for areas): the server computes the median and the 10, 25, 75
   and 90 % percentiles of the area at each time, so the response stays small whatever the
   size of the area.
+* **One value**: the server computes one value of the area for each parameter at each time,
+  with a function chosen for each parameter: the mean (a circular mean for directions), the
+  minimum, the maximum, the median, the sum or the standard deviation. The recommended function
+  is chosen at first: the mean of states such as temperature, the maximum of categories such as
+  weather symbols and of gusts, the minimum of minima. Missing values are skipped. The result is
+  drawn as one location, so it has a meteogram and can be compared with another producer.
 * **Every point**: the values of every grid point or station. More than 20 locations are
   drawn as their median and percentiles, as **All locations** (a swarm of thin lines coloured
   from south to north, the median on top), or as the **Probability** of a threshold.
