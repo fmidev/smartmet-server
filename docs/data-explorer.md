@@ -186,7 +186,8 @@ what is returned for them:
   with a function chosen for each parameter: the mean (a circular mean for directions), the
   minimum, the maximum, the median, the sum or the standard deviation. The recommended function
   is chosen at first: the mean of states such as temperature, the maximum of categories such as
-  weather symbols and of gusts, the minimum of minima. Missing values are skipped. The result is
+  weather symbols and of gusts, the minimum of minima. The extra columns that differ from point
+  to point, such as dark or the sun elevation, get a function too. Missing values are skipped. The result is
   drawn as one location, so it has a meteogram and can be compared with another producer.
 * **Every point**: the values of every grid point or station. More than 20 locations are
   drawn as their median and percentiles, as **All locations** (a swarm of thin lines coloured
