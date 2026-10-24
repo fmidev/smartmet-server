@@ -171,11 +171,16 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
         SmartMet::Spine::IPFilter::IPFilter::fromConfig(theOptions.itsConfig, "trustedproxies");
     if (!itsTrustedProxies)
     {
-      // Backward compatible default: X-Forwarded-For is believed from every IPv4 peer
+      // Default: X-Forwarded-For is believed from loopback and private network peers only
       itsTrustedProxies = std::make_shared<SmartMet::Spine::IPFilter::IPFilter>(
-          std::vector<std::string>{"*.*.*.*"});
-      std::cout << "Warning: 'trustedproxies' is not set, X-Forwarded-For is trusted from all "
-                   "IPv4 clients and the client IP can be spoofed to bypass IP filters"
+          std::vector<std::string>{"127.0.0.0/8",
+                                   "::1",
+                                   "10.0.0.0/8",
+                                   "172.16.0.0/12",
+                                   "192.168.0.0/16",
+                                   "fc00::/7"});
+      std::cout << "Warning: 'trustedproxies' is not set, X-Forwarded-For is trusted from "
+                   "loopback and private network addresses only"
                 << std::endl;
     }
   }

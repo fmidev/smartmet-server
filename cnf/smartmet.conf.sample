@@ -75,8 +75,9 @@ keepalive:
 // the client IP in an X-Forwarded-For header. The header is ignored from other peers,
 // and the client IP is the right-most address in it which is not a trusted proxy.
 // Accepts patterns like 192.168.1-10.*, exact addresses and CIDR blocks (IPv4/IPv6).
-// If not set, every IPv4 peer is trusted for backward compatibility, which lets any
-// client spoof its IP and bypass admin/plugin ip_filters. The default will change.
+// If not set, loopback and private network peers are trusted (127.0.0.0/8, ::1,
+// 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, fc00::/7). Set this explicitly if the
+// proxies have other addresses, or if clients may connect directly from private networks.
 
 // trustedproxies = ["127.0.0.1", "10.0.0.0/8"];
 

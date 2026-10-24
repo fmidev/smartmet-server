@@ -189,8 +189,8 @@ class Server
   /// Trusted reverse proxies ('trustedproxies' setting). An X-Forwarded-For header
   /// is believed only when the socket peer matches, and the header is then walked
   /// from the right skipping trusted hops; otherwise the socket peer address is the
-  /// client IP used for logging and access control. The default trusts every IPv4
-  /// peer for backward compatibility, which allows spoofing the client IP.
+  /// client IP used for logging and access control. The default trusts loopback and
+  /// private network (RFC 1918, IPv6 unique local) peers.
   std::shared_ptr<SmartMet::Spine::IPFilter::IPFilter> itsTrustedProxies;
 
   /// Period in minutes for logging memory usage to stdout (0 = disabled)
