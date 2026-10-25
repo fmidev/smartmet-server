@@ -96,7 +96,11 @@ grid expressions of the server, which are sent as such and shown under their ali
 producer **default** leaves the
 choice to the server, which takes for each location the first of its default producers
 covering it; it has the parameters of all the querydata producers. A producer card shows its period,
-time step, model run, levels and area; **Change** chooses another one.
+time step, model run, levels and area; **Change** chooses another one. The card of a grid
+producer also has **Open in grid-gui** when the server lets you use grid-gui: it shows the
+fields of the chosen run there, with the first parameter and, for a point, the point pinned.
+grid-gui in turn opens the time series of a field at a point here with **Open in data
+explorer**.
 
 ![A request from nothing: a parameter, a producer, a place and Run](images/explorer/timeseries-first.webp)
 
@@ -369,6 +373,14 @@ requests go through the frontend like any other. It lists the interfaces whose p
 publish an OpenAPI definition with a kind: TimeSeries and EDR (`smartmet-plugin-edr`) and
 Coverages (`smartmet-plugin-download`).
 
+**Access.** The explorer is meant for the staff of the site, not for the public: it can build
+requests for very large areas and long periods. It is a private page: the backends do not
+announce it to the frontends, and only the clients allowed by `explorer_ip_filters` may open
+it, by default the local and private networks (127.0.0.0/8, ::1, 10.0.0.0/8, 172.16.0.0/12
+and 192.168.0.0/16). Other clients get *403 Forbidden*, and the `/api` page shows them no
+link to the explorer. The address checked is that of the client as resolved through
+`trustedproxies`: set it to exactly the load balancers and proxies in front of the server.
+
 **Packages.** The page is in `smartmet-library-spine` (`/usr/share/smartmet/explorer`), and
 its charts use uPlot from `smartmet-uplot` (`/usr/share/smartmet/uplot`). The production
 colours come from the palettes of `smartmet-qdless` (`/usr/share/smartmet/qdless`); without
@@ -384,6 +396,8 @@ api_catalog:
   title          = "SmartMet Server APIs";   # shown in the header of the page
   explorer       = true;                     # false leaves /api/explorer out
   explorer_dir   = "/usr/share/smartmet/explorer";
+  # who may use the explorer; the default is the local and private networks
+  explorer_ip_filters = ["10.0.0.0/8", "203.0.113.0/24"];
   uplot_dir      = "/usr/share/smartmet/uplot";
   palette_dir    = "/usr/share/smartmet/qdless/palettes";
   palette_config = "/usr/share/smartmet/qdless/qdless.conf";
