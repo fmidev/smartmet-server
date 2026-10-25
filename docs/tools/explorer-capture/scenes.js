@@ -266,6 +266,45 @@ module.exports = {
     });
   },
 
+  // A3b: the parameters of a unit combined in one chart, a second unit on the right, and a
+  // parameter of unknown unit left in a chart of its own
+  async combineCharts(ctx)
+  {
+    const {b} = ctx;
+    await ctx.open({...PAL, params: 'temperature,dewpoint,feelslike,windspeedms,precipitation1h', locmode: 'place',
+                    location: 'Helsinki'});
+    await run(ctx, {click: false});
+    await scrollToElement(ctx, '.results-head', null, 10);
+    await ctx.anim('combine-charts', async () => {
+      await ctx.sleep(1800);
+      await b.click('.results .chart-combine');
+      await ctx.sleep(1500);
+      await hoverChart(ctx, 0.2, 0.8);
+      await ctx.sleep(1500);
+    }, {crop: RIGHT});
+  },
+
+  // A4b: the percentiles of an area combined, each parameter in colours of its own; the swarm
+  // of every point cannot be combined, and its lines are too many to hover
+  async combinePercentiles(ctx)
+  {
+    const {b} = ctx;
+    await ctx.open({...PAL, params: 'temperature,dewpoint', locmode: 'bbox', location: '21,59.7,30,64',
+                    areavalues: 'points'});
+    await run(ctx, {click: false});
+    await scrollToElement(ctx, '.results-head', null, 10);
+    await ctx.anim('combine-percentiles', async () => {
+      await ctx.sleep(1800);
+      await b.click('.results .chart-combine');
+      await ctx.sleep(1500);
+      await hoverChart(ctx, 0.25, 0.75);
+      await b.click('.results button', 'All locations');
+      await ctx.sleep(1200);
+      await hoverChart(ctx, 0.3, 0.7);
+      await ctx.sleep(1500);
+    }, {crop: RIGHT});
+  },
+
   // S5: the table of the results
   async table(ctx)
   {

@@ -186,6 +186,18 @@ pressure, height), and saves the view as **PNG** or the rows as **CSV**.
 The charts show the values of each location and parameter over time, with the values at the
 pointer below them. One location can be compared with another producer (see below).
 
+**Combine** draws the parameters of the same unit in one chart, for example the air, dewpoint
+and road temperatures, with a second unit such as precipitation on an axis on the right:
+amounts as bars from zero, percentages on 0–100 and directions as points on 0–360. The
+parameters keep their own colours, and the locations or producers are told apart by dashes. A
+parameter is combined only when its unit is known: temperatures, wind speeds, pressures and
+heights are recognised by their names and shown in the units chosen, other parameters need a
+unit in the parameter list of the server. Lines and percentiles can be combined, a chart has
+at most 20 lines, and at most four locations are drawn in one chart. **Separate** returns to a
+chart for each parameter.
+
+![Temperatures and the wind speed combined, precipitation without a known unit left in a chart of its own](images/explorer/combine-charts.webp)
+
 ![The table of the results](images/explorer/table.png)
 
 ## Areas: statistics, swarms and maps
@@ -205,7 +217,13 @@ what is returned for them:
   drawn as one location, so it has a meteogram and can be compared with another producer.
 * **Every point**: the values of every grid point or station. More than 20 locations are
   drawn as their median and percentiles, as **All locations** (a swarm of thin lines coloured
-  from south to north, the median on top), or as the **Probability** of a threshold.
+  from south to north, the median on top), or as the **Probability** of a threshold. The line
+  under the pointer is highlighted with its name when there are at most 100 lines; with more
+  the chart says so, since searching them would make the browser slow. The same limit applies to
+  the profiles. The percentiles of several parameters can be combined, each parameter in colours
+  of its own; the swarm cannot.
+
+![The percentiles of an area combined, then the swarm with hovering disabled](images/explorer/combine-percentiles.webp)
 
 ![The statistics of an area, then every point of it as a swarm](images/explorer/area-statistics.webp)
 
