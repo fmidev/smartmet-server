@@ -6,11 +6,13 @@
 #include "AsyncConnection.h"
 #include "AsyncServer.h"
 #include "Utility.h"
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/bind/bind.hpp>
 #include <boost/move/make_unique.hpp>
 #include <macgyver/Exception.h>
 #include <spine/Convenience.h>
 #include <sstream>
+#include <tuple>
 #include <vector>
 
 namespace SmartMet
@@ -31,9 +33,34 @@ bool statusHasNoBody(SmartMet::Spine::HTTP::Status status)
   const int code = static_cast<int>(status);
   return (code >= 100 && code < 200) || code == 204 || code == 304;
 }
+
+#ifndef NDEBUG
+// Debugging output of an incoming request
+void print_request(const SmartMet::Spine::HTTP::Request& theRequest)
+{
+  std::cout << "Incoming request from " << theRequest.getClientIP() << '\n';
+  std::cout << "Method: " << theRequest.getMethodString() << '\n';
+  std::cout << "URI: " << theRequest.getURI() << '\n';
+  std::cout << "Query string: " << theRequest.getQueryString() << '\n';
+  std::cout << "Headers: \n";
+  auto hmappi = theRequest.getHeaders();
+  for (const auto& header : hmappi)
+  {
+    std::cout << header.first << " : " << header.second << '\n';
+  }
+
+  std::cout << "Parsed parameters: \n";
+  auto mappi = theRequest.getParameterMap();
+  for (const auto& elem : mappi)
+  {
+    std::cout << elem.first << " : " << elem.second << '\n';
+  }
+  std::cout << "Content: \"" << theRequest.getContent() << "\"\n\n";
+}
+#endif
 }  // namespace
 
-AsyncConnection::AsyncConnection(Private,
+AsyncConnection::AsyncConnection(Private /*unused*/,
                                  AsyncServer* serverInstance,
                                  bool sslEnabled,
                                  boost::asio::ssl::context& sslContext,
@@ -100,10 +127,18 @@ AsyncConnection::~AsyncConnection()
 {
   if (!hasTimedOut)
   {
-    boost::system::error_code ignored_ec;
-    socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-    socket().close(ignored_ec);
+    closeSocket();
   }
+}
+
+// Shut the socket down in both directions and close it. The errors are ignored
+// on purpose: the peer may already be gone (ENOTCONN), and nothing more can be
+// done with a socket that is being discarded anyway.
+void AsyncConnection::closeSocket()
+{
+  boost::system::error_code ignored;
+  std::ignore = socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored);
+  std::ignore = socket().close(ignored);
 }
 
 // Arm (or re-arm) the connection timeout timer. The generation stamp ties the
@@ -142,9 +177,7 @@ void AsyncConnection::handleTimer(const boost::system::error_code& err,
       // time (RFC 9112 9.6), and it must do so silently here: the client may be
       // writing a request at this very moment, in which case an unsolicited 408 would
       // arrive in the middle of a request it still expects an answer to.
-      boost::system::error_code ignored_ec;
-      socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-      socket().close(ignored_ec);
+      closeSocket();
       return;
     }
 
@@ -202,8 +235,10 @@ void AsyncConnection::start()
     // that accident, and a proxied 1 kB response through the frontend went from
     // 0.4 ms to 43 ms. Servers that write whole messages have no use for Nagle;
     // this is what nginx and friends do by default too.
-    boost::system::error_code ignored;
-    socket().set_option(boost::asio::ip::tcp::no_delay(true), ignored);
+    boost::system::error_code ec;
+    if (socket().set_option(boost::asio::ip::tcp::no_delay(true), ec))
+      std::cerr << Spine::log_time_str()
+                << " Server info: failed to disable Nagle's algorithm: " << ec.message() << '\n';
 
     // Start the timeout timer
 
@@ -242,9 +277,7 @@ void AsyncConnection::handleHandshake(const boost::system::error_code& error)
     // std::cout << error << "\n";
 
     // Handshake error. Closing the connection.
-    boost::system::error_code ignored_ec;
-    socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-    socket().close(ignored_ec);
+    closeSocket();
   }
 }
 
@@ -304,164 +337,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         itsBuffer.erase(0, parsedRequest.consumed);
         itsReceivedBytes = itsBuffer.size();
 
-        // Set client ip
-        auto forwardHeader = itsRequest->getHeader("X-Forwarded-For");
-        if (forwardHeader)
-        {
-          // Should we validate this?
-          itsRequest->setClientIP(parseXForwardedFor(*forwardHeader));
-        }
-        else
-        {
-          try
-          {
-            itsRequest->setClientIP(socket().remote_endpoint().address().to_string());
-          }
-          catch (...)
-          {
-            Fmi::Exception exception(BCP, "Operation failed!", nullptr);
-            reportError(std::string("Failed to obtain remote endpoint IP address:\n") +
-                        exception.what());
-            return;
-          }
-        }
-
-#ifndef NDEBUG
-        // DEBUGGIN OUTPUT************************************
-
-        std::cout << "Incoming request from " << itsRequest->getClientIP() << '\n';
-        std::cout << "Method: " << itsRequest->getMethodString() << '\n';
-        std::cout << "URI: " << itsRequest->getURI() << '\n';
-        std::cout << "Query string: " << itsRequest->getQueryString() << '\n';
-        std::cout << "Headers: \n";
-        auto hmappi = itsRequest->getHeaders();
-        for (const auto& header : hmappi)
-        {
-          std::cout << header.first << " : " << header.second << '\n';
-        }
-
-        std::cout << "Parsed parameters: \n";
-        auto mappi = itsRequest->getParameterMap();
-        for (const auto& elem : mappi)
-        {
-          std::cout << elem.first << " : " << elem.second << '\n';
-        }
-        std::cout << "Content: \"" << itsRequest->getContent() << "\"\n\n";
-
-// DEBUGGIN OUTPUT************************************
-#endif
-
-        ++itsRequestCount;
-
-        // Answer in the client's own HTTP version and negotiate the persistence of
-        // the connection for this request/response cycle.
-        itsResponseVersion = negotiateVersion(itsRequest->getVersion());
-        itsKeepAlive = evaluateKeepAlive();
-
-        // RFC 9112 3.2: an HTTP/1.1 request without a Host header cannot be
-        // routed to a target resource and must be rejected. The check lives here
-        // rather than in the parser because HTTP/1.0 requests legitimately have
-        // no Host. The connection is closed: a client that gets this wrong is
-        // not one whose framing should be trusted for a second request.
-        if (itsResponseVersion == "1.1" && !itsRequest->getHeader("Host"))
-        {
-          reportError("400 Missing Host header on an HTTP/1.1 request");
-          itsKeepAlive = false;
-          sendStockReply(SmartMet::Spine::HTTP::Status::bad_request);
-          return;
-        }
-
-        // Must come after the keep-alive negotiation, which reads Connection
-        stripHopByHopHeaders();
-
-        // RFC 9110 9.3.2: the response to HEAD is the response to GET with the
-        // content left out. The plugins do not know the method - several answer
-        // only GET and POST and would reject it - so the request is handed on as
-        // a GET and the body is dropped when the reply is written. The cost is
-        // that a HEAD shows up as a GET in the per-handler access log.
-        itsHeadRequest = (itsRequest->getMethod() == SmartMet::Spine::HTTP::RequestMethod::HEAD);
-        if (itsHeadRequest)
-          itsRequest->setMethod(SmartMet::Spine::HTTP::RequestMethod::GET);
-
-        // Check whether we have 'OPTIONS' request
-        if (itsRequest->getMethodString() == "OPTIONS" && itsRequest->getResource() == "*")
-        {
-          *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
-          setServerHeaders();
-          sendSimpleReply();
-          return;
-        }
-
-        // Determine where to put the handler function
-        auto* handlerView = itsReactor.getHandlerView(*itsRequest);
-        if (!handlerView)
-        {
-          // Couldn't find handler for the request
-          sendStockReply(SmartMet::Spine::HTTP::Status::not_found);
-          return;
-        }
-
-        itsAdminQuery = (!handlerView->isCatchNoMatch() && handlerView->isAdminQuery(*itsRequest) &&
-                         itsAdminExecutor.getPoolSize() > 0);
-
-        // Handle high load situations
-        if (!itsAdminQuery && itsReactor.isLoadHigh())
-        {
-          std::cout << Spine::log_time_str() << " Too many active requests, reporting high load\n";
-          sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
-          return;
-        }
-
-        bool scheduled = false;
-
-        // Handle frontends and backends separately
-
-        if (handlerView->isCatchNoMatch())
-        {
-          // frontend always uses the fast executor
-          itsQueryIsFast = true;
-          itsAdminQuery = false;
-          scheduled = itsFastExecutor.schedule([me = shared_from_this(), handlerView]()
-                                               { me->handleCompletedRead(*handlerView); });
-
-          if (!scheduled)
-          {
-            // Task queue was full, send busy response
-            sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
-            reportInfo("Frontend request queue was full");
-          }
-        }
-
-        else
-        {
-          // backend
-
-          itsQueryIsFast =
-              (itsSlowExecutor.getPoolSize() == 0 || handlerView->queryIsFast(*itsRequest));
-
-          if (itsAdminQuery)
-          {
-            scheduled = itsAdminExecutor.schedule([me = shared_from_this(), handlerView]()
-                                                  { me->handleCompletedRead(*handlerView); });
-          }
-          else if (itsQueryIsFast)
-          {
-            scheduled = itsFastExecutor.schedule([me = shared_from_this(), handlerView]()
-                                                 { me->handleCompletedRead(*handlerView); });
-          }
-          else
-          {
-            scheduled = itsSlowExecutor.schedule([me = shared_from_this(), handlerView]()
-                                                 { me->handleCompletedRead(*handlerView); });
-          }
-
-          if (!scheduled)
-          {
-            // Task queue was full, send high load response to frontend
-            sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
-            reportInfo("Backend request queue was full, returning high load notification");
-          }
-        }
+        handleParsedRequest();
       }
       else if (parsedRequest.status == SmartMet::Spine::HTTP::ParsingStatus::FAILED)
       {
@@ -469,56 +345,258 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
         sendStockReply(SmartMet::Spine::HTTP::Status::bad_request);
       }
       else
-      {
-        // Bound the header section. Without this a client can hold a connection
-        // - and a slot against the connection limit - open indefinitely by
-        // dribbling header bytes that never reach the terminating blank line.
-        if (itsMaxHeaderSize > 0 && itsBuffer.size() > itsMaxHeaderSize &&
-            itsBuffer.find("\r\n\r\n") == std::string::npos)
-        {
-          reportError("431 Request header fields too large");
-          itsKeepAlive = false;
-          sendStockReply(SmartMet::Spine::HTTP::Status::request_header_fields_too_large);
-          return;
-        }
-
-        // Request is not succesfully parsed, attempt to get more data from socket and try
-        // again - unless the client is waiting for us to accept its body first.
-        if (handleExpectContinue())
-          startRead();
-      }
-    }
-    else if (e == boost::asio::error::eof)
-    {
-      // Peer closed the socket or timeout has occurred
-      // Abort this connection
-      return;
-    }
-    else if (itsIdle)
-    {
-      // An idle persistent connection went away: either the client closed it, or the
-      // keep-alive timeout reaped it here. Both are the expected end of a reused
-      // connection and are not worth a log entry.
-      return;
-    }
-    else if (e == boost::asio::error::operation_aborted)
-    {
-      // This connection has been timed out
-      reportInfo("Connection timeout");
+        handleIncompleteRequest();
     }
     else
-    {
-      // Some other error occurred in reading, handle it somehow
-      std::stringstream ss;
-      ss << e.message();
-      reportInfo("Error occurred while reading socket: " + ss.str());
-    }
+      handleReadError(e);
   }
   catch (...)
   {
     Fmi::Exception ex(BCP, "Operation failed! AsyncConnection::handleRead aborted", nullptr);
     std::cerr << ex.getStackTrace();
     // std::cerr << "Operation failed! AsyncConnection::handleRead aborted\n";
+  }
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Process a completely parsed request
+ */
+// ----------------------------------------------------------------------
+
+void AsyncConnection::handleParsedRequest()
+{
+  if (!resolveClientIP())
+    return;
+
+#ifndef NDEBUG
+  print_request(*itsRequest);
+#endif
+
+  ++itsRequestCount;
+
+  // Answer in the client's own HTTP version and negotiate the persistence of
+  // the connection for this request/response cycle.
+  itsResponseVersion = negotiateVersion(itsRequest->getVersion());
+  itsKeepAlive = evaluateKeepAlive();
+
+  // RFC 9112 3.2: an HTTP/1.1 request without a Host header cannot be
+  // routed to a target resource and must be rejected. The check lives here
+  // rather than in the parser because HTTP/1.0 requests legitimately have
+  // no Host. The connection is closed: a client that gets this wrong is
+  // not one whose framing should be trusted for a second request.
+  if (itsResponseVersion == "1.1" && !itsRequest->getHeader("Host"))
+  {
+    reportError("400 Missing Host header on an HTTP/1.1 request");
+    itsKeepAlive = false;
+    sendStockReply(SmartMet::Spine::HTTP::Status::bad_request);
+    return;
+  }
+
+  // Must come after the keep-alive negotiation, which reads Connection
+  stripHopByHopHeaders();
+
+  // RFC 9110 9.3.2: the response to HEAD is the response to GET with the
+  // content left out. The plugins do not know the method - several answer
+  // only GET and POST and would reject it - so the request is handed on as
+  // a GET and the body is dropped when the reply is written. The original
+  // method is passed in the internal X-SmartMet-Original-Method header so
+  // that the per-handler access log can report HEAD. The header is never
+  // accepted from the client.
+  itsRequest->removeHeader("X-SmartMet-Original-Method");
+  itsHeadRequest = (itsRequest->getMethod() == SmartMet::Spine::HTTP::RequestMethod::HEAD);
+  if (itsHeadRequest)
+  {
+    itsRequest->setMethod(SmartMet::Spine::HTTP::RequestMethod::GET);
+    itsRequest->setHeader("X-SmartMet-Original-Method", "HEAD");
+  }
+
+  // Check whether we have 'OPTIONS' request
+  if (itsRequest->getMethodString() == "OPTIONS" && itsRequest->getResource() == "*")
+  {
+    *itsResponse = SmartMet::Spine::HTTP::Response::stockOptionsResponse();
+    setServerHeaders();
+    sendSimpleReply();
+    return;
+  }
+
+  // Determine where to put the handler function
+  auto* handlerView = itsReactor.getHandlerView(*itsRequest);
+  if (!handlerView)
+  {
+    // Couldn't find handler for the request
+    sendStockReply(SmartMet::Spine::HTTP::Status::not_found);
+    return;
+  }
+
+  itsAdminQuery = (!handlerView->isCatchNoMatch() && handlerView->isAdminQuery(*itsRequest) &&
+                   itsAdminExecutor.getPoolSize() > 0);
+
+  // Handle high load situations
+  if (!itsAdminQuery && itsReactor.isLoadHigh())
+  {
+    std::cout << Spine::log_time_str() << " Too many active requests, reporting high load\n";
+    sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
+    return;
+  }
+
+  scheduleRequest(handlerView);
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Set the client IP of the parsed request, returns false on failure
+ */
+// ----------------------------------------------------------------------
+
+bool AsyncConnection::resolveClientIP()
+{
+  // Set client ip. The real socket peer address is taken first; an
+  // X-Forwarded-For header is believed only when that peer is a configured
+  // trusted reverse proxy, and then the right-most untrusted hop in it is the
+  // client (Spine::IPFilter::resolveClientIP). Otherwise any client could
+  // spoof its source IP by sending X-Forwarded-For and thereby defeat the
+  // admin and plugin IP filters (and impersonate other clients in the
+  // request logs).
+  std::string peerIP;
+  try
+  {
+    peerIP = socket().remote_endpoint().address().to_string();
+  }
+  catch (...)
+  {
+    Fmi::Exception exception(BCP, "Operation failed!", nullptr);
+    reportError(std::string("Failed to obtain remote endpoint IP address:\n") + exception.what());
+    return false;
+  }
+
+  if (itsServer != nullptr)
+    itsRequest->setClientIP(SmartMet::Spine::IPFilter::resolveClientIP(
+        peerIP, itsRequest->getHeader("X-Forwarded-For"), itsServer->getTrustedProxies()));
+  else
+    itsRequest->setClientIP(peerIP);
+  return true;
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Schedule the parsed request to the proper executor
+ */
+// ----------------------------------------------------------------------
+
+void AsyncConnection::scheduleRequest(SmartMet::Spine::HandlerView* handlerView)
+{
+  bool scheduled = false;
+
+  // Handle frontends and backends separately
+
+  if (handlerView->isCatchNoMatch())
+  {
+    // frontend always uses the fast executor
+    itsQueryIsFast = true;
+    itsAdminQuery = false;
+    scheduled = itsFastExecutor.schedule([me = shared_from_this(), handlerView]()
+                                         { me->handleCompletedRead(*handlerView); });
+
+    if (!scheduled)
+    {
+      // Task queue was full, send busy response
+      sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
+      reportInfo("Frontend request queue was full");
+    }
+  }
+
+  else
+  {
+    // backend
+
+    itsQueryIsFast = (itsSlowExecutor.getPoolSize() == 0 || handlerView->queryIsFast(*itsRequest));
+
+    if (itsAdminQuery)
+    {
+      scheduled = itsAdminExecutor.schedule([me = shared_from_this(), handlerView]()
+                                            { me->handleCompletedRead(*handlerView); });
+    }
+    else if (itsQueryIsFast)
+    {
+      scheduled = itsFastExecutor.schedule([me = shared_from_this(), handlerView]()
+                                           { me->handleCompletedRead(*handlerView); });
+    }
+    else
+    {
+      scheduled = itsSlowExecutor.schedule([me = shared_from_this(), handlerView]()
+                                           { me->handleCompletedRead(*handlerView); });
+    }
+
+    if (!scheduled)
+    {
+      // Task queue was full, send high load response to frontend
+      sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
+      reportInfo("Backend request queue was full, returning high load notification");
+    }
+  }
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Handle a request which has not been completely received yet
+ */
+// ----------------------------------------------------------------------
+
+void AsyncConnection::handleIncompleteRequest()
+{
+  // Bound the header section. Without this a client can hold a connection
+  // - and a slot against the connection limit - open indefinitely by
+  // dribbling header bytes that never reach the terminating blank line.
+  if (itsMaxHeaderSize > 0 && itsBuffer.size() > itsMaxHeaderSize &&
+      itsBuffer.find("\r\n\r\n") == std::string::npos)
+  {
+    reportError("431 Request header fields too large");
+    itsKeepAlive = false;
+    sendStockReply(SmartMet::Spine::HTTP::Status::request_header_fields_too_large);
+    return;
+  }
+
+  // Request is not succesfully parsed, attempt to get more data from socket and try
+  // again - unless the client is waiting for us to accept its body first.
+  if (handleExpectContinue())
+    startRead();
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Handle a socket read error
+ */
+// ----------------------------------------------------------------------
+
+void AsyncConnection::handleReadError(const boost::system::error_code& e)
+{
+  if (e == boost::asio::error::eof)
+  {
+    // Peer closed the socket or timeout has occurred
+    // Abort this connection
+    return;
+  }
+
+  if (itsIdle)
+  {
+    // An idle persistent connection went away: either the client closed it, or the
+    // keep-alive timeout reaped it here. Both are the expected end of a reused
+    // connection and are not worth a log entry.
+    return;
+  }
+
+  if (e == boost::asio::error::operation_aborted)
+  {
+    // This connection has been timed out
+    reportInfo("Connection timeout");
+  }
+  else
+  {
+    // Some other error occurred in reading, handle it somehow
+    std::stringstream ss;
+    ss << e.message();
+    reportInfo("Error occurred while reading socket: " + ss.str());
   }
 }
 
@@ -1284,9 +1362,7 @@ void AsyncConnection::getNextChunkedChunk()
         finalizeStreamLogging();
         reportInfo("Chunked response stream failed mid-body, closing the connection unterminated");
         itsKeepAlive = false;
-        boost::system::error_code ignored_ec;
-        socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-        socket().close(ignored_ec);
+        closeSocket();
         return;
       }
 
@@ -1489,9 +1565,22 @@ void AsyncConnection::startRegularReply()
     // Compress response if its greater than limit and client accepts
     if (itsCanGzipResponse && !streamed)
     {
-      auto encoding = select_content_encoding(*itsRequest, *itsResponse, itsCompressLimit);
+      auto encoding = select_content_encoding(
+          *itsRequest, *itsResponse, itsCompressLimit, itsReactor.getOptions().contentCodings);
       if (!encoding.empty())
         compress_response(*itsResponse, encoding);
+    }
+
+    // A 304 tells a cache which of its stored variants to use, and the variants
+    // differ in their content coding. Plugins know only the entity-tag of the
+    // data, and a 304 has no body to encode, so name the variant the client
+    // said it holds. Echoing the tag of the data instead makes a cache holding
+    // several variants serve one the request did not ask for.
+    if (itsResponse->getStatus() == SmartMet::Spine::HTTP::Status::not_modified)
+    {
+      auto etag = itsResponse->getHeader("ETag");
+      if (etag)
+        itsResponse->setHeader("ETag", SmartMet::Spine::HTTP::notModifiedETag(*itsRequest, *etag));
     }
 
     if (statusHasNoBody(itsResponse->getStatus()))
@@ -1576,114 +1665,130 @@ void AsyncConnection::setServerHeaders()
   {
     // Put additional server-based headers here
     itsResponse->setHeader("Server", "SmartMet Server (" __TIME__ " " __DATE__ ")");
-    itsResponse->setHeader("Vary", "Accept-Encoding");
+    // Keep the request headers the plugin itself declared the response to vary on
+    auto vary = itsResponse->getHeader("Vary");
+    if (!vary || vary->empty())
+      itsResponse->setHeader("Vary", "Accept-Encoding");
+    else if (!boost::algorithm::icontains(*vary, "Accept-Encoding"))
+      itsResponse->setHeader("Vary", *vary + ", Accept-Encoding");
     itsResponse->setHeader("Date", makeDateString());
 
-    // --- Persistent connection (keep-alive) negotiation --------------------------
-    //
-    // The reply is sent in the client's own HTTP version, because the two versions
-    // disagree on what a missing Connection header means:
-    //
-    //   HTTP/1.1  Connections are persistent by default (RFC 9112 9.3). Only the end
-    //             of persistence has to be announced, with "Connection: close". The
-    //             response version matters: answering an HTTP/1.1 request with an
-    //             HTTP/1.0 status line would make the client assume a non-persistent
-    //             connection no matter what we do with the headers.
-    //
-    //   HTTP/1.0  Has no persistent connections at all; keep-alive is an extension
-    //             (RFC 1945 appendix D.1.1). The client asks for it with
-    //             "Connection: keep-alive" and the server MUST echo the same header
-    //             to confirm, otherwise the client reads the body until EOF and
-    //             would hang on our reused socket.
-    //
-    // A chunked response is HTTP/1.1 by definition (Spine forces the version when a
-    // stream of unknown length is set as the content), so its version is left alone.
-    // Chunked transfer encoding does not exist in HTTP/1.0, so an HTTP/1.0 client
-    // cannot be given a reusable connection in that case.
-    if (itsResponse->getChunked())
-    {
-      if (itsResponseVersion != "1.1")
-        itsKeepAlive = false;
-    }
-    else
-    {
-      itsResponse->setVersion(itsResponseVersion);
-    }
-
-    // A plugin may veto the reuse of the connection on its own terms
-    auto connectionHeader = itsResponse->getHeader("Connection");
-    if (connectionHeader && hasHeaderToken(*connectionHeader, "close"))
-      itsKeepAlive = false;
-
-    if (!itsKeepAlive)
-    {
-      itsResponse->setHeader("Connection", "close");
-      itsResponse->removeHeader("Keep-Alive");
-    }
-    else if (itsResponseVersion == "1.1")
-    {
-      // Persistence is the default, saying so would only waste bytes
-      itsResponse->removeHeader("Connection");
-      itsResponse->removeHeader("Keep-Alive");
-    }
-    else
-    {
-      itsResponse->setHeader("Connection", "keep-alive");
-
-      // The Keep-Alive header is informational: it tells an HTTP/1.0 client how long the
-      // socket will be held and how many more requests it may still send. "max" is left
-      // out entirely when the number of requests is unlimited, since "max=0" would read
-      // as "no more requests allowed".
-      std::string keepAlive = "timeout=" + Fmi::to_string(itsKeepAliveTimeout);
-      if (itsMaxKeepAliveRequests > 0)
-        keepAlive += ", max=" + Fmi::to_string(itsMaxKeepAliveRequests - itsRequestCount);
-      itsResponse->setHeader("Keep-Alive", keepAlive);
-    }
-
-    // Append stale-while-revalidate and stale-if-error to cacheable responses.
-    //
-    // Why here rather than in each individual plugin:
-    //
-    //   This method is the single post-plugin hook that runs on every response before it is
-    //   written to the socket. Plugins (~10 of them) already independently construct their
-    //   Cache-Control header with a plugin-specific max-age, but none of them add the stale
-    //   directives because those values are a server-level policy concern, not a
-    //   data-product concern.  Adding the directives here means:
-    //
-    //   1. One code change covers all existing plugins and every future plugin automatically.
-    //   2. The stale durations are tuned server-wide in smartmet.conf alongside other
-    //      server-level knobs (timeout, compress, etc.), keeping operator config cohesive.
-    //   3. The frontend plugin's ResponseCache stores Cache-Control verbatim and replays it
-    //      on cache hits, so the stale directives propagate to CDN/browser caches with no
-    //      extra code.
-    //
-    // Guard: only touch headers that already carry "max-age" (i.e. genuinely cacheable
-    // responses).  Responses with "no-cache" or no Cache-Control header at all are left
-    // unchanged.  A plugin that needs different stale values can set its own stale-*
-    // directives before returning; the second guard prevents double-appending.
-    //
-    // Rationale for default values (configurable via smartmet.conf):
-    //   stalewhilerevalidate = 60     -- serve at most 60 s stale while fetching fresh data
-    //   staleiferror         = 86400  -- serve up to 24 h stale when the backend is down
-    //
-    const auto& opts = itsReactor.getOptions();
-    if (opts.staleWhileRevalidate > 0 || opts.staleIfError > 0)
-    {
-      auto cc = itsResponse->getHeader("Cache-Control");
-      if (cc && cc->find("max-age") != std::string::npos && cc->find("stale-") == std::string::npos)
-      {
-        std::string updated = *cc;
-        if (opts.staleWhileRevalidate > 0)
-          updated += ", stale-while-revalidate=" + std::to_string(opts.staleWhileRevalidate);
-        if (opts.staleIfError > 0)
-          updated += ", stale-if-error=" + std::to_string(opts.staleIfError);
-        itsResponse->setHeader("Cache-Control", updated);
-      }
-    }
+    setConnectionHeaders();
+    appendStaleDirectives();
   }
   catch (...)
   {
     std::cerr << "Operation failed! AsyncConnection::setServerHeaders aborted\n";
+  }
+}
+
+// Negotiates the persistence of the connection, see the comments below
+void AsyncConnection::setConnectionHeaders()
+{
+  // --- Persistent connection (keep-alive) negotiation --------------------------
+  //
+  // The reply is sent in the client's own HTTP version, because the two versions
+  // disagree on what a missing Connection header means:
+  //
+  //   HTTP/1.1  Connections are persistent by default (RFC 9112 9.3). Only the end
+  //             of persistence has to be announced, with "Connection: close". The
+  //             response version matters: answering an HTTP/1.1 request with an
+  //             HTTP/1.0 status line would make the client assume a non-persistent
+  //             connection no matter what we do with the headers.
+  //
+  //   HTTP/1.0  Has no persistent connections at all; keep-alive is an extension
+  //             (RFC 1945 appendix D.1.1). The client asks for it with
+  //             "Connection: keep-alive" and the server MUST echo the same header
+  //             to confirm, otherwise the client reads the body until EOF and
+  //             would hang on our reused socket.
+  //
+  // A chunked response is HTTP/1.1 by definition (Spine forces the version when a
+  // stream of unknown length is set as the content), so its version is left alone.
+  // Chunked transfer encoding does not exist in HTTP/1.0, so an HTTP/1.0 client
+  // cannot be given a reusable connection in that case.
+  if (itsResponse->getChunked())
+  {
+    if (itsResponseVersion != "1.1")
+      itsKeepAlive = false;
+  }
+  else
+  {
+    itsResponse->setVersion(itsResponseVersion);
+  }
+
+  // A plugin may veto the reuse of the connection on its own terms
+  auto connectionHeader = itsResponse->getHeader("Connection");
+  if (connectionHeader && hasHeaderToken(*connectionHeader, "close"))
+    itsKeepAlive = false;
+
+  if (!itsKeepAlive)
+  {
+    itsResponse->setHeader("Connection", "close");
+    itsResponse->removeHeader("Keep-Alive");
+  }
+  else if (itsResponseVersion == "1.1")
+  {
+    // Persistence is the default, saying so would only waste bytes
+    itsResponse->removeHeader("Connection");
+    itsResponse->removeHeader("Keep-Alive");
+  }
+  else
+  {
+    itsResponse->setHeader("Connection", "keep-alive");
+
+    // The Keep-Alive header is informational: it tells an HTTP/1.0 client how long the
+    // socket will be held and how many more requests it may still send. "max" is left
+    // out entirely when the number of requests is unlimited, since "max=0" would read
+    // as "no more requests allowed".
+    std::string keepAlive = "timeout=" + Fmi::to_string(itsKeepAliveTimeout);
+    if (itsMaxKeepAliveRequests > 0)
+      keepAlive += ", max=" + Fmi::to_string(itsMaxKeepAliveRequests - itsRequestCount);
+    itsResponse->setHeader("Keep-Alive", keepAlive);
+  }
+}
+
+// Adds the server-wide stale-* directives to cacheable responses
+void AsyncConnection::appendStaleDirectives()
+{
+  // Append stale-while-revalidate and stale-if-error to cacheable responses.
+  //
+  // Why here rather than in each individual plugin:
+  //
+  //   This method is the single post-plugin hook that runs on every response before it is
+  //   written to the socket. Plugins (~10 of them) already independently construct their
+  //   Cache-Control header with a plugin-specific max-age, but none of them add the stale
+  //   directives because those values are a server-level policy concern, not a
+  //   data-product concern.  Adding the directives here means:
+  //
+  //   1. One code change covers all existing plugins and every future plugin automatically.
+  //   2. The stale durations are tuned server-wide in smartmet.conf alongside other
+  //      server-level knobs (timeout, compress, etc.), keeping operator config cohesive.
+  //   3. The frontend plugin's ResponseCache stores Cache-Control verbatim and replays it
+  //      on cache hits, so the stale directives propagate to CDN/browser caches with no
+  //      extra code.
+  //
+  // Guard: only touch headers that already carry "max-age" (i.e. genuinely cacheable
+  // responses).  Responses with "no-cache" or no Cache-Control header at all are left
+  // unchanged.  A plugin that needs different stale values can set its own stale-*
+  // directives before returning; the second guard prevents double-appending.
+  //
+  // Rationale for default values (configurable via smartmet.conf):
+  //   stalewhilerevalidate = 60     -- serve at most 60 s stale while fetching fresh data
+  //   staleiferror         = 86400  -- serve up to 24 h stale when the backend is down
+  //
+  const auto& opts = itsReactor.getOptions();
+  if (opts.staleWhileRevalidate > 0 || opts.staleIfError > 0)
+  {
+    auto cc = itsResponse->getHeader("Cache-Control");
+    if (cc && cc->find("max-age") != std::string::npos && cc->find("stale-") == std::string::npos)
+    {
+      std::string updated = *cc;
+      if (opts.staleWhileRevalidate > 0)
+        updated += ", stale-while-revalidate=" + std::to_string(opts.staleWhileRevalidate);
+      if (opts.staleIfError > 0)
+        updated += ", stale-if-error=" + std::to_string(opts.staleIfError);
+      itsResponse->setHeader("Cache-Control", updated);
+    }
   }
 }
 
@@ -1740,9 +1845,7 @@ void AsyncConnection::sendSimpleReply()
     }
 
     // Shutdown immediately to avoid lingering CLOSE_WAIT sockets
-    boost::system::error_code ignored_ec;
-    socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-    socket().close(ignored_ec);
+    closeSocket();
   }
   catch (...)
   {

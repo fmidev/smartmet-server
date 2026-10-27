@@ -115,7 +115,7 @@ class Connection
   std::uint64_t itsTimerGeneration = 0;
 
   /// Socket reads into this buffer
-  std::array<char, 8192> itsSocketBuffer;
+  std::array<char, 8192> itsSocketBuffer{};
 
   /// Entire received data.
   std::string itsBuffer;

@@ -1,0 +1,454 @@
+# The data explorer
+
+The data explorer is a web page of SmartMet Server for finding data and building requests
+for it, at `/api/explorer` of the server (for example `https://server.example.org/api/explorer`).
+It reads the metadata of the TimeSeries, EDR and OGC API - Coverages interfaces of the
+server: what data there is, which parameters, models, stations, levels and times it has, and
+what area it covers. It then lets you choose the data with searches, buttons and maps instead
+of typing request parameters, shows the request it builds, runs it and draws the result as
+charts, maps and meteorological diagrams.
+
+The explorer is meant for anyone who wants to find out what a server offers and get the data:
+forecasters checking a model, researchers looking for observations, and developers writing a
+client, who can copy the request URL or a ready script once the result looks right.
+
+The images below were made from the test data of SmartMet Server. They show Finnish and
+Scandinavian data and test descriptions such as "Title for collection pal_skandinavia"; a
+production server shows its own data and descriptions.
+
+## Contents
+
+1. [The page](#the-page)
+2. [Browsing the data](#browsing-the-data)
+3. [Building a TimeSeries request](#building-a-timeseries-request)
+4. [Locations and maps](#locations-and-maps)
+5. [The results](#the-results)
+6. [Areas: statistics, swarms and maps](#areas-statistics-swarms-and-maps)
+7. [Meteograms, comparisons and ensembles](#meteograms-comparisons-and-ensembles)
+8. [Soundings and vertical sections](#soundings-and-vertical-sections)
+9. [Paths, cross sections and flights](#paths-cross-sections-and-flights)
+10. [Observations](#observations)
+11. [EDR](#edr)
+12. [Coverages](#coverages)
+13. [Settings, links and exports](#settings-links-and-exports)
+14. [For administrators](#for-administrators)
+
+## The page
+
+![The parts of the page, numbered](images/explorer/overview.png)
+
+1. **Browse all data** opens the [Browse page](#browsing-the-data), a catalogue of the data of
+   all the interfaces. It is on every page.
+2. **API** chooses the interface to build requests for: TimeSeries, EDR or Coverages. The
+   Browse page is also the first choice of this menu.
+3. **API documentation** and **API catalog** open the OpenAPI documentation (Swagger UI) of
+   the interfaces and the list of the interfaces of the server.
+4. **API key**, for servers that require one. The key is sent with the requests of the page
+   and kept in your browser.
+5. **Settings**: the clock, the units, the language, and the licences of the parts of the
+   page. **Reset**, next to it, starts over: it clears the choices of the form and the
+   settings the page keeps in your browser, except the API key, and opens the interface in
+   its defaults. The browser's Back button returns to the previous request.
+6. **The request form**: *What* (the producer or collection, and the parameters), *When* (the
+   period and the time step), *Where* (the locations) and *Output* (how areas are returned,
+   the language of the names, extra columns).
+7. **The request** as a URL. It is updated as you make choices, and it tells what is still
+   needed before the request can be run. **Run** sends it.
+8. **The results**, as tabs of views of the same data.
+
+## Browsing the data
+
+The Browse page lists every dataset of the server as a card, with the interfaces offering it.
+A dataset with the same name in several interfaces (a model in TimeSeries, EDR and Coverages,
+say) has one card. The kinds of data (forecast models, ensembles, observations, soundings,
+radar, marine, air quality, climate) and the themes of the parameters (temperature, wind,
+precipitation, clouds and fog, ...) are buttons with counts; together with the search they
+narrow the cards. The search covers the names and descriptions of the datasets and of their
+parameters.
+
+![Searching for gusts, narrowing to forecast models and opening a model in TimeSeries](images/explorer/browse.webp)
+
+Each card shows the kind of the data, where it comes from, its period and how old the
+latest data is, the themes and the parameters (the matching ones when you have searched). An
+**Open in ...** button opens the dataset in that interface with the parameters searched
+for already chosen. When an interface has the dataset from several sources, for example
+both as querydata and as GRIB, the buttons name the source.
+
+![A card of the Browse page](images/explorer/browse-card.png)
+
+The map shows the areas of the datasets listed. A point clicked on the map keeps only the
+datasets covering it; **Anywhere** removes the point.
+
+![The datasets covering a point in the North Atlantic, then a point in Finland](images/explorer/browse-point.webp)
+
+## Building a TimeSeries request
+
+The TimeSeries interface returns values of parameters at locations over a period, from model
+data, observations and other point data.
+
+**What.** Start typing in **Producer** to find a model or other producer by name, then in
+**Parameters** to find its parameters by name or description. You can also start from the
+parameters: their suggestions tell how many producers have each one, and the **Producer**
+search then lists only the producers having all the chosen parameters, while the parameter
+search lists only the parameters of the chosen producer. **Parameter expressions** take
+parameters as written in a request, such as `nanpercentage[0.5:](PROB-SNOW) as snow` or the
+grid expressions of the server, which are sent as such and shown under their aliases. The
+producer **default** leaves the
+choice to the server, which takes for each location the first of its default producers
+covering it; it has the parameters of all the querydata producers. A producer card shows its period,
+time step, model run, levels and area; **Change** chooses another one. The card of a grid
+producer also has **Open in grid-gui** when the server lets you use grid-gui: it shows the
+fields of the chosen run there, with the first parameter and, for a point, the point pinned.
+grid-gui in turn opens the time series of a field at a point here with **Open in data
+explorer**.
+
+![A request from nothing: a parameter, a producer, a place and Run](images/explorer/timeseries-first.webp)
+
+For data on levels the card is followed by the levels (none chosen means all of them, for
+grid data the default level of each parameter), and for grid data by the model runs,
+geometries, ensemble members and level types of the producer. The chosen levels and members
+of grid data are counted as levels and members, not as locations, and three or more levels
+of one location give the vertical views. Buttons such as **Meteogram** and **Skew-T log-p** add the parameters such a view
+needs and run the request.
+
+![The details of a grid model on 65 model levels](images/explorer/producer-details.png)
+
+**When.** The period is given as UTC times in the clock of the settings, with a date picker
+button. **Whole data**, **Next 24 h** and **Last 24 h** set the period from the data of the
+producer (for observations **Last 24 h**, **Last week** and **Last month**, as their
+history can go back a long time). The start and the end can also be relative, so that a link
+asks for the same period later too: the start now, the start of the data or an offset from now
+(`-1h`), and the end now, the end of the data, an offset (`+24h`) or a number of time steps.
+The time step is that of the data or a fixed one. **Over
+a period** asks for values aggregated over a period around each time (a maximum, a sum, a
+mean, ...), with the function recommended for each kind of parameter.
+
+**The request and its code.** The URL of the request is always shown. Under **Code for this
+request** the same request is given as bash, Python, R and JavaScript, and as loops that
+repeat it for consecutive periods, for fetching a long history piece by piece.
+
+![The request as Python](images/explorer/request-code.png)
+
+**Other options**, under **Output**, takes options of the request written as in its query
+string, such as `hour=6,18&numberofstations=3&maxdistance=50km`. They are added to the request
+and replace the options the page sets, which the page tells; an empty value removes an option.
+The views need JSON, other formats are shown as text.
+
+## Locations and maps
+
+**Where** chooses the locations:
+
+| Mode | The locations | Example |
+|---|---|---|
+| Place | a place name, or a name and a radius in km | `Helsinki`, `Helsinki:20` |
+| Point | a longitude and latitude, or a click on the map | `25,60.2` |
+| Radius | a point and a radius in km, or a drag on the map | `25,60.2:25` |
+| Box | west, south, east and north, or a drag on the map | `23,61,27,63` |
+| Path | points along a line, clicked on the map | `24.3,59.8,25,60.2,25.8,60.5` |
+| WKT | a POINT, MULTIPOINT, LINESTRING or POLYGON (or MULTILINESTRING, MULTIPOLYGON) in longitude and latitude | `MULTIPOINT(24.88 60.20,24.89 60.21)` |
+| Keyword | a location keyword of the server | |
+| Station id | station numbers, or stations clicked on the map | `100971,101004` |
+| WMO id | WMO station numbers | `2963,2974` |
+| Geoid | GeoNames ids of places; a place name typed is completed to its geoid | `658225,653492` |
+| Area | an area name of the server | `uusimaa` |
+
+While a place or an area name is typed, the names the server knows are suggested: for a
+place the places whose names begin with the text, the largest first, and for an area the
+areas of the server. A place name shared by several places is completed with its area, such
+as `Portland,USA`. The suggestions come from `/timeseries/api/places` and
+`/timeseries/api/areas`; a server without them suggests nothing.
+
+A WKT geometry is typed or pasted, and the map is zoomed to it. A point, path, box or radius
+drawn in its own mode is kept when **WKT** is chosen next: a path becomes the MULTIPOINT of its
+marked points, or a LINESTRING when the points are taken along it, and a box or a radius a
+POLYGON. The server takes the points of a MULTIPOINT as they are, points about every kilometre
+along a LINESTRING, and the grid points inside a POLYGON.
+
+The map draws the area of the chosen producer. A box or a radius drawn on the map also
+narrows the producers to those covering it: below, a box over Iberia leaves the 6 producers
+whose data reaches it, and a radius around Helsinki brings back the 22 that have
+temperatures there.
+
+![Drawing a box and a radius: the producers not covering them drop out](images/explorer/map-selection.webp)
+
+The maps of the page draw the land, the lakes and the borders from Natural Earth data that
+comes with the server, so no online map service is needed. The 1:50m map is drawn first;
+zoomed in closer, the map switches to the more detailed 1:10m data. The **enlarge** button
+below **Fit** opens the map over the page, with the 1:10m data from the scale of a country,
+for drawing a selection precisely; the button again, **Escape** or a click beside the map
+returns it to its place.
+
+## The results
+
+The results open as tabs. Which tabs there are depends on the data: **Chart**, **Table** and
+**Tree** (the JSON response) always; **Map** when there are several points; **Meteogram**
+when the parameters allow one; **Profile**, **Section** and **Sounding** for data on levels;
+**Cross section** and **Along the path** for paths. The head of the results gives the
+number of rows, locations and levels, has the unit choices (temperature, wind speed,
+pressure, height), and saves the view as **PNG** or the rows as **CSV**.
+
+The charts show the values of each location and parameter over time, with the values at the
+pointer below them. One location can be compared with another producer (see below).
+
+**Combine** draws the parameters of the same unit in one chart, for example the air, dewpoint
+and road temperatures, with a second unit such as precipitation on an axis on the right:
+amounts as bars from zero, percentages on 0–100 and directions as points on 0–360. The
+parameters keep their own colours, and the locations or producers are told apart by dashes. A
+parameter is combined only when its unit is known: temperatures, wind speeds, pressures and
+heights are recognised by their names and shown in the units chosen, other parameters need a
+unit in the parameter list of the server. Lines and percentiles can be combined, a chart has
+at most 20 lines, and at most four locations are drawn in one chart. **Separate** returns to a
+chart for each parameter.
+
+![Temperatures and the wind speed combined, precipitation without a known unit left in a chart of its own](images/explorer/combine-charts.webp)
+
+![The table of the results](images/explorer/table.png)
+
+## Areas: statistics, swarms and maps
+
+A box, a radius, an area or a list of stations contains many points. **Output** chooses
+what is returned for them:
+
+* **Statistics** (the default for areas): the server computes the median and the 10, 25, 75
+  and 90 % percentiles of the area at each time, so the response stays small whatever the
+  size of the area.
+* **One value**: the server computes one value of the area for each parameter at each time,
+  with a function chosen for each parameter: the mean (a circular mean for directions), the
+  minimum, the maximum, the median, the sum or the standard deviation. The recommended function
+  is chosen at first: the mean of states such as temperature, the maximum of categories such as
+  weather symbols and of gusts, the minimum of minima. The extra columns that differ from point
+  to point, such as dark or the sun elevation, get a function too. Missing values are skipped. The result is
+  drawn as one location, so it has a meteogram and can be compared with another producer.
+* **Every point**: the values of every grid point or station. More than 20 locations are
+  drawn as their median and percentiles, as **All locations** (a swarm of thin lines coloured
+  from south to north, the median on top), or as the **Probability** of a threshold. The line
+  under the pointer is highlighted with its name when there are at most 100 lines; with more
+  the chart says so, since searching them would make the browser slow. The same limit applies to
+  the profiles. The percentiles of several parameters can be combined, each parameter in colours
+  of its own; the swarm cannot.
+
+![The percentiles of an area combined, then the swarm with hovering disabled](images/explorer/combine-percentiles.webp)
+
+![The statistics of an area, then every point of it as a swarm](images/explorer/area-statistics.webp)
+
+The **Map** tab colours the values of every point at one time, as cells for grids and dots
+for stations. The colours are those of the production products of the server when it has
+them for the parameter, otherwise a scale fitted to the data, and both the colours and the
+scale can be changed. The time slider plays the times. A value clicked on the map gives the
+time series of that point below the map.
+
+![Playing the times of a map, then the time series of a point](images/explorer/map-results.webp)
+
+## Meteograms, comparisons and ensembles
+
+**Meteogram** draws temperature and dew point, precipitation, cloud cover, and wind and gusts
+with wind barbs, for one location.
+
+![A meteogram](images/explorer/meteogram.png)
+
+For one location, **Compare with** draws the same parameters from another producer covering
+the place and period, and tells the mean difference and the mean absolute difference.
+
+![A forecast compared with another model](images/explorer/comparison.png)
+
+Ensembles are drawn as the median and percentiles of the members, as **All members**, or as
+the **Probability** that the members are above or below a threshold. The meteogram of an
+ensemble is an EPSgram: the median and the 10-90 % range of the members.
+
+![An ensemble: percentiles, all the members, the probability of temperatures below -5 °C, the EPSgram](images/explorer/ensemble.webp)
+
+## Soundings and vertical sections
+
+Data on pressure, model, height or depth levels gives vertical views of one location.
+
+**Sounding** draws a thermodynamic diagram: a skew-T log-p diagram, a tephigram or a Stüve
+diagram, with the dry and moist adiabats and mixing ratio lines, the temperature, the dew
+point, the wind barbs of the levels and the path of a lifted surface parcel. The pointer
+gives the values at its level. The time slider steps through the times, and **All times**
+draws every sounding of the period at once.
+
+![A skew-T diagram, its readout, the tephigram and the Stüve diagram, then the times played](images/explorer/sounding.webp)
+
+**Add a panel** shows another sounding beside the first one, by default the next time or
+location, with shared scales so that the panels compare. **Compare with** draws the
+soundings of another producer, such as observed soundings, within three hours of each time.
+
+![Two soundings side by side, the second one stepped forward in time](images/explorer/sounding-panels.webp)
+
+Below the diagram are an analysis of the sounding (CAPE, CIN, the LFC and EL, the lifted
+index, the freezing level, the K-index, total totals, precipitable water and the 0-6 km
+shear), a hodograph coloured by height, and a table of the values of every level.
+
+![The analysis of a sounding and its hodograph](images/explorer/sounding-analysis.png)
+
+**Section** is a time-height section of one location: a parameter coloured over time and
+height, with isotherms, wind barbs and the 90 % humidity line as overlays and flight
+levels on the side. **Top** limits the height, and **Vertical axis** chooses pressure,
+height or the model levels. **Profile** draws the values of each parameter against height.
+
+![A time-height section up to 100 hPa, wind barbs added, the readout](images/explorer/time-height.webp)
+
+## Paths, cross sections and flights
+
+In the **Path** mode you click points on the map; **Undo** and **Clear** edit the path. The
+values are asked at the marked points or at points every so many kilometres along the
+path. For data on levels the result opens as a **Cross section** along the path, with
+the same overlays as the time-height section and its own time slider.
+
+![Clicking a path, its cross section, wind, humidity and flight levels](images/explorer/cross-section.webp)
+
+A **Departure** and an **Arrival** time make the path a flight: the cross section shows the
+values at the times the points are passed, and **Along the path** charts the values met on
+the flight at the chosen level.
+
+![A flight along the path and the values met on it](images/explorer/flight.webp)
+
+## Observations
+
+Observation producers list their stations, which can be chosen on the map, by name or by
+their numbers. With stations chosen, the explorer lists the **Sensors** of each parameter at
+those stations in the period, marking the default sensor; the buttons add other sensors.
+**Quality** chooses which values to accept by their quality codes, and the codes can be
+shown in the table.
+
+![The sensors of a station](images/explorer/sensors.png)
+
+Observations are returned only for the times and stations that reported them, so a period
+without reports gives an empty result; the explorer then says so below the request. Errors
+of the server are shown there too:
+
+![An error of the server below the request](images/explorer/error.png)
+
+## EDR
+
+The OGC API - Environmental Data Retrieval module works on the collections of the EDR
+interface. The collection and parameter searches narrow each other as in TimeSeries, and the
+query types of the collection are offered: **Position**, **Radius**, **Area**, **Cube**,
+**Trajectory** and **Locations**. The times and levels come from the extents of the
+collection, and the output is CoverageJSON or GeoJSON. The results are drawn with the same
+views as in TimeSeries.
+
+![An EDR area query: a collection, a parameter, an area drawn on the map, the chart and the map](images/explorer/edr.webp)
+
+## Coverages
+
+The OGC API - Coverages module downloads gridded data as files: GRIB 2, GRIB 1, NetCDF,
+GeoTIFF or querydata. The collection card tells the native projection, grid size and
+resolution of the data. A **Box** drawn on the map (or typed) crops it, the **Projection**
+reprojects it to the native grid, longitude and latitude, Web Mercator or the projections
+configured for the server (here ETRS-TM35FIN and ETRS89 LAEA Europe), and an optional grid
+size resamples it. As these change, the map shows the area of the output and the page
+estimates the grid size and the size of the download.
+
+![The native grid of a collection and the estimated size of a request](images/explorer/coverage-metadata.png)
+
+**Show maps** draws the request on up to four linked maps, each with its own parameter,
+level and colours. The maps move together and share the time slider, and a value clicked on
+one gives the time series of the point in every map.
+
+![A box in ETRS-TM35FIN, two linked maps panned together, the times played](images/explorer/coverages.webp)
+
+## Settings, links and exports
+
+**Settings** chooses the clock (24 or 12 hours), the units of temperature (C, F, K), wind
+speed (m/s, knots, km/h, mph), pressure (hPa, Pa, inHg) and height (m, ft), and the
+language of the page (English, Finnish or Swedish). Times are always UTC. Without your own
+choices the page follows the defaults of the server, and then your browser language.
+
+![Knots and a 12-hour clock, then the page in Finnish](images/explorer/settings.webp)
+
+**Links.** The choices of the page are kept in its address after `#`, so a view can be
+bookmarked or shared as a link, and the page opens the last view again when it is opened
+without one. The page keeps nothing on the server: the views and the preferences are in
+the local storage of the browser, and no cookies are used.
+
+**Exports.** **PNG** saves the view shown, and **CSV** the rows of the result.
+
+## For administrators
+
+The explorer is part of the API catalog of the server (`/api`, RFC 9727) and is served at
+`/api/explorer` whenever the catalog is. In a cluster the frontend serves it with the merged
+catalog of its backends, so the explorer sees every interface of the cluster, and its
+requests go through the frontend like any other. It lists the interfaces whose plugins
+publish an OpenAPI definition with a kind: TimeSeries and EDR (`smartmet-plugin-edr`) and
+Coverages (`smartmet-plugin-download`).
+
+**Access.** The explorer is meant for the staff of the site, not for the public: it can build
+requests for very large areas and long periods. It is a private page: the backends do not
+announce it to the frontends, and only the clients allowed by `explorer_ip_filters` may open
+it, by default the local and private networks (127.0.0.0/8, ::1, 10.0.0.0/8, 172.16.0.0/12
+and 192.168.0.0/16). Other clients get *403 Forbidden*, and the `/api` page shows them no
+link to the explorer. The address checked is that of the client as resolved through
+`trustedproxies`: set it to exactly the load balancers and proxies in front of the server.
+
+**Packages.** The page is in `smartmet-library-spine` (`/usr/share/smartmet/explorer`), and
+its charts use uPlot from `smartmet-uplot` (`/usr/share/smartmet/uplot`). The production
+colours come from the palettes of `smartmet-qdless` (`/usr/share/smartmet/qdless`); without
+them the maps use fitted colour scales. When files are missing the server logs which ones and
+leaves the explorer out.
+
+**Configuration.** The settings are in the `api_catalog` group of the server configuration
+(on a cluster, the configuration of the frontend). All are optional:
+
+```
+api_catalog:
+{
+  title          = "SmartMet Server APIs";   # shown in the header of the page
+  explorer       = true;                     # false leaves /api/explorer out
+  explorer_dir   = "/usr/share/smartmet/explorer";
+  # who may use the explorer; the default is the local and private networks
+  explorer_ip_filters = ["10.0.0.0/8", "203.0.113.0/24"];
+  uplot_dir      = "/usr/share/smartmet/uplot";
+  palette_dir    = "/usr/share/smartmet/qdless/palettes";
+  palette_config = "/usr/share/smartmet/qdless/qdless.conf";
+
+  # The defaults of the region and the users of the server
+  explorer_defaults:
+  {
+    center      = [25.0, 62.0];      # longitude, latitude of the first map view
+    zoom        = 4;
+    language    = "fi";              # en, fi or sv
+    clock       = "24";              # "24" or "12"
+    examples:   { place = "Helsinki"; fmisid = "100971,101004"; wmo = "2963,2974";
+                  keyword = "synop_fi"; area = "Uusimaa"; };
+    projections = ["EPSG:3067 ETRS-TM35FIN", "EPSG:3035 ETRS89 LAEA Europe"];
+    units:      { temperature = "C"; speed = "ms"; pressure = "hPa"; height = "m"; };
+  };
+
+  # The background maps from the data of the server instead of the files that come with
+  # the explorer (optional): any OGR data source with a layer and an attribute filter
+  basemap_detail:
+  {
+    land    = { source = "/smartmet/share/naturalearth/ne_10m_land.shp"; };
+    lakes   = { source = "PG:host=gis dbname=gis user=reader";
+                layer  = "natural_earth.ne_10m_lakes"; };
+    borders = { source = "PG:host=gis dbname=gis user=reader";
+                layer  = "natural_earth.ne_10m_admin_0_boundary_lines_land"; };
+  };
+  # basemap: the same for the 1:50m map
+};
+```
+
+Without `explorer_defaults` the explorer assumes no region: the maps open on the whole
+world, the location fields show neutral examples, and the units and the clock follow the
+language of each browser. The `examples` are the hints of the location fields, so they
+should be places, stations, keywords and areas the server knows. The `projections` are
+offered for Coverages downloads in addition to the native grid, longitude and latitude and
+Web Mercator. A user's own choices in the settings override these defaults.
+
+The background maps are `basemap.json` (Natural Earth 1:50m) and `basemap-10m.json` (1:10m)
+of `explorer_dir` unless `basemap` or `basemap_detail` give the layers: a shapefile, a
+GeoJSON file or a PostGIS database (`PG:` connection string), the layer (the first one by
+default) and `where` (an attribute filter, all features by default). `land` is required,
+`lakes` and `borders` optional. The layers are read when the server starts, converted to
+longitude and latitude, and a source that cannot be read leaves the file in use with a
+warning.
+
+**Licences.** uPlot is MIT licensed and the Natural Earth map data is in the public domain;
+the settings menu of the page lists them.
+
+## Making the images of this guide
+
+The images are made by `docs/tools/explorer-capture/` from a server running the test data of
+the frontend plugin with the TimeSeries/EDR, download, querydata, grid and observation
+modules. See its [README](tools/explorer-capture/README.md).

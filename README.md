@@ -109,8 +109,11 @@ Plugins handle HTTP requests and provide the server's external interfaces.
 
 ## Documentation
 
+- [Data explorer](docs/data-explorer.md) — the `/api/explorer` page: browsing the data of the server, building TimeSeries, EDR and Coverages requests, charts, maps and sounding diagrams
+- [Developer guide](docs/developer-guide.md) — process lifecycle, threads, connection handling, reply paths, compression, limits
 - [Admin Requests](docs/Admin-Requests.md)
 - [Test Environment Setup](docs/SmartMet-Server-Test-Environment.md)
+- [HTTP client guide](docs/HTTP-Client-Guide.md) — ETag / If-None-Match, Expires, stale data, connections, compression, error handling, why cache busting does not work
 
 ## License
 

@@ -1,7 +1,7 @@
 MODULE = smartmet-server
 SPEC = smartmet-server
 
-REQUIRES = configpp
+REQUIRES = configpp gdal
 
 include $(shell echo $${PREFIX-/usr})/share/smartmet/devel/makefile.inc
 
@@ -22,6 +22,7 @@ LIBS += $(PREFIX_LDFLAGS) \
 	-lsmartmet-spine \
 	-lsmartmet-macgyver \
 	$(CONFIGPP_LIBS) \
+	$(GDAL_LIBS) \
 	-ldl \
 	-lboost_regex \
 	-lboost_iostreams \

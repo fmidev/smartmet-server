@@ -45,7 +45,7 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
   };
 
  public:
-  explicit AsyncConnection(Private,
+  explicit AsyncConnection(Private /*unused*/,
                            AsyncServer* serverInstance,
                            bool sslEnabled,
                            boost::asio::ssl::context& sslContext,
@@ -101,7 +101,7 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
                               ThreadPoolType& slowExecutor,
                               ThreadPoolType& fastExecutor);
 
-  inline ConnectionPtr get_ptr() { return shared_from_this(); }
+  ConnectionPtr get_ptr() { return shared_from_this(); }
 
   // ======================================================================
   /*!
@@ -155,6 +155,13 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
   // ======================================================================
 
   void handleRead(const boost::system::error_code& e, std::size_t bytes_transferred);
+
+  // Parts of handleRead
+  void handleParsedRequest();
+  bool resolveClientIP();
+  void scheduleRequest(SmartMet::Spine::HandlerView* handlerView);
+  void handleIncompleteRequest();
+  void handleReadError(const boost::system::error_code& e);
 
   // ======================================================================
   /*!
@@ -227,6 +234,9 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
 
   void finishResponse();
 
+  // Shut down and close the socket, ignoring errors
+  void closeSocket();
+
   // ======================================================================
   /*!
    * \brief Handle completed request
@@ -247,6 +257,8 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
   // ======================================================================
 
   void setServerHeaders();
+  void setConnectionHeaders();
+  void appendStaleDirectives();
 
   // ======================================================================
   /*!

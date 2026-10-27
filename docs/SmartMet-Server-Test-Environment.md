@@ -16,7 +16,7 @@ Test configurations expect following directory structure (note: module directori
 `<basedirectory>`/**plugins**  
 `<basedirectory>`/**plugins**/_autocomplete_  
 `<basedirectory>`/**plugins**/_autocomplete/test_  
-`<basedirectory>`/**engines**/_cross_section_  
+`<basedirectory>`/**plugins**/_cross_section_  
 ..  
 
 To create such environment for module testing, one could for example

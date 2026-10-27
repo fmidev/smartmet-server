@@ -106,7 +106,7 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
     {
       itsAcceptor.bind(endpoint);
     }
-    catch (const boost::system::system_error& err)
+    catch (const boost::system::system_error&)
     {
       std::cout << "Error: Unable to bind listening socket to port " << theOptions.port << '\n';
       throw;
@@ -163,6 +163,26 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
     int maxHeaderSize = static_cast<int>(itsMaxHeaderSize);
     if (theOptions.itsConfig.lookupValue("maxheadersize", maxHeaderSize) && maxHeaderSize >= 0)
       itsMaxHeaderSize = static_cast<std::size_t>(maxHeaderSize);
+
+    // Reverse proxies trusted to report the client IP in X-Forwarded-For; see
+    // AsyncConnection::handleRead. Without a proper setting any client can spoof its
+    // source IP and defeat admin/plugin IP filters.
+    itsTrustedProxies =
+        SmartMet::Spine::IPFilter::IPFilter::fromConfig(theOptions.itsConfig, "trustedproxies");
+    if (!itsTrustedProxies)
+    {
+      // Default: X-Forwarded-For is believed from loopback and private network peers only
+      itsTrustedProxies = std::make_shared<SmartMet::Spine::IPFilter::IPFilter>(
+          std::vector<std::string>{"127.0.0.0/8",
+                                   "::1",
+                                   "10.0.0.0/8",
+                                   "172.16.0.0/12",
+                                   "192.168.0.0/16",
+                                   "fc00::/7"});
+      std::cout << "Warning: 'trustedproxies' is not set, X-Forwarded-For is trusted from "
+                   "loopback and private network addresses only"
+                << std::endl;
+    }
   }
   catch (...)
   {
@@ -285,7 +305,7 @@ void appendJemallocStats(std::ostream& out)
   {
     const double frag =
         100.0 * static_cast<double>(active - allocated) / static_cast<double>(active);
-    std::array<char, 32> buf;
+    std::array<char, 32> buf{};
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
     std::snprintf(buf.data(), buf.size(), "%.1f%%", frag);
     out << " jemalloc.fragmentation=" << buf.data();

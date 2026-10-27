@@ -1,0 +1,53 @@
+# Example robots.txt for a SmartMet Server, served when the server configuration
+# sets robots_txt to the path of this file.
+#
+# Crawlers may read the API definitions and documentation, the landing pages of
+# the OpenAPI services, the conformance declarations and the collection listings,
+# but nothing else: following the links further would make them send data
+# requests. The rules follow RFC 9309: '*' matches any characters, '$' anchors
+# the end, and the longest matching rule wins, so 'Disallow: /' only applies
+# where no Allow rule matches. The leading '/*' also covers the apikey path
+# prefix (/fmi-apikey/<key>/...). Adjust the landing pages to the services and
+# URLs configured on the server.
+
+User-agent: *
+
+# The API catalog of the server
+Allow: /.well-known/api-catalog$
+Allow: /api$
+Allow: /api?
+Allow: /api/docs
+
+# OpenAPI definitions, documentation pages and their files
+Allow: /*/api$
+Allow: /*/api?
+Allow: /*/api/docs
+
+# Conformance declarations and collection listings
+Allow: /*/conformance$
+Allow: /*/conformance?
+Allow: /*/collections$
+Allow: /*/collections?
+
+# Landing pages of the OpenAPI services
+Allow: /edr$
+Allow: /edr/$
+Allow: /edr?
+Allow: /*/edr$
+Allow: /*/edr/$
+Allow: /*/edr?
+Allow: /tiles$
+Allow: /tiles/$
+Allow: /tiles?
+Allow: /*/tiles$
+Allow: /*/tiles/$
+Allow: /*/tiles?
+Allow: /coverages$
+Allow: /coverages/$
+Allow: /coverages?
+Allow: /*/coverages$
+Allow: /*/coverages/$
+Allow: /*/coverages?
+
+# Everything else, including all data requests
+Disallow: /

@@ -18,7 +18,6 @@ AsyncServer::AsyncServer(SmartMet::Spine::Options& theOptions,
                          SmartMet::Spine::Reactor& theReactor,
                          std::size_t numThreads)
     : Server(theOptions, theReactor),
-      itsConnections(0),
       numThreads(std::max(numThreads, std::size_t{1U}))
 {
   try
@@ -52,7 +51,7 @@ void AsyncServer::run()
       // during startup tears them down first and starting them would then
       // dereference a null unique_ptr. Take the lock so the check and the
       // start() calls cannot straddle that teardown.
-      std::lock_guard<std::mutex> lock(itsExecutorMutex);
+      std::scoped_lock lock(itsExecutorMutex);
 
       if (!*itsShutdownRequested && itsAdminExecutor)
       {
@@ -99,7 +98,7 @@ void AsyncServer::shutdown()
       // Serialised against run() starting them, and skipped when they are gone
       // already: shutdownServer() can be reached more than once, from a signal
       // and from the reactor reporting itself finished.
-      std::lock_guard<std::mutex> lock(itsExecutorMutex);
+      std::scoped_lock lock(itsExecutorMutex);
 
       if (itsAdminExecutor)
       {
@@ -184,6 +183,9 @@ void AsyncServer::serverThreadFunction(unsigned index)
   {
     std::atomic<std::size_t>& count;
     ~WorkerExitGuard() { --count; }
+    explicit WorkerExitGuard(std::atomic<std::size_t>& theCount) : count(theCount) {}
+    WorkerExitGuard(const WorkerExitGuard&) = delete;
+    WorkerExitGuard& operator=(const WorkerExitGuard&) = delete;
   } guard{itsRunningWorkers};
 
   try

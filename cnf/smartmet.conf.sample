@@ -71,9 +71,71 @@ keepalive:
 
 // maxheadersize = 16384;
 
+// Reverse proxies (for example the frontends in front of backends) trusted to report
+// the client IP in an X-Forwarded-For header. The header is ignored from other peers,
+// and the client IP is the right-most address in it which is not a trusted proxy.
+// Accepts patterns like 192.168.1-10.*, exact addresses and CIDR blocks (IPv4/IPv6).
+// If not set, loopback and private network peers are trusted (127.0.0.0/8, ::1,
+// 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, fc00::/7). Set this explicitly if the
+// proxies have other addresses, or if clients may connect directly from private networks.
+
+// trustedproxies = ["127.0.0.1", "10.0.0.0/8"];
+
 lazylinking = false;
 
 defaultlogging = true;
+
+// /robots.txt is served from this file, read at startup. Without the setting the
+// server does not serve /robots.txt. robots.txt.sample allows crawlers the API
+// definitions, landing pages and collection listings, but no data requests.
+// robots_txt = "/etc/smartmet/robots.txt";
+
+// The API catalog (RFC 9727) at /api, /.well-known/api-catalog and /api/docs, served
+// when some plugin publishes an OpenAPI definition (and always by the frontend plugin),
+// and the data explorer at /api/explorer (explorer = false leaves it out). The
+// explorer_defaults are the first map view, the location examples, extra output
+// projections, the language, the clock and the units for the region of the server; the
+// explorer is neutral without them. See OpenApi.h of smartmet-library-spine.
+// api_catalog:
+// {
+//   enabled        = true;
+//   ui             = true;
+//   swagger_ui_dir = "/usr/share/smartmet/swagger-ui";
+//   title          = "SmartMet Server APIs";
+//   description    = "Weather and climate data APIs";
+//   explorer       = true;
+//   explorer_dir   = "/usr/share/smartmet/explorer";
+//   uplot_dir      = "/usr/share/smartmet/uplot";
+//   palette_dir    = "/usr/share/smartmet/qdless/palettes";
+//   palette_config = "/usr/share/smartmet/qdless/qdless.conf";
+//   explorer_defaults:
+//   {
+//     center      = [25.0, 62.0];
+//     zoom        = 4;
+//     language    = "fi";         // en, fi or sv
+//     clock       = "24";         // "24" or "12"
+//     examples:   { place = "Helsinki"; fmisid = "100971,101004"; wmo = "2963,2974";
+//                   keyword = "synop_fi"; area = "Uusimaa"; };
+//     projections = ["EPSG:3067 ETRS-TM35FIN", "EPSG:3035 ETRS89 LAEA Europe"];
+//     units:      { temperature = "C"; speed = "ms"; pressure = "hPa"; height = "m"; };
+//   };
+// };
+
+// Response compression. compresscodings lists the content codings offered, in
+// preference order; only codings the server can produce are accepted (zstd, gzip)
+// and an unknown name stops the server at startup. Narrowing the list is how a
+// codec is taken out of use across a cluster without a rebuild, for instance when
+// a client turns out to advertise one it cannot actually decode:
+//
+//   compresscodings = "gzip";   // stop offering zstd
+//
+// Small responses are never compressed, and the identity representation is used
+// for clients that accept no coding. Set compress = false to stop encoding
+// entirely.
+
+compress        = true;
+compresslimit   = 1000;          // bytes; responses below this are not compressed
+compresscodings = "zstd,gzip";   // codings offered, best first
 
 // Reverse-DNS (PTR) resolution of the client IP for diagnostics and the admin
 // active-requests output. Resolution is cached (LRU, with separate positive and

@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.9.2
+Version: 26.10.24
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -31,8 +31,8 @@ BuildRequires: elfutils-devel
 BuildRequires: %{smartmet_fmt_devel}
 BuildRequires: openssl-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 26.7.29
-BuildRequires: smartmet-library-spine-devel >= 26.8.4
+BuildRequires: smartmet-library-macgyver-devel >= 26.10.16
+BuildRequires: smartmet-library-spine-devel >= 26.10.16
 Requires: %{smartmet_boost}-iostreams
 Requires: %{smartmet_boost}-program-options
 Requires: %{smartmet_boost}-regex
@@ -42,8 +42,8 @@ Requires: %{smartmet_fmt}
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 26.7.29
-Requires: smartmet-library-spine >= 26.8.4
+Requires: smartmet-library-macgyver >= 26.10.17
+Requires: smartmet-library-spine >= 26.10.17
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -108,6 +108,60 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Sat Oct 24 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.10.24-1.fmi
+- Without a trustedproxies setting X-Forwarded-For is trusted from loopback and private network peers only
+
+* Mon Oct 19 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.10.17-2.fmi
+- Repackaged: simultaneous CI runs corrupted the 26.10.17-1 RPMs
+* Sat Oct 17 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.10.17-1.fmi
+- Split functions with a cognitive complexity above 25 into smaller helpers, no functional changes
+
+* Fri Oct 16 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.10.16-1.fmi
+- Fixed compiler warnings and clang-tidy findings (unused code, unreachable code, empty statements, member initialization, parameter passing, noexcept), no functional changes
+
+* Thu Oct 15 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.10.15-1.fmi
+- Fixed mechanical clang-tidy findings (internal linkage, unused parameters, initialization, redundant code), no functional changes
+- Requires 26.10.15 versions of spine due to their ABI changes
+- Fixed clang-tidy style findings (loops, nested conditionals, dead code)
+- Fixed clang-tidy correctness findings (member initialization, rule of five, printf formats, dead stores)
+
+* Sun Oct 11 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.10.11-1.fmi
+- Keep a Vary header set by a plugin and append Accept-Encoding to it instead of replacing it
+- Report a failure to disable Nagle's algorithm and ignore socket shutdown errors explicitly
+
+* Sat Oct 03 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.10.3-1.fmi
+- Set LC_NUMERIC once at startup
+- Pass the original HEAD method to the access log
+- Shut down in order on SIGHUP
+
+* Tue Sep 29 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.9.29-1.fmi
+- Content encoding negotiation now honours quality values. A response is no
+  longer compressed with a coding the client refused: "Accept-Encoding: gzip,
+  deflate, zstd;q=0" was answered with zstd, which clients unable to decode it
+  reported as corrupt output
+- "Accept-Encoding: *" is answered with gzip rather than zstd, as it states
+  that any coding is acceptable rather than that the newest one is preferred
+- The entity-tag of a compressed response now names its content coding
+  ("abc-timeseries+gzip"), so that the encodings of one resource no longer
+  share an entity-tag (RFC 9110 4.3.4). A shared entity-tag made a caching
+  proxy (Squid) answer requests with empty bodies
+- The ETag of a 304 Not Modified is the If-None-Match entity-tag that matched,
+  naming the variant the client holds instead of the coding independent tag of
+  the data
+- New 'compresscodings' setting lists the content codings the server offers, in
+  preference order (default "zstd,gzip"). Narrowing it to "gzip" takes zstd out
+  of use without a rebuild; an unknown coding name stops the server at startup.
+  The startup report prints the offered codings
+
+* Sat Sep 26 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.9.26-1.fmi
+- Security: X-Forwarded-For is believed only from peers matching the new "trustedproxies"
+  setting (IP filter syntax: patterns, exact addresses, CIDR, IPv6), and the client IP is the
+  right-most untrusted hop instead of the client-chosen left-most one. The unset default trusts
+  every IPv4 peer for backward compatibility and prints a warning at startup.
+
+* Thu Sep 24 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.9.24-1.fmi
+- Repackaged due to base library changes
+
 * Wed Sep  2 2026 Andris Pavēnis <andris.pavenis@fmi.fi> 26.9.2-1.fmi
 - Send a streamed response's headers with its first chunk in case of chunked response
 

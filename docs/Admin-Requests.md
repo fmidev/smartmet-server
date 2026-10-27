@@ -13,6 +13,8 @@ Table of Contents
     * [Service statistics](#service-statistics)
     * [Cache statistics](#cachestats)
     * [Active requests](#active-requests)
+    * [Loaded packages](#loaded-packages)
+    * [Changelog](#changelog)
     * [Querydata producers](#querydata-producers)
     * [GRID producers](#grid-producers)
     * [GRID generations](#grid-generations)
@@ -276,6 +278,58 @@ The server keeps track of active requests which have not been completed yet. Thi
 Below is a sample response as visualized by the Metadata Catalog:
 
 ![Active requests](images/active-requests.png)
+
+## Loaded packages
+
+The versions of the packages the running server has actually loaded can be queried with
+
+    http://<backend_server>/admin?what=packages
+
+The versions are read from the binaries mapped into the process, not from the package database, which
+after an upgrade without a restart or after `make install` no longer describes what is running. This
+makes it easy to compare two servers, for example a local test server and a production server, or to
+check that a CI test server runs the freshly built packages.
+
+* The querystring option `all=1` lists all loaded libraries instead of SmartMet packages only.
+* The querystring option `format` can be used to change the output format.
+
+| Column | Content |
+|--------|---------|
+| Package | Name of the package which owns the file, or the name in the ELF note if the file is not owned by any package |
+| Version | Version of the loaded binary, empty if the binary carries no version information |
+| Installed | Version of the owning package currently installed on disk (from `rpm`, or `dpkg-query` on Debian based systems) |
+| Commit | Git commit the binary was built from, with a `-dirty` suffix if there were uncommitted changes |
+| Status | `ok`, `restart needed` (the file has been deleted or replaced on disk since it was loaded), `mismatch` (the loaded version differs from the installed package), `dirty` (built from a checkout with uncommitted changes), `local build` (built outside rpmbuild, e.g. `make install`), `unpackaged` (no owning package) |
+| Origin | Where the version came from: `rpm note` (the `.note.package` added by rpmbuild on RHEL9 and later), `smartmet note` (added by the SmartMet build system), `rpm` or `dpkg` (package database only) or `unknown` |
+| Build-id | GNU build-id of the binary, which identifies the matching debuginfo |
+| File | The mapped file |
+
+SmartMet packages built with smartmet-utils 26.10.11 or later carry the SmartMet note with the
+version and git commit also on RHEL8. Older builds without any note are reported from the package
+database.
+
+## Changelog
+
+The recent changelog entries of the loaded SmartMet packages can be listed with
+
+    http://<backend_server>/admin?what=changelog
+
+The entries come from the package database for the installed versions of the packages listed by
+`what=packages`, newest first. Binary packages built from the same source package share one
+changelog, and are listed once under the source package name. Only `rpm` stores changelogs in the
+package database, on Debian based systems the list is empty.
+
+* The querystring option `days` limits the entries to the last N days. The default is 30, 0 lists all entries.
+* The querystring option `package` limits the output to one package.
+* The querystring option `format` can be used to change the output format.
+
+| Column | Content |
+|--------|---------|
+| Date | Date of the changelog entry |
+| Package | Source package name |
+| Version | Version given in the changelog entry header |
+| Author | Author of the entry |
+| Text | The changelog text, usually one line per change starting with `-` |
 
 ## Querydata producers
 

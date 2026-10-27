@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is `smartmet-server` — the HTTP server daemon (`smartmetd`) for the SmartMet ecosystem. It is a thin networking layer built on Boost.ASIO that delegates all request handling to dynamically-loaded engines and plugins. The actual content logic lives in `spine` (the core framework library) and the engine/plugin shared objects; this repo owns only the async I/O, connection management, signal handling, and thread pool orchestration.
 
+Full developer documentation: `docs/developer-guide.md`.
+
 ## Build and test
 
 ```bash
@@ -39,10 +41,10 @@ All source is in `SmartMet::Server` namespace.
 ### Class hierarchy
 
 - **`Connection`** — Abstract base for a single client connection. Owns the SSL socket, read buffer, request/response objects, timeout timer, and references to the three thread pools. Not instantiated directly.
-- **`AsyncConnection`** — Concrete connection using half-sync/half-async pattern. Created via `AsyncConnection::create()` factory (private constructor + `enable_shared_from_this`). Handles the full async lifecycle: SSL handshake, chunked/unchunked/gateway reads and writes, gzip compression, client disconnect detection.
-- **`Server`** — Abstract server base. Binds the TCP acceptor, initializes SSL context, creates three `ThreadPoolType` executors (admin/slow/fast), stores server-wide options (gzip, timeout, max request size).
+- **`AsyncConnection`** — Concrete connection using half-sync/half-async pattern. Created via `AsyncConnection::create()` factory (private constructor + `enable_shared_from_this`). Handles the full async lifecycle: SSL handshake, chunked/unchunked/gateway reads and writes, response compression (zstd/gzip), client disconnect detection.
+- **`Server`** — Abstract server base. Binds the TCP acceptor, initializes SSL context, creates three `ThreadPoolType` executors (admin/slow/fast), stores server-wide options (compression, timeout, max request size, keep-alive, connection cap, trusted proxies).
 - **`AsyncServer`** — Concrete server. Runs `numThreads` ASIO worker threads for network I/O. On accept, creates an `AsyncConnection` and calls `start()`. Shutdown sequence: close acceptor, stop io_service, gracefully shut down thread pools, then shut down Reactor.
-- **`Utility`** — Free functions: gzip compression, HTTP date formatting, X-Forwarded-For parsing, request dumping.
+- **`Utility`** — Free functions: content-coding negotiation and zstd/gzip compression, HTTP date formatting, protocol-version negotiation, request dumping.
 - **`Names`** — Extract engine/plugin names from shared object filenames.
 
 ### Threading model
@@ -141,6 +143,9 @@ cosmetic. Implemented in this repo:
   keep-alive negotiation, which reads `Connection`.
 - **Header section bounded** by `maxheadersize` (16 kB default) → 431, so a client cannot hold a
   connection — and a slot against `maxconnections` — open by dribbling header bytes.
+- **Client IP** is the socket peer unless the peer matches `trustedproxies`; then the right-most
+  untrusted `X-Forwarded-For` hop is used (`Spine::IPFilter::resolveClientIP`). The unset default
+  trusts every IPv4 peer for backward compatibility, which makes the client IP spoofable.
 
 ### Pipelining, chunked request bodies, HEAD
 
@@ -259,13 +264,16 @@ will not produce, so curl cannot drive them.
 3. Create `Spine::Reactor` (the plugin/engine container)
 4. Create `AsyncServer` (binds port, starts accept loop)
 5. Launch two async tasks: reactor init (loads engines/plugins) and server run (starts thread pools)
-6. Main thread enters `select()` loop, handling signals (SIGTERM/SIGINT = shutdown, SIGBUS/SIGWINCH = ignore)
+6. Main thread enters a once-per-second loop, handling recorded signals (SIGTERM/SIGINT = orderly shutdown, SIGBUS/SIGWINCH = ignore)
 
 ### Configuration
 
 Uses libconfig format (`.conf` files). The server config specifies:
 - `port`, `server_threads`, `defaultlogging`, `lazylinking`
 - `keepalive` block (`enabled`, `timeout`, `maxrequests`)
+- `compress`, `compresslimit`, `compresscodings` (codings offered, default `zstd,gzip`)
+- `maxconnections`, `maxheadersize`, `trustedproxies`
+- `robots_txt`, `api_catalog` (API catalog and data explorer)
 - `encryption` block (SSL/TLS cert, key, password)
 - `adminpool`, `slowpool`, `fastpool` (thread counts, queue sizes)
 - `engines` and `plugins` blocks listing modules to load with their config file paths
