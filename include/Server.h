@@ -15,6 +15,7 @@
 #include <spine/IPFilter.h>
 #include <spine/Options.h>
 #include <spine/Reactor.h>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -70,6 +71,9 @@ class Server
 
   /// Maximum size of a request's header section in bytes (0 = unlimited)
   std::size_t getMaxHeaderSize() const { return itsMaxHeaderSize; }
+
+  /// Seconds a plugin may spend handling a request (0 = unlimited)
+  unsigned int getRequestTimeout(const std::string& thePluginName) const;
 
   /// Reverse proxies trusted to report the client IP in an X-Forwarded-For header
   const SmartMet::Spine::IPFilter::IPFilter& getTrustedProxies() const
@@ -192,6 +196,14 @@ class Server
   /// client IP used for logging and access control. The default trusts loopback and
   /// private network (RFC 1918, IPv6 unique local) peers.
   std::shared_ptr<SmartMet::Spine::IPFilter::IPFilter> itsTrustedProxies;
+
+  /// Seconds a plugin may spend handling a request (0 = unlimited), the 'request_timeout'
+  /// setting. Code which checks Fmi::check_cancelled() stops when the time is up.
+  unsigned int itsRequestTimeout = 0;
+
+  /// Plugin specific time limits ('plugins.<name>.request_timeout'), by plugin name in
+  /// lower case
+  std::map<std::string, unsigned int> itsPluginRequestTimeouts;
 
   /// Period in minutes for logging memory usage to stdout (0 = disabled)
   unsigned int itsMemoryLogPeriod = 0;

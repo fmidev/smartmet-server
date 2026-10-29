@@ -9,8 +9,12 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/bind/bind.hpp>
 #include <boost/move/make_unique.hpp>
+#include <macgyver/Cancellation.h>
 #include <macgyver/Exception.h>
+#include <macgyver/StringConversion.h>
 #include <spine/Convenience.h>
+#include <poll.h>
+#include <chrono>
 #include <sstream>
 #include <tuple>
 #include <vector>
@@ -32,6 +36,21 @@ bool statusHasNoBody(SmartMet::Spine::HTTP::Status status)
 {
   const int code = static_cast<int>(status);
   return (code >= 100 && code < 200) || code == 204 || code == 304;
+}
+
+// Whether the client has closed the connection. POLLRDHUP notices the close also behind
+// data not yet read, such as a pipelined request or a TLS close_notify alert, and nothing
+// is consumed from the socket.
+bool clientHasDisconnected(int theSocket)
+{
+  struct pollfd pfd
+  {
+  };
+  pfd.fd = theSocket;
+  pfd.events = POLLRDHUP;
+  if (::poll(&pfd, 1, 0) <= 0)
+    return false;
+  return (pfd.revents & (POLLRDHUP | POLLHUP | POLLERR | POLLNVAL)) != 0;
 }
 
 #ifndef NDEBUG
@@ -893,8 +912,30 @@ void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandl
       reportInfo(requestString);
     }
 
-    // Handle the request
-    bool success = theHandlerView.handle(itsReactor, *itsRequest, *itsResponse);
+    // Handle the request. Code which checks Fmi::check_cancelled() stops if the time limit
+    // of the plugin is exceeded or if the client closes the connection, and the response
+    // is then replaced in HandlerView.
+    const auto started = std::chrono::steady_clock::now();
+    auto cancellation = createCancellationToken(theHandlerView);
+    bool success = false;
+    {
+      Fmi::CancellationScope scope(cancellation);
+      success = theHandlerView.handle(itsReactor, *itsRequest, *itsResponse);
+    }
+
+    if (cancellation->interrupted())
+    {
+      const auto reason = cancellation->reason();
+      const std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - started;
+      reportInfo(std::string(Fmi::to_string(reason)) + ", the " + theHandlerView.getPluginName() +
+                 " request was cancelled after " + Fmi::to_string("%.1f", elapsed.count()) +
+                 " seconds");
+
+      // Nobody is waiting for the response
+      if (reason == Fmi::CancellationToken::Reason::Disconnected)
+        return;
+    }
+
     if (!success)
     {
       // Incoming IP not if filter whitelist
@@ -946,6 +987,39 @@ void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandl
     // Must not continue throwing here or the server will terminate
     // std::cerr << "Operation failed! AsyncConnection::handleCompletedRead aborted\n";
   }
+}
+
+// The token for cancelling the request: the time limit of the plugin, and a probe noticing
+// a client which has closed the connection
+std::shared_ptr<Fmi::CancellationToken> AsyncConnection::createCancellationToken(
+    const SmartMet::Spine::HandlerView& theHandlerView)
+{
+  auto token = std::make_shared<Fmi::CancellationToken>();
+
+  // Admin requests are not limited, they may for example wait for a reload. Nor is the
+  // frontend's proxying, the frontend has a backend timeout of its own.
+  if (!itsAdminQuery && !theHandlerView.isCatchNoMatch())
+  {
+    const auto timeout = itsServer->getRequestTimeout(theHandlerView.getPluginName());
+    if (timeout > 0)
+      token->setDeadline(Fmi::CancellationToken::Clock::now() + std::chrono::seconds(timeout));
+  }
+
+  // Probe only while the connection exists, a closed descriptor may already have been
+  // reused for another connection
+  auto handling = std::weak_ptr<AsyncConnection>(shared_from_this());
+  const int fd = socket().native_handle();
+  token->setProbe(
+      [handling, fd]()
+      {
+        const auto connection = handling.lock();
+        if (connection && clientHasDisconnected(fd))
+          return Fmi::CancellationToken::Reason::Disconnected;
+        return Fmi::CancellationToken::Reason::None;
+      },
+      std::chrono::seconds(1));
+
+  return token;
 }
 
 // Handle gateway writes. This function is always called from within the thread pool

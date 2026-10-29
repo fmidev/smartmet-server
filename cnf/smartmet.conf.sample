@@ -71,6 +71,14 @@ keepalive:
 
 // maxheadersize = 16384;
 
+// Seconds a plugin may spend handling a request, 0 (the default) for no limit. Code which
+// checks for cancellation stops when the time is up, and the client gets a 503. The same
+// check stops a request whose client has closed the connection. The limit can be set for
+// a plugin in its section, for example plugins.edr.request_timeout. Admin requests are
+// not limited.
+
+// request_timeout = 0;
+
 // Reverse proxies (for example the frontends in front of backends) trusted to report
 // the client IP in an X-Forwarded-For header. The header is ignored from other peers,
 // and the client IP is the right-most address in it which is not a trusted proxy.
