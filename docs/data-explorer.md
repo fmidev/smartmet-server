@@ -51,7 +51,7 @@ production server shows its own data and descriptions.
    its defaults. The browser's Back button returns to the previous request.
 6. **The request form**: *What* (the producer or collection, and the parameters), *When* (the
    period and the time step), *Where* (the locations) and *Output* (how areas are returned,
-   the language of the names, extra columns).
+   the language of the names, the precision, extra columns).
 7. **The request** as a URL. It is updated as you make choices, and it tells what is still
    needed before the request can be run. **Run** sends it.
 8. **The results**, as tabs of views of the same data.
@@ -128,6 +128,14 @@ request** the same request is given as bash, Python, R and JavaScript, and as lo
 repeat it for consecutive periods, for fetching a long history piece by piece.
 
 ![The request as Python](images/explorer/request-code.png)
+
+**Precision**, under **Output**, chooses the `precision` of the request among those the server
+is configured with; the server default rounds most values to the decimals of a table. The table,
+the response and the values under the pointer of a chart are those of the request, but the
+charts, meteograms, profiles, sections and soundings draw the same request asked again in the
+precision of the data (`auto`, or `full` when the server has no `auto`), so that rounding does
+not make steps in the lines. The second request is not made when the server lists no
+precisions, or when the precision chosen is the one the views draw.
 
 **Other options**, under **Output**, takes options of the request written as in its query
 string, such as `hour=6,18&numberofstations=3&maxdistance=50km`. They are added to the request
