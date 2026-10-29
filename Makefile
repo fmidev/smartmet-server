@@ -3,7 +3,7 @@ SPEC = smartmet-server
 
 REQUIRES = configpp gdal
 
-include $(shell echo $${PREFIX-/usr})/share/smartmet/devel/makefile.inc
+include $(or $(PREFIX),$(shell smartbuildcfg --prefix))/share/smartmet/devel/makefile.inc
 
 # Default compiler flags
 
@@ -39,6 +39,8 @@ ifeq ($(origin SBINDIR), undefined)
 else
   sbindir = $(SBINDIR)
 endif
+
+sysconfdir ?= $(or $(SYSCONFDIR), /etc)
 
 # Compilation directories
 
