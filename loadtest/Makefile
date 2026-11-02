@@ -1,4 +1,4 @@
-include $(shell echo $${PREFIX-/usr})/share/smartmet/devel/makefile.inc
+include $(or $(PREFIX),$(shell smartbuildcfg --prefix))/share/smartmet/devel/makefile.inc
 
 PROG = $(patsubst %.test,%,$(wildcard *.test))
 TEST = $(PROG:%=%.test)
