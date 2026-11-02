@@ -246,10 +246,10 @@ and retires the backend for a moment (see the frontend guide).
 
 ### Cancelling a request
 
-A plugin is not stopped from the outside: `AsyncConnection::handleCompletedRead()` gives
-each request an `Fmi::CancellationToken` (macgyver `Cancellation.h`) and makes it current
-in the thread calling the plugin. Code which may run for long calls
-`Fmi::check_cancelled()` in its loops, and the call throws when
+`AsyncConnection::handleCompletedRead()` gives each request an `Fmi::CancellationToken`
+(macgyver `Cancellation.h`) and makes it current in the thread calling the plugin. Code
+which may run for long calls `Fmi::check_cancelled()` in its loops, and the call throws
+when
 
 * the time limit of the plugin (`request_timeout`) has passed, or
 * the client has closed the connection, if `cancel_on_disconnect` is set. The socket is
@@ -261,9 +261,15 @@ wait for the response. TCP does not tell that apart from a client which has left
 `cancel_on_disconnect` is off by default. Set it where the clients do not half-close,
 such as on backends behind a frontend.
 
-Only code which checks stops, the check does nothing without a token (plugin tests,
+In addition, spine's `HandlerView` has a `RequestWatcher` interrupt the pool worker
+handling a cancelled request with `boost::thread::interrupt()`, so that the handler also
+stops at boost interruption points (boost sleeps and condition variables, thread joins,
+`Fmi::AsyncTask` waits). Blocking calls which are not interruption points, such as
+database queries, are not cut short. The check does nothing without a token (plugin tests,
 background tasks). It must not be called where the result is shared with other
-requests, such as a value computed for a cache which other requests wait for.
+requests, such as a value computed for a cache which other requests wait for. For the
+same reason, such code must be protected from the interruption with
+`boost::this_thread::disable_interruption`.
 
 Whatever the plugin made of the exception, `HandlerView` replaces the response of an
 interrupted request with a plain 503 before the access log and the active requests are
