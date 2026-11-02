@@ -170,16 +170,24 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
     if (theOptions.itsConfig.lookupValue("request_timeout", requestTimeout) && requestTimeout >= 0)
       itsRequestTimeout = static_cast<unsigned int>(requestTimeout);
 
+    theOptions.itsConfig.lookupValue("cancel_on_disconnect", itsCancelOnDisconnect);
+
     if (theOptions.itsConfig.exists("plugins"))
     {
       const auto& plugins = theOptions.itsConfig.lookup("plugins");
       for (int i = 0; i < plugins.getLength(); ++i)
       {
+        if (!plugins[i].isGroup())
+          continue;
+        const auto name = Fmi::ascii_tolower_copy(plugins[i].getName());
+
         int pluginTimeout = 0;
-        if (plugins[i].isGroup() && plugins[i].lookupValue("request_timeout", pluginTimeout) &&
-            pluginTimeout >= 0)
-          itsPluginRequestTimeouts[Fmi::ascii_tolower_copy(plugins[i].getName())] =
-              static_cast<unsigned int>(pluginTimeout);
+        if (plugins[i].lookupValue("request_timeout", pluginTimeout) && pluginTimeout >= 0)
+          itsPluginRequestTimeouts[name] = static_cast<unsigned int>(pluginTimeout);
+
+        bool cancelOnDisconnect = false;
+        if (plugins[i].lookupValue("cancel_on_disconnect", cancelOnDisconnect))
+          itsPluginCancelOnDisconnect[name] = cancelOnDisconnect;
       }
     }
 
@@ -215,6 +223,14 @@ unsigned int Server::getRequestTimeout(const std::string& thePluginName) const
   if (it != itsPluginRequestTimeouts.end())
     return it->second;
   return itsRequestTimeout;
+}
+
+bool Server::getCancelOnDisconnect(const std::string& thePluginName) const
+{
+  const auto it = itsPluginCancelOnDisconnect.find(Fmi::ascii_tolower_copy(thePluginName));
+  if (it != itsPluginCancelOnDisconnect.end())
+    return it->second;
+  return itsCancelOnDisconnect;
 }
 
 std::string Server::getPassword() const

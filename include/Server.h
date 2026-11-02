@@ -75,6 +75,9 @@ class Server
   /// Seconds a plugin may spend handling a request (0 = unlimited)
   unsigned int getRequestTimeout(const std::string& thePluginName) const;
 
+  /// Whether a request is cancelled when its client closes the connection
+  bool getCancelOnDisconnect(const std::string& thePluginName) const;
+
   /// Reverse proxies trusted to report the client IP in an X-Forwarded-For header
   const SmartMet::Spine::IPFilter::IPFilter& getTrustedProxies() const
   {
@@ -204,6 +207,15 @@ class Server
   /// Plugin specific time limits ('plugins.<name>.request_timeout'), by plugin name in
   /// lower case
   std::map<std::string, unsigned int> itsPluginRequestTimeouts;
+
+  /// Whether a request is cancelled when its client closes the connection, the
+  /// 'cancel_on_disconnect' setting. Off by default, since a client which has only closed
+  /// its sending side (a half-close) cannot be told apart from one which has left.
+  bool itsCancelOnDisconnect = false;
+
+  /// Plugin specific settings ('plugins.<name>.cancel_on_disconnect'), by plugin name in
+  /// lower case
+  std::map<std::string, bool> itsPluginCancelOnDisconnect;
 
   /// Period in minutes for logging memory usage to stdout (0 = disabled)
   unsigned int itsMemoryLogPeriod = 0;

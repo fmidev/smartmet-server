@@ -237,6 +237,7 @@ the connections each frontend keeps idle (see the frontend guide).
 | `activerequests.*` | 50 / 50 / 100 / 10 | The throttle behind `Reactor::isLoadHigh()`: start with `start_limit` active requests, raise the limit by one every `increase_rate` successful requests up to `limit`, fall back to `restart_limit`. |
 | pool `maxrequeuesize` | 100 | Queue length per pool. Full → 503. |
 | `request_timeout` | 0 (unlimited) | Seconds a plugin may spend handling a request, `plugins.<name>.request_timeout` per plugin. Expiry → 503, see below. Admin requests are not limited. |
+| `cancel_on_disconnect` | false | Cancel a request whose client has closed the connection, `plugins.<name>.cancel_on_disconnect` per plugin. See below. |
 
 A high-load reply and a full-queue 503 are sent directly from `AsyncConnection`,
 **before** the handler runs, so they do not appear in the access log; they are only
@@ -251,9 +252,14 @@ in the thread calling the plugin. Code which may run for long calls
 `Fmi::check_cancelled()` in its loops, and the call throws when
 
 * the time limit of the plugin (`request_timeout`) has passed, or
-* the client has closed the connection. The socket is polled with `POLLRDHUP` at most
-  once a second, from the thread doing the check, which also notices a close behind
-  unread data (a pipelined request, a TLS close_notify).
+* the client has closed the connection, if `cancel_on_disconnect` is set. The socket is
+  polled with `POLLRDHUP` at most once a second, from the thread doing the check, which
+  also notices a close behind unread data (a pipelined request, a TLS close_notify).
+
+A client may close its sending side once the request is sent (a half-close) and still
+wait for the response. TCP does not tell that apart from a client which has left, so
+`cancel_on_disconnect` is off by default. Set it where the clients do not half-close,
+such as on backends behind a frontend.
 
 Only code which checks stops, the check does nothing without a token (plugin tests,
 background tasks). It must not be called where the result is shared with other
@@ -268,7 +274,8 @@ backend, only the high load and shutdown replies do.
 The limit applies also without a frontend in front. When there is one, its
 `backend.timeout` should be longer than the limit, so that the client gets the 503
 rather than a gateway timeout. When the frontend gives up first it closes the backend
-connection, which then cancels the request on the backend.
+connection, which then cancels the request on the backend if `cancel_on_disconnect` is
+set there.
 
 ## 10. Configuration
 
@@ -277,7 +284,8 @@ The main configuration file (libconfig, see `cnf/smartmet.conf.sample`) is read 
 server-level keys are `port`, `server_threads`, `encryption.*` (`enabled`,
 `certificatefile`, `privatekeyfile`, `passwordfile`, `password`), the three pools,
 `activerequests.*`, `keepalive.*`, `maxconnections`, `maxheadersize`, `maxrequestsize`,
-`request_timeout` (also `plugins.<name>.request_timeout`), `timeout`, `compress`, `compresslimit`, `compresscodings`, `trustedproxies` (peers whose
+`request_timeout` (also `plugins.<name>.request_timeout`), `cancel_on_disconnect` (also
+`plugins.<name>.cancel_on_disconnect`), `timeout`, `compress`, `compresslimit`, `compresscodings`, `trustedproxies` (peers whose
 `X-Forwarded-For` is believed), `stalewhilerevalidate`, `staleiferror`,
 `dns.*` (client host name resolution), `accesslogdir`, `defaultlogging`,
 `robots_txt` (file served as /robots.txt, see cnf/robots.txt.sample),

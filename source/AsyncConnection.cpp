@@ -989,8 +989,8 @@ void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandl
   }
 }
 
-// The token for cancelling the request: the time limit of the plugin, and a probe noticing
-// a client which has closed the connection
+// The token for cancelling the request: the time limit of the plugin, and if enabled, a
+// probe noticing a client which has closed the connection
 std::shared_ptr<Fmi::CancellationToken> AsyncConnection::createCancellationToken(
     const SmartMet::Spine::HandlerView& theHandlerView)
 {
@@ -1004,6 +1004,12 @@ std::shared_ptr<Fmi::CancellationToken> AsyncConnection::createCancellationToken
     if (timeout > 0)
       token->setDeadline(Fmi::CancellationToken::Clock::now() + std::chrono::seconds(timeout));
   }
+
+  // A client which has only closed its sending side after the request (a half-close) looks
+  // the same as one which has left, so the probe is used only where clients do not do that,
+  // such as behind a frontend
+  if (!itsServer->getCancelOnDisconnect(theHandlerView.getPluginName()))
+    return token;
 
   // Probe only while the connection exists, a closed descriptor may already have been
   // reused for another connection
