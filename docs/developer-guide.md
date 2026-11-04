@@ -236,11 +236,52 @@ the connections each frontend keeps idle (see the frontend guide).
 | `maxconnections` | ¾ of the soft `RLIMIT_NOFILE` | Open client connections. Over → framed 503 and close; logged once per episode. |
 | `activerequests.*` | 50 / 50 / 100 / 10 | The throttle behind `Reactor::isLoadHigh()`: start with `start_limit` active requests, raise the limit by one every `increase_rate` successful requests up to `limit`, fall back to `restart_limit`. |
 | pool `maxrequeuesize` | 100 | Queue length per pool. Full → 503. |
+| `request_timeout` | 0 (unlimited) | Seconds a plugin may spend handling a request, `plugins.<name>.request_timeout` per plugin. Expiry → 503, see below. Admin requests are not limited. |
+| `cancel_on_disconnect` | false | Cancel a request whose client has closed the connection, `plugins.<name>.cancel_on_disconnect` per plugin. See below. |
 
 A high-load reply and a full-queue 503 are sent directly from `AsyncConnection`,
 **before** the handler runs, so they do not appear in the access log; they are only
 printed to stdout. The frontend treats the high-load reply as "try another backend"
 and retires the backend for a moment (see the frontend guide).
+
+### Cancelling a request
+
+`AsyncConnection::handleCompletedRead()` gives each request an `Fmi::CancellationToken`
+(macgyver `Cancellation.h`) and makes it current in the thread calling the plugin. Code
+which may run for long calls `Fmi::check_cancelled()` in its loops, and the call throws
+when
+
+* the time limit of the plugin (`request_timeout`) has passed, or
+* the client has closed the connection, if `cancel_on_disconnect` is set. The socket is
+  polled with `POLLRDHUP` at most once a second, from the thread doing the check, which
+  also notices a close behind unread data (a pipelined request, a TLS close_notify).
+
+A client may close its sending side once the request is sent (a half-close) and still
+wait for the response. TCP does not tell that apart from a client which has left, so
+`cancel_on_disconnect` is off by default. Set it where the clients do not half-close,
+such as on backends behind a frontend.
+
+In addition, spine's `HandlerView` has a `RequestWatcher` interrupt the pool worker
+handling a cancelled request with `boost::thread::interrupt()`, so that the handler also
+stops at boost interruption points (boost sleeps and condition variables, thread joins,
+`Fmi::AsyncTask` waits). Blocking calls which are not interruption points, such as
+database queries, are not cut short. The check does nothing without a token (plugin tests,
+background tasks). It must not be called where the result is shared with other
+requests, such as a value computed for a cache which other requests wait for. For the
+same reason, such code must be protected from the interruption with
+`boost::this_thread::disable_interruption`.
+
+Whatever the plugin made of the exception, `HandlerView` replaces the response of an
+interrupted request with a plain 503 before the access log and the active requests are
+updated, and the server logs the reason and the duration. A request whose client has
+left is not answered at all. A plain 503 does not make the frontend try another
+backend, only the high load and shutdown replies do.
+
+The limit applies also without a frontend in front. When there is one, its
+`backend.timeout` should be longer than the limit, so that the client gets the 503
+rather than a gateway timeout. When the frontend gives up first it closes the backend
+connection, which then cancels the request on the backend if `cancel_on_disconnect` is
+set there.
 
 ## 10. Configuration
 
@@ -249,7 +290,8 @@ The main configuration file (libconfig, see `cnf/smartmet.conf.sample`) is read 
 server-level keys are `port`, `server_threads`, `encryption.*` (`enabled`,
 `certificatefile`, `privatekeyfile`, `passwordfile`, `password`), the three pools,
 `activerequests.*`, `keepalive.*`, `maxconnections`, `maxheadersize`, `maxrequestsize`,
-`timeout`, `compress`, `compresslimit`, `compresscodings`, `trustedproxies` (peers whose
+`request_timeout` (also `plugins.<name>.request_timeout`), `cancel_on_disconnect` (also
+`plugins.<name>.cancel_on_disconnect`), `timeout`, `compress`, `compresslimit`, `compresscodings`, `trustedproxies` (peers whose
 `X-Forwarded-For` is believed), `stalewhilerevalidate`, `staleiferror`,
 `dns.*` (client host name resolution), `accesslogdir`, `defaultlogging`,
 `robots_txt` (file served as /robots.txt, see cnf/robots.txt.sample),

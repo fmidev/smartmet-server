@@ -1,6 +1,7 @@
 #include "Server.h"
 #include "Utility.h"
 #include <macgyver/Exception.h>
+#include <macgyver/StringConversion.h>
 #include <sys/resource.h>
 #include <chrono>
 #include <cmath>
@@ -164,6 +165,32 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
     if (theOptions.itsConfig.lookupValue("maxheadersize", maxHeaderSize) && maxHeaderSize >= 0)
       itsMaxHeaderSize = static_cast<std::size_t>(maxHeaderSize);
 
+    // Time limits for handling a request, see AsyncConnection::handleCompletedRead
+    int requestTimeout = 0;
+    if (theOptions.itsConfig.lookupValue("request_timeout", requestTimeout) && requestTimeout >= 0)
+      itsRequestTimeout = static_cast<unsigned int>(requestTimeout);
+
+    theOptions.itsConfig.lookupValue("cancel_on_disconnect", itsCancelOnDisconnect);
+
+    if (theOptions.itsConfig.exists("plugins"))
+    {
+      const auto& plugins = theOptions.itsConfig.lookup("plugins");
+      for (int i = 0; i < plugins.getLength(); ++i)
+      {
+        if (!plugins[i].isGroup())
+          continue;
+        const auto name = Fmi::ascii_tolower_copy(plugins[i].getName());
+
+        int pluginTimeout = 0;
+        if (plugins[i].lookupValue("request_timeout", pluginTimeout) && pluginTimeout >= 0)
+          itsPluginRequestTimeouts[name] = static_cast<unsigned int>(pluginTimeout);
+
+        bool cancelOnDisconnect = false;
+        if (plugins[i].lookupValue("cancel_on_disconnect", cancelOnDisconnect))
+          itsPluginCancelOnDisconnect[name] = cancelOnDisconnect;
+      }
+    }
+
     // Reverse proxies trusted to report the client IP in X-Forwarded-For; see
     // AsyncConnection::handleRead. Without a proper setting any client can spoof its
     // source IP and defeat admin/plugin IP filters.
@@ -188,6 +215,22 @@ Server::Server(SmartMet::Spine::Options& theOptions, SmartMet::Spine::Reactor& t
   {
     throw Fmi::Exception::Trace(BCP, "Operation failed!");
   }
+}
+
+unsigned int Server::getRequestTimeout(const std::string& thePluginName) const
+{
+  const auto it = itsPluginRequestTimeouts.find(Fmi::ascii_tolower_copy(thePluginName));
+  if (it != itsPluginRequestTimeouts.end())
+    return it->second;
+  return itsRequestTimeout;
+}
+
+bool Server::getCancelOnDisconnect(const std::string& thePluginName) const
+{
+  const auto it = itsPluginCancelOnDisconnect.find(Fmi::ascii_tolower_copy(thePluginName));
+  if (it != itsPluginCancelOnDisconnect.end())
+    return it->second;
+  return itsCancelOnDisconnect;
 }
 
 std::string Server::getPassword() const

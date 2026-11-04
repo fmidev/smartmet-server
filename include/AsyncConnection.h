@@ -9,6 +9,7 @@
 #pragma once
 #include "Connection.h"
 #include <boost/asio.hpp>
+#include <macgyver/Cancellation.h>
 #include <macgyver/ThreadPool.h>
 #include <spine/HTTP.h>
 #include <spine/HandlerView.h>
@@ -249,6 +250,8 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
   // ======================================================================
 
   void handleCompletedRead(SmartMet::Spine::HandlerView& theHandlerView);
+  std::shared_ptr<Fmi::CancellationToken> createCancellationToken(
+      const SmartMet::Spine::HandlerView& theHandlerView);
 
   // ======================================================================
   /*!
