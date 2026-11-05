@@ -31,8 +31,8 @@ BuildRequires: elfutils-devel
 BuildRequires: %{smartmet_fmt_devel}
 BuildRequires: openssl-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 26.10.16
-BuildRequires: smartmet-library-spine-devel >= 26.10.16
+BuildRequires: smartmet-library-macgyver-devel >= 26.11.3
+BuildRequires: smartmet-library-spine-devel >= 26.11.4
 Requires: %{smartmet_boost}-iostreams
 Requires: %{smartmet_boost}-program-options
 Requires: %{smartmet_boost}-regex
@@ -42,8 +42,8 @@ Requires: %{smartmet_fmt}
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 26.10.17
-Requires: smartmet-library-spine >= 26.10.17
+Requires: smartmet-library-macgyver >= 26.11.3
+Requires: smartmet-library-spine >= 26.11.4
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
