@@ -2,7 +2,7 @@ version: 2.1
 jobs:
   build-rhel8:
     docker:
-      - image: fmidev/smartmet-cibase-8:latest
+      - image: quay.io/fmi/smartmet-cibase-8:latest
     resource_class: xlarge
     environment:
       RPM_BUILD_NCPUS: 8
@@ -19,7 +19,7 @@ jobs:
           paths: ./*.rpm
   test-rhel8:
     docker:
-      - image: fmidev/smartmet-cibase-8:latest
+      - image: quay.io/fmi/smartmet-cibase-8:latest
     resource_class: xlarge
     environment:
       RPM_BUILD_NCPUS: 8
@@ -41,7 +41,7 @@ jobs:
           destination: dist/
   upload-rhel8:
     docker:
-      - image: fmidev/smartmet-cibase-8:latest
+      - image: quay.io/fmi/smartmet-cibase-8:latest
     steps:
       - attach_workspace:
           at: /dist
@@ -99,7 +99,7 @@ jobs:
   upload-rhel10:
     docker:
       # No need to use smartmet-cibase-10
-      - image: fmidev/smartmet-cibase-8:latest
+      - image: quay.io/fmi/smartmet-cibase-10:latest
     steps:
       - attach_workspace:
           at: /dist
