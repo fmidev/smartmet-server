@@ -1,5 +1,6 @@
 #include "AsyncServer.h"
 
+#include <macgyver/AsyncTask.h>
 #include <macgyver/AnsiEscapeCodes.h>
 #include <macgyver/AsyncTaskGroup.h>
 #include <macgyver/Exception.h>
