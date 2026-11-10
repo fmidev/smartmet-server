@@ -180,6 +180,27 @@ dns:
 logmemoryuse    = 0;                          // logging period in minutes (0 = disabled)
 logmemoryfields = ["RssAnon", "RssFile"];     // /proc/self/status fields to log
 
+// OpenTelemetry export over OTLP/HTTP: cache statistics as metrics, and one trace span
+// per request. The endpoint is a base URL; /v1/metrics and /v1/traces are appended to it.
+// The OTLP receiver of Prometheus (started with --web.enable-otlp-receiver) accepts
+// metrics only, so set traces = false when exporting directly to it. The values below
+// are the defaults, except enabled. See docs/build-opentelemetry.md of
+// smartmet-library-spine.
+// opentelemetry:
+// {
+//   enabled                 = true;
+//   endpoint                = "http://localhost:4318";   // e.g. "http://prometheus:9090/api/v1/otlp"
+//   service_name            = "smartmet-server";
+//   service_version         = "";
+//   timeout_ms              = 10000;   // per export, and for the final flush at shutdown
+//   traces                  = true;    // false = export metrics only
+//   batch                   = true;    // batch spans in a background thread
+//   batch_max_queue_size    = 2048;
+//   batch_schedule_delay_ms = 5000;
+//   metrics_interval_s      = 60;      // 0 = no metrics
+//   headers                 = { };     // extra HTTP headers, e.g. { Authorization = "Bearer <token>"; };
+// };
+
 debug	       	= false;
 verbose		= true;
 

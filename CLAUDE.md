@@ -274,6 +274,7 @@ Uses libconfig format (`.conf` files). The server config specifies:
 - `compress`, `compresslimit`, `compresscodings` (codings offered, default `zstd,gzip`)
 - `maxconnections`, `maxheadersize`, `trustedproxies`
 - `robots_txt`, `api_catalog` (API catalog and data explorer)
+- `opentelemetry` block (OTLP/HTTP metrics and traces, parsed by spine's `OTelOptions`)
 - `encryption` block (SSL/TLS cert, key, password)
 - `adminpool`, `slowpool`, `fastpool` (thread counts, queue sizes)
 - `engines` and `plugins` blocks listing modules to load with their config file paths
