@@ -87,13 +87,13 @@ std::string select_content_encoding(const SmartMet::Spine::HTTP::Request& reques
     if (response.getHeader("Content-Encoding"))
       return "";
 
-    std::vector<std::string> non_compressable_mimes = {
+    std::vector<std::string> non_compressible_mimes = {
         "image/png", "image/webp", "application/pdf"};
 
     auto content_header = response.getHeader("Content-Type");
     if (content_header)
     {
-      for (const auto& mime : non_compressable_mimes)
+      for (const auto& mime : non_compressible_mimes)
       {
         if (content_header->find(mime) != std::string::npos)
           return "";

@@ -109,7 +109,7 @@ done
 
 %changelog
 * Wed Nov 11 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.11.11-1.fmi
-- Fixed typos in messages and comments
+- Fixed typos in messages, comments and identifiers
 
 * Fri Nov 6 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.11.6-1.fmi
 - Include the headers used directly instead of relying on transitive includes
