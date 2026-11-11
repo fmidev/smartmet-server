@@ -576,7 +576,7 @@ void AsyncConnection::handleIncompleteRequest()
     return;
   }
 
-  // Request is not succesfully parsed, attempt to get more data from socket and try
+  // Request is not successfully parsed, attempt to get more data from socket and try
   // again - unless the client is waiting for us to accept its body first.
   if (handleExpectContinue())
     startRead();

@@ -205,7 +205,7 @@ class Tester
     size =
         boost::asio::read(socket, boost::asio::buffer(retArray), boost::asio::transfer_at_least(8));
 
-    // If no exceptions are thrown, the remote is succesfully contacted
+    // If no exceptions are thrown, the remote is successfully contacted
   }
 
  private:
@@ -337,7 +337,7 @@ class Tester
     }
     else
     {
-      // Don't include erroneus connects
+      // Don't include erroneous connects
       return;
     }
 
@@ -425,7 +425,7 @@ int main(int argc, const char* argv[])
 
   theTester.probeRemote();
 
-  std::cerr << "Succesfully probed, running test..." << std::endl;
+  std::cerr << "Successfully probed, running test..." << std::endl;
 
   if (timeout > 0)
   {

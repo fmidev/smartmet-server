@@ -77,11 +77,11 @@ admin:
 };
 </pre>
 
-Admin section may also contain setting **ip_filters**, whoose value is list of strings. For example:
+Admin section may also contain setting **ip_filters**, whose value is list of strings. For example:
 <pre>
     ip_filters = ["127.*.*.*", "10.*.*.*", "172.16.0-15.*"];
 </pre>
-The default value is an empty list when setting **admin.uri** is specified (allowed from enywhere) and
+The default value is an empty list when setting **admin.uri** is specified (allowed from anywhere) and
 Localhost only if it is not specified and the default value of **admin.uri** (**/admin**) is being used.
 
 It is recommended to set **admin.ip_filter** to restrict access to admin queries due to security reasons.
@@ -151,7 +151,7 @@ https://opendata.fmi.fi/info?what=clusterinfo
 In case of accessing cluster information through **/admin** more information is returned
 
 The result of this request consists of the server information and the services known by the frontend
-![Frontend cluser info](images/frontend-clusterinfo.png)
+![Frontend cluster info](images/frontend-clusterinfo.png)
 
 The request to get the backend status information for backend server BServer:
 
@@ -435,7 +435,7 @@ An example:
 * The querystring option `producer` can be used to limit the output to a single producer name
 * The querystring option `timeformat` can be used to change the time formatting from the default `sql`
 
-Below is a sample response as visualized by the Metadata Catalog. The interface has been used to search for producers which provice the `IceConcentration` parameter.
+Below is a sample response as visualized by the Metadata Catalog. The interface has been used to search for producers which provide the `IceConcentration` parameter.
 
 ![Querydata parameters](images/querydata-parameters.png)
 
@@ -452,7 +452,7 @@ The known Grid parameters can be queried with
 This information is only available when SmartMet server uses grid engine (smartmet-engine-grid). It is not
 currently used for https://opendata.fmi.fi
 
-Below is a sample response as visualized by the Metadata Catalog. The interface has been used to search for producers which provice the `Temperature` parameter.
+Below is a sample response as visualized by the Metadata Catalog. The interface has been used to search for producers which provide the `Temperature` parameter.
 
 ![Grid parameters](images/grid-parameters.png)
 
@@ -471,11 +471,11 @@ An example
 * The querystring option `producer` can be used to limit the output to a single producer name
 * The querystring option `timeformat` can be used to change the time formatting from the default `sql`
 
-Below is a sample response as visualized by the Metadata Catalog. The interface has been used to search for producers which provice the `Temperature` parameter.
+Below is a sample response as visualized by the Metadata Catalog. The interface has been used to search for producers which provide the `Temperature` parameter.
 
 ![Observation parameters](images/observation-parameters.png)
 
-## Location paremeters
+## Location parameters
 
 Parameters that depend on site location only can be queried with
 

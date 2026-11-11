@@ -38,7 +38,7 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
 
  private:
   // Implemented according to https://en.cppreference.com/w/cpp/memory/enable_shared_from_this
-  // (variant Best) This dummy private structure is to disable acccess to constructor, but to still
+  // (variant Best) This dummy private structure is to disable access to constructor, but to still
   // allow it's use in static factory method
   struct Private
   {
@@ -430,7 +430,7 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
 
   // ======================================================================
   /*!
-   * \brief Auxilary function to schedule chunk getter functor
+   * \brief Auxiliary function to schedule chunk getter functor
    *
    */
   // ======================================================================
@@ -439,7 +439,7 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
 
   // ======================================================================
   /*!
-   * \brief Auxilary function to schedule chunked chunk getter functor
+   * \brief Auxiliary function to schedule chunked chunk getter functor
    *
    */
   // ======================================================================
@@ -448,7 +448,7 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
 
   // ======================================================================
   /*!
-   * \brief Auxilary function to see if client disconnected while
+   * \brief Auxiliary function to see if client disconnected while
    * waiting in the queue
    *
    */

@@ -784,7 +784,7 @@ struct ResolvedTrace : public Trace
 
 /*************** STACK TRACE ***************/
 
-// default implemention.
+// default implementation.
 template <typename TAG>
 class StackTraceImpl
 {
@@ -3807,7 +3807,7 @@ class TraceResolverLinuxImpl<trace_resolver_tag::libdwarf> : public TraceResolve
 
     if (aranges)
     {
-      // We have aranges. Get the one where our address is.
+      // We have arranges. Get the one where our address is.
       Dwarf_Arange arange;
       if (dwarf_get_arange(aranges, arange_count, addr, &arange, &error) == DW_DLV_OK)
       {
@@ -3816,7 +3816,7 @@ class TraceResolverLinuxImpl<trace_resolver_tag::libdwarf> : public TraceResolve
         Dwarf_Off cu_die_offset;
         if (dwarf_get_cu_die_offset(arange, &cu_die_offset, &error) == DW_DLV_OK)
         {
-          // Get the DIE at the offset returned by the aranges search.
+          // Get the DIE at the offset returned by the arranges search.
           // We set is_info to 1 to specify that the offset is from
           // the .debug_info section (and not .debug_types)
           int dwarf_result = dwarf_offdie_b(dwarf, cu_die_offset, 1, &returnDie, &error);
@@ -3830,7 +3830,7 @@ class TraceResolverLinuxImpl<trace_resolver_tag::libdwarf> : public TraceResolve
     if (found)
       return returnDie;  // The caller is responsible for freeing the die
 
-    // The search for aranges failed. Try to find our address by scanning
+    // The search for arranges failed. Try to find our address by scanning
     // all compilation units.
     Dwarf_Unsigned next_cu_header;
     Dwarf_Half tag = 0;

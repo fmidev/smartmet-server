@@ -229,7 +229,7 @@ void sigint_watchdog(double& sigint_cnt)
       if (sigint_cnt > 5)
       {
         std::cout << "*** Too many SIGINT or SIGTERM signals after first SIGINT. "
-                     "Commiting suicide\n";
+                     "Committing suicide\n";
         abort();
       }
     }
@@ -299,7 +299,7 @@ int main(int argc, char* argv[])
 {
   try
   {
-    // Ensure that the registrated static object cleanup is done before the exit
+    // Ensure that the registered static object cleanup is done before the exit
     Fmi::StaticCleanup::AtExit cleanup;
 
     GDALAllRegister();
