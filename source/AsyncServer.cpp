@@ -3,10 +3,21 @@
 #include <fmt/format.h>
 #include <macgyver/Exception.h>
 #include <macgyver/ThreadName.h>
+#include <macgyver/ThreadPool.h>
 #include <spine/Convenience.h>
+#include <spine/Reactor.h>
 #include <algorithm>
 #include <chrono>
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <string>
 #include <thread>
+
+namespace SmartMet::Spine
+{
+struct Options;
+}  // namespace SmartMet::Spine
 
 namespace SmartMet
 {

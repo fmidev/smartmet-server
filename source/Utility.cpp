@@ -1,16 +1,17 @@
 #include "Utility.h"
 #include <boost/iostreams/copy.hpp>
-#include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filter/zstd.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
-#include <fmt/format.h>
 #include <fmt/printf.h>
 #include <macgyver/DateTime.h>
 #include <macgyver/Exception.h>
 #include <macgyver/StringConversion.h>
+#include <spine/HTTP.h>
+#include <algorithm>
 #include <array>
 #include <fstream>
+#include <optional>
 #include <sstream>
 
 namespace

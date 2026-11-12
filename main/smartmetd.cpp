@@ -1,26 +1,40 @@
 #include "AsyncServer.h"
-
-#include <macgyver/AsyncTask.h>
+#include "Server.h"
+#include <boost/thread.hpp>
 #include <macgyver/AnsiEscapeCodes.h>
+#include <macgyver/AsyncTask.h>
 #include <macgyver/AsyncTaskGroup.h>
 #include <macgyver/Exception.h>
 #include <macgyver/StaticCleanup.h>
+#include <spine/ActiveRequests.h>
 #include <spine/Backtrace.h>
 #include <spine/Convenience.h>
 #include <spine/HTTP.h>
 #include <spine/Options.h>
 #include <spine/Reactor.h>
-#include <spine/SmartMet.h>
-#include <sys/select.h>
-#include <sys/types.h>
+#include <algorithm>
+#include <array>
 #include <atomic>
+#include <chrono>
+#include <clocale>
 #include <csignal>
-#include <iostream>
-#include <memory>
-#include <optional>
-#include <new>
-#include <thread>
+#include <cstdlib>
+#include <cstring>
+#include <exception>
+#include <functional>
 #include <gdal.h>
+#include <iostream>
+#include <libconfig.h++>
+#include <memory>
+#include <mutex>
+#include <new>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <unistd.h>
+#include <utility>
+#include <vector>
 
 // libdw from elfutils-devel provides more details than libbfd
 #define BACKWARD_HAS_DW 1

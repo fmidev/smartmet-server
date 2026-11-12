@@ -11,12 +11,25 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
-#include <boost/thread.hpp>
 #include <macgyver/ThreadPool.h>
-#include <spine/Reactor.h>
 #include <spine/Thread.h>
+#include <array>
+#include <atomic>
+#include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <string>
+
+namespace SmartMet::Spine::HTTP
+{
+class Request;
+class Response;
+}  // namespace SmartMet::Spine::HTTP
+namespace SmartMet::Spine
+{
+class Reactor;
+}  // namespace SmartMet::Spine
 
 using ssl_socket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
 

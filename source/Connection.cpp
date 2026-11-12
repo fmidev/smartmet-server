@@ -7,9 +7,13 @@
 #include "Connection.h"
 #include "Server.h"
 #include <fmt/format.h>
+#include <macgyver/DateTime.h>
 #include <macgyver/Exception.h>
 #include <macgyver/StringConversion.h>
+#include <spine/HTTP.h>
 #include <spine/HostInfo.h>
+#include <spine/Reactor.h>
+#include <iostream>
 
 namespace SmartMet
 {

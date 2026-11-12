@@ -12,12 +12,15 @@
 #include "AsyncConnection.h"
 #include "Server.h"
 #include <boost/asio.hpp>
-#include <spine/Options.h>
-#include <spine/Reactor.h>
 #include <spine/Thread.h>
 #include <atomic>
-#include <string>
-#include <vector>
+#include <cstddef>
+
+namespace SmartMet::Spine
+{
+class Reactor;
+struct Options;
+}  // namespace SmartMet::Spine
 
 namespace SmartMet
 {

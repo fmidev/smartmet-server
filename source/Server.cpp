@@ -1,19 +1,29 @@
 #include "Server.h"
 #include "Utility.h"
+#include <boost/bind/bind.hpp>
 #include <macgyver/Exception.h>
 #include <macgyver/StringConversion.h>
+#include <spine/IPFilter.h>
+#include <spine/Options.h>
 #include <sys/resource.h>
+#include <algorithm>
+#include <array>
 #include <chrono>
-#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <dlfcn.h>
 #include <fstream>
 #include <iostream>
+#include <libconfig.h++>
 #include <map>
-#include <ostream>
 #include <string>
+#include <utility>
 #include <vector>
+
+namespace SmartMet::Spine
+{
+class Reactor;
+}  // namespace SmartMet::Spine
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 #define SMARTMETD_SSL_METHOD boost::asio::ssl::context::tlsv13

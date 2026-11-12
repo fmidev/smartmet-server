@@ -12,14 +12,24 @@
 
 #include "Connection.h"
 #include <boost/asio.hpp>
-#include <spine/IPFilter.h>
-#include <spine/Options.h>
-#include <spine/Reactor.h>
+#include <boost/asio/ssl.hpp>
+#include <atomic>
+#include <cstddef>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
+
+namespace SmartMet::Spine::IPFilter
+{
+class IPFilter;
+}  // namespace SmartMet::Spine::IPFilter
+namespace SmartMet::Spine
+{
+class Reactor;
+struct Options;
+}  // namespace SmartMet::Spine
 
 namespace SmartMet
 {

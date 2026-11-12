@@ -9,14 +9,22 @@
 #pragma once
 #include "Connection.h"
 #include <boost/asio.hpp>
+#include <boost/thread.hpp>
 #include <macgyver/Cancellation.h>
-#include <macgyver/ThreadPool.h>
 #include <spine/HTTP.h>
-#include <spine/HandlerView.h>
-#include <spine/Reactor.h>
-#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
+
+namespace SmartMet::Spine
+{
+class HandlerView;
+class Reactor;
+}  // namespace SmartMet::Spine
+namespace boost::asio::ssl
+{
+class context;
+}  // namespace boost::asio::ssl
 
 namespace SmartMet
 {

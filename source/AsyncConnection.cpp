@@ -5,18 +5,29 @@
 //===================================
 #include "AsyncConnection.h"
 #include "AsyncServer.h"
+#include "Server.h"
 #include "Utility.h"
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/bind/bind.hpp>
-#include <boost/move/make_unique.hpp>
+#include <boost/asio/ssl.hpp>
 #include <macgyver/Cancellation.h>
 #include <macgyver/Exception.h>
 #include <macgyver/StringConversion.h>
 #include <spine/Convenience.h>
-#include <poll.h>
+#include <spine/HandlerView.h>
+#include <spine/IPFilter.h>
+#include <spine/Options.h>
+#include <spine/Reactor.h>
+#include <spine/Thread.h>
+#include <array>
+#include <atomic>
 #include <chrono>
+#include <iostream>
+#include <optional>
+#include <poll.h>
 #include <sstream>
-#include <tuple>
+#include <stdexcept>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace SmartMet
