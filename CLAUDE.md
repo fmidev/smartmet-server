@@ -145,7 +145,8 @@ cosmetic. Implemented in this repo:
   connection — and a slot against `maxconnections` — open by dribbling header bytes.
 - **Client IP** is the socket peer unless the peer matches `trustedproxies`; then the right-most
   untrusted `X-Forwarded-For` hop is used (`Spine::IPFilter::resolveClientIP`). The unset default
-  trusts every IPv4 peer for backward compatibility, which makes the client IP spoofable.
+  trusts loopback and private network peers (127.0.0.0/8, ::1, 10.0.0.0/8, 172.16.0.0/12,
+  192.168.0.0/16, fc00::/7). A configured list replaces the default entirely.
 
 ### Pipelining, chunked request bodies, HEAD
 
