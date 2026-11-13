@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.11.11
+Version: 26.11.13
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -108,6 +108,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Fri Nov 13 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.11.13-1.fmi
+- Include cleanup: files include what they use, unnecessary includes removed. No functional changes
+
 * Wed Nov 11 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.11.11-1.fmi
 - Fixed typos in messages, comments and identifiers
 
