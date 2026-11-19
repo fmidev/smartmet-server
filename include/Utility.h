@@ -7,6 +7,7 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -94,6 +95,39 @@ struct RawRequestHead
 };
 
 RawRequestHead peekRequestHead(const std::string& buffer);
+
+// ======================================================================
+/*!
+ * \brief The request line of a request which could not be parsed
+ *
+ * Read leniently from the raw socket buffer so that a request the server
+ * rejects before parsing it - the header section is too large, the message is
+ * malformed - can still be attributed to a handler and written to its access
+ * log. Whatever part of the line has not arrived or cannot be made out is
+ * left empty. The target is cut at the first whitespace or control character,
+ * so it is safe to write to a log as it is.
+ */
+// ======================================================================
+struct RawRequestLine
+{
+  std::string method;
+  std::string target;   ///< Request target as sent: path and query string
+  std::string version;  ///< For example "1.1", empty if not present
+};
+
+RawRequestLine peekRequestLine(const std::string& buffer);
+
+// ======================================================================
+/*!
+ * \brief Value of a header in a raw, possibly incomplete header section
+ *
+ * Only header lines which have arrived completely are considered.
+ *
+ * \param buffer The raw socket buffer
+ * \param name Name of the header in lower case
+ */
+// ======================================================================
+std::optional<std::string> peekHeader(const std::string& buffer, const std::string& name);
 
 std::string dumpRequest(SmartMet::Spine::HTTP::Request& request);
 

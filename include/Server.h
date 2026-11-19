@@ -201,7 +201,7 @@ class Server
 
   /// Maximum size of a request's header section in bytes (0 = unlimited). Bounds
   /// how long a client can hold a connection open without completing a request.
-  std::size_t itsMaxHeaderSize = 16384;
+  std::size_t itsMaxHeaderSize = 65536;
 
   /// Trusted reverse proxies ('trustedproxies' setting). An X-Forwarded-For header
   /// is believed only when the socket peer matches, and the header is then walked

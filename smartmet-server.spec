@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.11.13
+Version: 26.11.19
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -32,7 +32,7 @@ BuildRequires: %{smartmet_fmt_devel}
 BuildRequires: openssl-devel
 BuildRequires: systemd
 BuildRequires: smartmet-library-macgyver-devel >= 26.11.6
-BuildRequires: smartmet-library-spine-devel >= 26.11.6-2
+BuildRequires: smartmet-library-spine-devel >= 26.11.19-1
 Requires: %{smartmet_boost}-iostreams
 Requires: %{smartmet_boost}-program-options
 Requires: %{smartmet_boost}-regex
@@ -43,7 +43,7 @@ Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
 Requires: smartmet-library-macgyver >= 26.11.6
-Requires: smartmet-library-spine >= 26.11.6-2
+Requires: smartmet-library-spine >= 26.11.19-1
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -108,6 +108,14 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Thu Nov 19 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.11.19-1.fmi
+- Fixed the request header size limit (maxheadersize) to depend only on the size of the header
+  section. Requests between the limit and about 8 kB over it used to be accepted or rejected
+  with 431 depending on how the bytes happened to arrive
+- Raised the default of maxheadersize from 16384 to 65536 bytes
+- Requests the server rejects before they reach a handler (431, 413, 400, 417, high load and
+  full queue 503) are now written to the access log of the handler they were for
+
 * Fri Nov 13 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.11.13-1.fmi
 - Include cleanup: files include what they use, unnecessary includes removed. No functional changes
 

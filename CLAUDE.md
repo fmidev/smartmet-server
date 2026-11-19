@@ -141,7 +141,7 @@ cosmetic. Implemented in this repo:
 - **Hop-by-hop headers** are removed from the request before handlers see them
   (`stripHopByHopHeaders()`), including whatever `Connection` itself names. Runs *after* the
   keep-alive negotiation, which reads `Connection`.
-- **Header section bounded** by `maxheadersize` (16 kB default) → 431, so a client cannot hold a
+- **Header section bounded** by `maxheadersize` (64 kB default) → 431, so a client cannot hold a
   connection — and a slot against `maxconnections` — open by dribbling header bytes.
 - **Client IP** is the socket peer unless the peer matches `trustedproxies`; then the right-most
   untrusted `X-Forwarded-For` hop is used (`Spine::IPFilter::resolveClientIP`). The unset default

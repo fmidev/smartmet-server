@@ -12,6 +12,7 @@ of the Reactor's built-in admin handlers.
 
 import socket
 import sys
+import json
 import time
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8079
@@ -30,12 +31,18 @@ def exchange(chunks, read_rounds=1, pause=0.35):
     replies = []
     try:
         for chunk in chunks:
-            s.sendall(chunk)
+            try:
+                s.sendall(chunk)
+            except (BrokenPipeError, ConnectionResetError):
+                # The server answered early and closed, for example with a 431
+                # while the rest of an oversized header was still on its way.
+                # Whatever it sent before closing is still readable.
+                pass
             time.sleep(pause)
             s.settimeout(1.0)
             try:
                 data = s.recv(65536)
-            except socket.timeout:
+            except (socket.timeout, ConnectionResetError):
                 data = b""
             replies.append(data)
 
@@ -45,6 +52,9 @@ def exchange(chunks, read_rounds=1, pause=0.35):
             try:
                 extra = s.recv(65536)
             except socket.timeout:
+                break
+            except ConnectionResetError:
+                closed = True
                 break
             if extra == b"":
                 closed = True
@@ -161,8 +171,10 @@ for label, raw in [
           closed or headers_of(replies[0]).get("connection") == "close")
 
 # HEAD: headers as for GET, but no content.
-replies, _ = exchange([b"HEAD /admin?what=servicestats HTTP/1.1\r\nHost: h\r\n\r\n",
-                       b"GET /admin?what=servicestats HTTP/1.1\r\nHost: h\r\n\r\n"])
+# The request is one whose reply does not change from one call to the next:
+# request logging is on, and the statistics requests count these very calls.
+replies, _ = exchange([b"HEAD /admin?what=list HTTP/1.1\r\nHost: h\r\n\r\n",
+                       b"GET /admin?what=list HTTP/1.1\r\nHost: h\r\n\r\n"])
 head_hdrs = headers_of(replies[0])
 get_hdrs = headers_of(replies[1])
 check("HEAD returns a 200 with no body",
@@ -256,9 +268,87 @@ check("obsolete line folding is rejected",
 
 # A client must not be able to hold a connection open by dribbling header bytes
 # that never reach the terminating blank line.
-replies, closed = exchange([b"GET /a HTTP/1.1\r\nHost: h\r\n" + b"X-Pad: " + b"p" * 40000 + b"\r\n"])
+replies, closed = exchange([b"GET /a HTTP/1.1\r\nHost: h\r\n" + b"X-Pad: " + b"p" * 80000 + b"\r\n"])
 check("an oversized header section gives 431",
       "431" in status_of(replies[0]), repr(head_of(replies[0])))
+
+check("the 431 body names the right status",
+      b"Request Header Fields Too Large" in replies[0] and
+      b"Internal Server Error" not in replies[0], repr(replies[0][-120:]))
+
+
+def padded_request(size):
+    """A complete GET whose header section is exactly size bytes."""
+    head = b"GET /a HTTP/1.1\r\nHost: h\r\nX-Pad: "
+    tail = b"\r\n\r\n"
+    return head + b"p" * (size - len(head) - len(tail)) + tail
+
+
+def send_in_pieces(data, n):
+    """Send data n bytes at a time and return the whole reply."""
+    s = socket.create_connection((HOST, PORT), timeout=5)
+    s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+    reply = b""
+    try:
+        try:
+            for i in range(0, len(data), n):
+                s.sendall(data[i:i + n])
+                time.sleep(0.002)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        s.settimeout(1.0)
+        try:
+            while True:
+                more = s.recv(65536)
+                if not more:
+                    break
+                reply += more
+                if b"\r\n\r\n" in reply:
+                    break
+        except (socket.timeout, ConnectionResetError):
+            pass
+    finally:
+        s.close()
+    return reply
+
+
+# The limit applies to the size of the header section, and the verdict must not
+# depend on how the bytes are split into TCP segments and socket reads.
+LIMIT = 65536
+for label, n in (("in one write", LIMIT + 1),
+                 ("in 1000 byte pieces", 1000),
+                 ("in 8192 byte pieces", 8192)):
+    reply = send_in_pieces(padded_request(LIMIT), n)
+    check("a header section at the limit is served, sent " + label,
+          status_of(reply).startswith("HTTP/1.1 404"), repr(head_of(reply)))
+
+    reply = send_in_pieces(padded_request(LIMIT + 1), n)
+    check("a header section one byte over the limit gives 431, sent " + label,
+          "431" in status_of(reply), repr(head_of(reply)))
+
+# A body does not count against the header limit.
+replies, _ = exchange([b"POST /a HTTP/1.1\r\nHost: h\r\nContent-Length: 100000\r\n\r\n" +
+                       b"b" * 100000], pause=0.5)
+check("a large body with small headers is not a 431",
+      status_of(b"".join(replies)).startswith("HTTP/1.1 404"), repr(head_of(b"".join(replies))))
+
+# A request the server rejects by itself never reaches a handler, but it must
+# still be found in the access log of the handler it was meant for.
+send_in_pieces(b"GET /info?what=logged431 HTTP/1.1\r\nHost: h\r\n"
+               b"X-Forwarded-For: 10.1.2.3\r\nX-Pad: " + b"p" * 70000 + b"\r\n\r\n", 100000)
+exchange([b"GET /info?what=logged400 HTTP/1.1\r\n\r\n"])
+replies, _ = exchange([b"GET /admin?what=lastrequests&format=json&minutes=5 HTTP/1.1\r\n"
+                       b"Host: h\r\nConnection: close\r\n\r\n"], read_rounds=20)
+logged = json.loads(b"".join(replies).split(b"\r\n\r\n", 1)[1])
+entry = [r for r in logged if r["URL"] == "/info?what=logged431"]
+check("a request rejected with 431 is in the access log of its handler",
+      len(entry) == 1 and entry[0]["Status"] == 431 and entry[0]["Plugin"] == "/info",
+      repr(entry))
+check("the logged 431 has the client address from X-Forwarded-For",
+      len(entry) == 1 and entry[0]["IP"] == "10.1.2.3", repr(entry))
+entry = [r for r in logged if r["URL"] == "/info?what=logged400"]
+check("a request rejected for a missing Host is in the access log",
+      len(entry) == 1 and entry[0]["Status"] == 400, repr(entry))
 
 # An unsupported expectation cannot be met (RFC 9110 10.1.1).
 replies, closed = exchange([b"POST /a HTTP/1.1\r\nHost: h\r\nExpect: something-else\r\n"

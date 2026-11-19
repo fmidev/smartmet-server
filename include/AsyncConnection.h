@@ -170,6 +170,7 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
   bool resolveClientIP();
   void scheduleRequest(SmartMet::Spine::HandlerView* handlerView);
   void handleIncompleteRequest();
+  bool headerSectionTooLarge() const;
   void handleReadError(const boost::system::error_code& e);
 
   // ======================================================================
@@ -278,6 +279,11 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
   // ======================================================================
 
   void sendStockReply(SmartMet::Spine::HTTP::Status theStatus);
+
+  // Send a stock reply to a request which is rejected before it reaches a
+  // handler, and write the request to the access log of the handler it was for
+  void rejectRequest(SmartMet::Spine::HTTP::Status theStatus);
+  void logRejectedRequest(SmartMet::Spine::HTTP::Status theStatus);
 
   // ======================================================================
   /*!

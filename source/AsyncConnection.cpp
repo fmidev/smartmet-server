@@ -9,6 +9,7 @@
 #include "Utility.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/ssl.hpp>
+#include <fmt/format.h>
 #include <macgyver/Cancellation.h>
 #include <macgyver/Exception.h>
 #include <macgyver/StringConversion.h>
@@ -18,6 +19,7 @@
 #include <spine/Options.h>
 #include <spine/Reactor.h>
 #include <spine/Thread.h>
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <chrono>
@@ -27,6 +29,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -54,9 +57,7 @@ bool statusHasNoBody(SmartMet::Spine::HTTP::Status status)
 // is consumed from the socket.
 bool clientHasDisconnected(int theSocket)
 {
-  struct pollfd pfd
-  {
-  };
+  struct pollfd pfd{};
   pfd.fd = theSocket;
   pfd.events = POLLRDHUP;
   if (::poll(&pfd, 1, 0) <= 0)
@@ -186,8 +187,7 @@ void AsyncConnection::armTimer(long theSeconds)
       { me->handleTimer(err, generation); });
 }
 
-void AsyncConnection::handleTimer(const boost::system::error_code& err,
-                                  std::uint64_t theGeneration)
+void AsyncConnection::handleTimer(const boost::system::error_code& err, std::uint64_t theGeneration)
 {
   try
   {
@@ -342,7 +342,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
       {
         // Request is larger than the incoming buffer size.
         reportError("413 Entity too large");
-        sendStockReply(SmartMet::Spine::HTTP::Status::request_entity_too_large);
+        rejectRequest(SmartMet::Spine::HTTP::Status::request_entity_too_large);
         return;
       }
 
@@ -350,6 +350,21 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
       itsBuffer.append(itsSocketBuffer.data(), bytes_transferred);
 
       // std::cout << itsBuffer << "\n";
+
+      // Bound the header section before parsing, so that the verdict depends
+      // only on its size and never on how the bytes happened to be split into
+      // socket reads.
+      if (headerSectionTooLarge())
+      {
+        const auto requestLine =
+            itsBuffer.substr(0, std::min<std::size_t>(itsBuffer.find('\r'), 200));
+        reportError(fmt::format("431 Request header fields too large (limit {} bytes): {}",
+                                itsMaxHeaderSize,
+                                requestLine));
+        itsKeepAlive = false;
+        rejectRequest(SmartMet::Spine::HTTP::Status::request_header_fields_too_large);
+        return;
+      }
 
       // Try to parse the incoming message. parseOneRequest reads exactly one
       // message and says how much of the buffer it took, so anything a
@@ -372,7 +387,7 @@ void AsyncConnection::handleRead(const boost::system::error_code& e, std::size_t
       else if (parsedRequest.status == SmartMet::Spine::HTTP::ParsingStatus::FAILED)
       {
         // Failed parse, something (fundamentally) wrong with the request
-        sendStockReply(SmartMet::Spine::HTTP::Status::bad_request);
+        rejectRequest(SmartMet::Spine::HTTP::Status::bad_request);
       }
       else
         handleIncompleteRequest();
@@ -419,7 +434,7 @@ void AsyncConnection::handleParsedRequest()
   {
     reportError("400 Missing Host header on an HTTP/1.1 request");
     itsKeepAlive = false;
-    sendStockReply(SmartMet::Spine::HTTP::Status::bad_request);
+    rejectRequest(SmartMet::Spine::HTTP::Status::bad_request);
     return;
   }
 
@@ -466,7 +481,7 @@ void AsyncConnection::handleParsedRequest()
   if (!itsAdminQuery && itsReactor.isLoadHigh())
   {
     std::cout << Spine::log_time_str() << " Too many active requests, reporting high load\n";
-    sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
+    rejectRequest(SmartMet::Spine::HTTP::Status::high_load);
     return;
   }
 
@@ -531,7 +546,7 @@ void AsyncConnection::scheduleRequest(SmartMet::Spine::HandlerView* handlerView)
     if (!scheduled)
     {
       // Task queue was full, send busy response
-      sendStockReply(SmartMet::Spine::HTTP::Status::service_unavailable);
+      rejectRequest(SmartMet::Spine::HTTP::Status::service_unavailable);
       reportInfo("Frontend request queue was full");
     }
   }
@@ -561,10 +576,33 @@ void AsyncConnection::scheduleRequest(SmartMet::Spine::HandlerView* handlerView)
     if (!scheduled)
     {
       // Task queue was full, send high load response to frontend
-      sendStockReply(SmartMet::Spine::HTTP::Status::high_load);
+      rejectRequest(SmartMet::Spine::HTTP::Status::high_load);
       reportInfo("Backend request queue was full, returning high load notification");
     }
   }
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Test whether the header section of the buffered request is too large
+ *
+ * The header section runs from the request line to the blank line ending the
+ * headers, both included. It fits if that blank line ends within the first
+ * maxheadersize bytes. If it does not and more than that has been received,
+ * the section is too large whether or not its end has arrived yet. This also
+ * stops a client from holding a connection - and a slot against the
+ * connection limit - open indefinitely by dribbling header bytes that never
+ * reach the terminating blank line.
+ */
+// ----------------------------------------------------------------------
+
+bool AsyncConnection::headerSectionTooLarge() const
+{
+  if (itsMaxHeaderSize == 0 || itsBuffer.size() <= itsMaxHeaderSize)
+    return false;
+
+  const std::string_view head(itsBuffer.data(), itsMaxHeaderSize);
+  return head.find("\r\n\r\n") == std::string_view::npos;
 }
 
 // ----------------------------------------------------------------------
@@ -575,18 +613,6 @@ void AsyncConnection::scheduleRequest(SmartMet::Spine::HandlerView* handlerView)
 
 void AsyncConnection::handleIncompleteRequest()
 {
-  // Bound the header section. Without this a client can hold a connection
-  // - and a slot against the connection limit - open indefinitely by
-  // dribbling header bytes that never reach the terminating blank line.
-  if (itsMaxHeaderSize > 0 && itsBuffer.size() > itsMaxHeaderSize &&
-      itsBuffer.find("\r\n\r\n") == std::string::npos)
-  {
-    reportError("431 Request header fields too large");
-    itsKeepAlive = false;
-    sendStockReply(SmartMet::Spine::HTTP::Status::request_header_fields_too_large);
-    return;
-  }
-
   // Request is not successfully parsed, attempt to get more data from socket and try
   // again - unless the client is waiting for us to accept its body first.
   if (handleExpectContinue())
@@ -678,7 +704,7 @@ bool AsyncConnection::handleExpectContinue()
     // An expectation we do not understand cannot be met (RFC 9110 10.1.1).
     reportInfo("Unsupported expectation '" + head.expect + "', rejecting the request");
     itsKeepAlive = false;
-    sendStockReply(SmartMet::Spine::HTTP::Status::expectation_failed);
+    rejectRequest(SmartMet::Spine::HTTP::Status::expectation_failed);
     return false;
   }
   catch (...)
@@ -1898,6 +1924,98 @@ void AsyncConnection::sendStockReply(const SmartMet::Spine::HTTP::Status theStat
   catch (...)
   {
     std::cerr << "Operation failed! AsyncConnection::sendStockReply aborted\n";
+  }
+}
+
+void AsyncConnection::rejectRequest(const SmartMet::Spine::HTTP::Status theStatus)
+{
+  // Logged first: sending the reply may recycle the connection for the next
+  // request, after which there is nothing left to tell what was rejected.
+  logRejectedRequest(theStatus);
+  sendStockReply(theStatus);
+}
+
+// ----------------------------------------------------------------------
+/*!
+ * \brief Write a request rejected by the server to the access log of its handler
+ *
+ * The access logs are written by the handlers, and a request the server turns
+ * down by itself never reaches one. The request may not even be parseable, so
+ * when there is no parsed request the method, the target and the client are
+ * read from the raw buffer as far as they can be made out.
+ */
+// ----------------------------------------------------------------------
+
+void AsyncConnection::logRejectedRequest(const SmartMet::Spine::HTTP::Status theStatus)
+{
+  try
+  {
+    // Long enough to identify the request. The target of a request rejected
+    // for its size is by definition a long one.
+    const std::size_t maxLoggedTarget = 1024;
+
+    std::string uri;
+    std::string ip;
+    std::string method;
+    std::string version;
+    SmartMet::Spine::HandlerView* handlerView = nullptr;
+
+    if (!itsRequest->getResource().empty())
+    {
+      // The request was parsed before it was rejected
+      uri = itsRequest->getURI();
+      ip = itsRequest->getClientIP();
+      method = (itsHeadRequest ? "HEAD" : itsRequest->getMethodString());
+      version = itsRequest->getVersion();
+      handlerView = itsReactor.getHandlerView(*itsRequest);
+    }
+    else
+    {
+      const auto line = peekRequestLine(itsBuffer);
+      if (line.target.empty())
+        return;  // Nothing to tell which handler the request was for
+
+      uri = line.target;
+      method = line.method;
+      version = line.version;
+
+      boost::system::error_code err;
+      const auto endpoint = socket().remote_endpoint(err);
+      if (!err)
+      {
+        ip = endpoint.address().to_string();
+        if (itsServer != nullptr)
+          ip = SmartMet::Spine::IPFilter::resolveClientIP(
+              ip, peekHeader(itsBuffer, "x-forwarded-for"), itsServer->getTrustedProxies());
+      }
+
+      SmartMet::Spine::HTTP::Request request;
+      request.setResource(uri.substr(0, uri.find('?')));
+      handlerView = itsReactor.getHandlerView(request);
+    }
+
+    if (handlerView == nullptr)
+      return;
+
+    if (uri.size() > maxLoggedTarget)
+      uri = uri.substr(0, maxLoggedTarget) + "...";
+
+    // The stock reply has not been built yet, set it to learn its size
+    itsResponse->setStatus(theStatus, true);
+
+    handlerView->logRejectedRequest(uri,
+                                    ip.empty() ? "-" : ip,
+                                    method,
+                                    version.empty() ? itsResponseVersion : version,
+                                    theStatus,
+                                    itsResponse->getContentLength());
+  }
+  catch (...)
+  {
+    // Failing to log must not prevent the reply from being sent
+    Fmi::Exception ex(
+        BCP, "Operation failed! AsyncConnection::logRejectedRequest aborted", nullptr);
+    std::cerr << ex.getStackTrace();
   }
 }
 

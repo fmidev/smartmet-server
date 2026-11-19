@@ -69,7 +69,7 @@ keepalive:
 // hold a connection open without ever completing a request; exceeding it gives a
 // framed 431 and closes. 0 disables the check.
 
-// maxheadersize = 16384;
+// maxheadersize = 65536;
 
 // Seconds a plugin may spend handling a request, 0 (the default) for no limit. Code which
 // checks for cancellation stops when the time is up, and the client gets a 503. The limit

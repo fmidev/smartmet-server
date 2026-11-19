@@ -24,7 +24,8 @@ fi
 port=8079
 
 cat > conformance.conf <<EOF
-defaultlogging = false;
+defaultlogging = true;
+accesslogdir = "$PWD/conformance-logs";
 server_threads = 4;
 port = $port;
 keepalive: { enabled = true; timeout = 30; maxrequests = 1000; };
@@ -32,6 +33,7 @@ engines: { }
 plugins: { }
 EOF
 
+mkdir -p conformance-logs
 touch conformance.out
 timeout $waittime "$smartmetd" -d -v -c ./conformance.conf >conformance.out 2>&1 &
 childpid=$!
@@ -60,6 +62,6 @@ if [ "$ret" != "0" ] ; then
     exit $ret
 fi
 
-rm -f conformance.out conformance.conf
+rm -rf conformance.out conformance.conf conformance-logs
 echo "Conformance test OK"
 exit 0

@@ -134,7 +134,8 @@ pending handlers). Then:
 1. **`start()`**: register the connection in the count, set `TCP_NODELAY`, arm the read
    timeout, and start the TLS handshake if encryption is on.
 2. **`handleRead()`**: accumulate bytes, arm the read timeout (`timeout`), enforce
-   `maxheadersize` (431) and `maxrequestsize` (413). Answer `Expect: 100-continue` from
+   `maxheadersize` (431, by the size of the header section alone, however the bytes arrive)
+   and `maxrequestsize` (413). Answer `Expect: 100-continue` from
    the raw header section as soon as it is complete (`handleExpectContinue()`), because the
    client is withholding the body. Then parse exactly one request with
    `Spine::HTTP::parseOneRequest()`, which also rejects request smuggling (conflicting
@@ -232,7 +233,7 @@ the connections each frontend keeps idle (see the frontend guide).
 | `timeout` | 60 s | Reading a request. Expiry → 408 and close. |
 | `keepalive.timeout` | 30 s | Idle time between requests. Expiry → silent close. |
 | `maxrequestsize` | 131072 | Request size (0 = unlimited). Over → 413 and close. |
-| `maxheadersize` | 16 kB | Header section. Over → 431. |
+| `maxheadersize` | 64 kB | Header section. Over → 431. |
 | `maxconnections` | ¾ of the soft `RLIMIT_NOFILE` | Open client connections. Over → framed 503 and close; logged once per episode. |
 | `activerequests.*` | 50 / 50 / 100 / 10 | The throttle behind `Reactor::isLoadHigh()`: start with `start_limit` active requests, raise the limit by one every `increase_rate` successful requests up to `limit`, fall back to `restart_limit`. |
 | pool `maxrequeuesize` | 100 | Queue length per pool. Full → 503. |
@@ -240,8 +241,12 @@ the connections each frontend keeps idle (see the frontend guide).
 | `cancel_on_disconnect` | false | Cancel a request whose client has closed the connection, `plugins.<name>.cancel_on_disconnect` per plugin. See below. |
 
 A high-load reply and a full-queue 503 are sent directly from `AsyncConnection`,
-**before** the handler runs, so they do not appear in the access log; they are only
-printed to stdout. The frontend treats the high-load reply as "try another backend"
+**before** the handler runs. So are the replies to requests the server rejects by itself:
+431, 413, 400 and 417. `AsyncConnection::rejectRequest()` writes all of these to the access
+log of the handler the request was for (`HandlerView::logRejectedRequest()`), with a zero
+duration. A request which could not be parsed is identified from its raw request line, and
+a target longer than 1024 characters is cut. A request no handler matches (404) and a
+request which never arrived in full (408) are not logged. The frontend treats the high-load reply as "try another backend"
 and retires the backend for a moment (see the frontend guide).
 
 ### Cancelling a request
@@ -313,6 +318,7 @@ hanging shutdown is killed, default 60), `debug`, `quiet`, `verbose`, and the `e
 * **The server accepts requests before the plugins are ready.** Load balancers must use a
   readiness check (the backend plugin's `/` text, or `what=waitforready`), not the open
   port.
-* **Overload is not in the access logs.** Count high-load and queue-full replies from the
-  stdout log, not the access logs.
+* **Rejected requests are in the access logs with a zero duration.** High-load and
+  queue-full replies, and requests rejected with 431, 413, 400 or 417, are logged for the
+  handler they were for and count in its `servicestats`.
 * **Streamed responses are never compressed.**

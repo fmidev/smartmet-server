@@ -280,6 +280,84 @@ RawRequestHead peekRequestHead(const std::string& buffer)
   }
 }
 
+RawRequestLine peekRequestLine(const std::string& buffer)
+{
+  try
+  {
+    RawRequestLine line;
+
+    // A token ends at the first whitespace or control character
+    const auto token_end = [&buffer](std::size_t pos)
+    {
+      while (pos < buffer.size() && buffer[pos] > ' ' && buffer[pos] != 0x7f)
+        ++pos;
+      return pos;
+    };
+
+    // A server should ignore empty lines before the request line (RFC 9112 2.2)
+    std::size_t pos = buffer.find_first_not_of("\r\n");
+    if (pos == std::string::npos)
+      return line;
+
+    std::size_t end = token_end(pos);
+    line.method = buffer.substr(pos, end - pos);
+    if (end >= buffer.size() || buffer[end] != ' ')
+      return line;
+
+    pos = end + 1;
+    end = token_end(pos);
+    line.target = buffer.substr(pos, end - pos);
+    if (end >= buffer.size() || buffer[end] != ' ')
+      return line;
+
+    pos = end + 1;
+    end = token_end(pos);
+    if (buffer.compare(pos, 5, "HTTP/") == 0)
+      line.version = buffer.substr(pos + 5, end - pos - 5);
+
+    return line;
+  }
+  catch (...)
+  {
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
+  }
+}
+
+std::optional<std::string> peekHeader(const std::string& buffer, const std::string& name)
+{
+  try
+  {
+    // The headers start after the request line and end at the first empty line
+    std::size_t pos = buffer.find("\r\n");
+
+    while (pos != std::string::npos)
+    {
+      pos += 2;
+      const std::size_t lineEnd = buffer.find("\r\n", pos);
+      if (lineEnd == std::string::npos || lineEnd == pos)
+        break;  // The rest has not arrived, or the header section ended
+
+      const std::size_t colon = buffer.find(':', pos);
+      if (colon < lineEnd && Fmi::ascii_tolower_copy(buffer.substr(pos, colon - pos)) == name)
+      {
+        const std::size_t first = buffer.find_first_not_of(" \t", colon + 1);
+        if (first >= lineEnd)
+          return std::string();
+        const std::size_t last = buffer.find_last_not_of(" \t", lineEnd - 1);
+        return buffer.substr(first, last - first + 1);
+      }
+
+      pos = lineEnd;
+    }
+
+    return {};
+  }
+  catch (...)
+  {
+    throw Fmi::Exception::Trace(BCP, "Operation failed!");
+  }
+}
+
 std::string dumpRequest(SmartMet::Spine::HTTP::Request& request)
 {
   try

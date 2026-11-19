@@ -7,4 +7,4 @@ test: $(SMARTMETD) startup-test.sh conformance-test.sh conformance-test.py
 	bash ./conformance-test.sh $(SMARTMETD)
 
 clean:
-	rm -f test.out test.status conformance.out conformance.conf
+	rm -rf test.out test.status conformance.out conformance.conf conformance-logs

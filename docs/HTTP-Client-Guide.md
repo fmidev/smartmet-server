@@ -499,7 +499,7 @@ per installation; the defaults are:
 | `404 Not Found` | No plugin handles the path. | Check the URL. |
 | `408 Request Timeout` | The request was not received in full within 60 seconds. | Send requests promptly once the connection is open. The connection is closed. |
 | `413 Content Too Large` | The whole request exceeds 128 kB. | Send less. This mostly concerns `POST` bodies. The connection is closed. |
-| `431 Request Header Fields Too Large` | The request line and headers exceed 16 kB. | Shorten the URL. A `GET` with a long polygon or a long list of parameters can hit this; use `POST` for such queries. |
+| `431 Request Header Fields Too Large` | The request line and headers exceed 64 kB (the server default; a proxy in front may enforce a lower limit). | Shorten the URL. A `GET` with a long polygon or a long list of parameters can hit this; use `POST` for such queries. |
 | `502 Bad Gateway` | The frontend could not get an answer from any backend. | Treat like `503`. |
 | `503 Service Unavailable` | The server is overloaded, still starting up or shutting down. | See below. |
 
