@@ -12,9 +12,11 @@
 #include <boost/thread.hpp>
 #include <macgyver/Cancellation.h>
 #include <spine/HTTP.h>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <string>
 
 namespace SmartMet::Spine
 {
@@ -424,6 +426,22 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
 
   // ======================================================================
   /*!
+   * \brief Get the next chunk from the response stream
+   *
+   * The cancellation token of the request is current while the streamer produces the
+   * chunk, so the time limit of the plugin and the probe noticing a client which has
+   * left apply also while the response is streamed. Returns false if the request was
+   * cancelled: the connection is then closed.
+   */
+  // ======================================================================
+
+  bool getStreamChunk(std::string& theChunk);
+
+  // Log a cancelled request
+  void reportCancellation(const std::string& theWhen);
+
+  // ======================================================================
+  /*!
    * \brief Function to start regular (unstreamed) writes
    *
    * Regular replies are simple string responses.
@@ -502,6 +520,12 @@ class AsyncConnection : public Connection, public std::enable_shared_from_this<A
 
   /// True once the backend health hooks have been told how this response ended
   bool itsBackendNotified = false;
+
+  /// The cancellation token of the current request, current also while its response is
+  /// streamed, the plugin handling the request and when the handling started
+  std::shared_ptr<Fmi::CancellationToken> itsCancellation;
+  std::string itsCancellationPlugin;
+  std::chrono::steady_clock::time_point itsHandlingStarted;
 
   /// True when the current request was a HEAD. The request itself is handed to
   /// the handler as a GET, so this is the only record of it.
