@@ -65,7 +65,7 @@ request handling look like the work of one thread. A frontend profile now splits
 cleanly — for one measured load, 47% `srv-fast`, 37% the frontend plugin's own
 `front-be-N` backend I/O threads, 15% `srv-wrk-NNNN`.
 
-> **High-load rejections are not access-logged.** When the server is overloaded it sends a high-load (`503`) stock reply directly from `AsyncConnection` — either on `isLoadHigh()` or when a pool's task queue is full — and `return`s *before* the request is scheduled to a handler. Access logging lives in `HandlerView::handle()` (per-handler `AccessLogger`), so a rejected request never reaches it and produces **no access-log entry** — only a stdout line (`"Too many active requests, reporting high load"` / `"Backend request queue was full..."`). Don't compute error rates or count `503`s from access logs; high-load events appear only in the system/stdout log. (And the frontend silently retries these on another backend, so they may be invisible client-side too.)
+> **High-load rejections are access-logged with a zero duration.** When the server is overloaded it sends a high-load stock reply directly from `AsyncConnection` — either on `isLoadHigh()` or when a pool's task queue is full — *before* the request is scheduled to a handler, so `HandlerView::handle()` never runs. `AsyncConnection::rejectRequest()` therefore writes the entry itself through `HandlerView::logRejectedRequest()`, as it does for 431, 413, 400 and 417, and also prints a stdout line (`"Too many active requests, reporting high load"`). The rejections count in the handler's `servicestats`. (The frontend silently retries high-load replies on another backend, so they are usually invisible client-side.)
 
 ### Persistent connections (HTTP keep-alive)
 
