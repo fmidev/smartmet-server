@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="330" viewBox="0 0 980 330" role="img" aria-label="How a WMS map is drawn">
+<title>How a WMS map is drawn</title>
+
+<style>
+  text { font-family: Inter, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #1e293b; }
+  .t { font-size: 15px; font-weight: 600; }
+  .s { font-size: 12.5px; fill: #475569; }
+  .m { font-size: 12px; fill: #334155; font-family: 'JetBrains Mono', Menlo, Consolas, monospace; }
+  .h { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; fill: #64748b; }
+  .g { font-size: 14px; font-weight: 700; fill: #334155; }
+  .l { font-size: 12px; fill: #475569; font-style: italic; }
+  .ln { stroke: #475569; stroke-width: 1.6; fill: none; }
+  .dash { stroke-dasharray: 6 4; }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+  </marker>
+</defs>
+
+<rect width="980" height="330" rx="12" fill="#ffffff"/>
+<rect x="20" y="40" width="190" height="80" rx="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="115.0" y="68.0" class="t" text-anchor="middle">Request</text>
+<text x="115.0" y="87.0" class="s" text-anchor="middle">+ product JSON</text>
+<text x="115.0" y="103.0" class="s" text-anchor="middle">(layers, styles)</text>
+<rect x="250" y="40" width="170" height="80" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+<text x="335.0" y="68.0" class="t" text-anchor="middle">Hash</text>
+<text x="335.0" y="87.0" class="s" text-anchor="middle">of product and data</text>
+<text x="335.0" y="103.0" class="s" text-anchor="middle">versions = ETag</text>
+<polygon points="540,34 625,80 540,126 455,80" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+<text x="540" y="84" class="t" text-anchor="middle">cached?</text>
+<rect x="700" y="40" width="260" height="80" rx="10" fill="#fce7f3" stroke="#db2777" stroke-width="1.5"/>
+<text x="830.0" y="76.0" class="t" text-anchor="middle">Cached image</text>
+<text x="830.0" y="95.0" class="s" text-anchor="middle">or 304 Not Modified</text>
+<polyline points="210,80 248,80" class="ln" marker-end="url(#arrow)"/>
+<polyline points="420,80 453,80" class="ln" marker-end="url(#arrow)"/>
+<polyline points="625,80 698,80" class="ln" marker-end="url(#arrow)"/>
+<rect x="646.0" y="60" width="28.0" height="16" rx="3" fill="#ffffff"/>
+<text x="660" y="72" class="l" text-anchor="middle">yes</text>
+<rect x="20" y="210" width="205" height="84" rx="10" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="122.5" y="240.0" class="t" text-anchor="middle">Read data</text>
+<text x="122.5" y="259.0" class="s" text-anchor="middle">per layer: querydata,</text>
+<text x="122.5" y="275.0" class="s" text-anchor="middle">grid, observation…</text>
+<rect x="265" y="210" width="205" height="84" rx="10" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="367.5" y="240.0" class="t" text-anchor="middle">Contour engine</text>
+<text x="367.5" y="259.0" class="s" text-anchor="middle">isobands, isolines</text>
+<text x="367.5" y="275.0" class="s" text-anchor="middle">in map projection</text>
+<rect x="510" y="210" width="205" height="84" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="612.5" y="240.0" class="t" text-anchor="middle">SVG document</text>
+<text x="612.5" y="259.0" class="s" text-anchor="middle">layers through</text>
+<text x="612.5" y="275.0" class="s" text-anchor="middle">a template, CSS</text>
+<rect x="755" y="210" width="205" height="84" rx="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="857.5" y="240.0" class="t" text-anchor="middle">Output</text>
+<text x="857.5" y="259.0" class="s" text-anchor="middle">PNG, WebP, PDF;</text>
+<text x="857.5" y="275.0" class="s" text-anchor="middle">GeoJSON, MVT, GeoTIFF…</text>
+<polyline points="225,252 263,252" class="ln" marker-end="url(#arrow)"/>
+<polyline points="470,252 508,252" class="ln" marker-end="url(#arrow)"/>
+<polyline points="715,252 753,252" class="ln" marker-end="url(#arrow)"/>
+<polyline points="540,126 540,165 122,165 122,208" class="ln" marker-end="url(#arrow)"/>
+<rect x="295.0" y="147" width="70.0" height="16" rx="3" fill="#ffffff"/>
+<text x="330" y="159" class="l" text-anchor="middle">no: render</text>
+</svg>

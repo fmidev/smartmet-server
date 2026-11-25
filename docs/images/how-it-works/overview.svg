@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="350" viewBox="0 0 1000 350" role="img" aria-label="From data producers to clients">
+<title>From data producers to clients</title>
+
+<style>
+  text { font-family: Inter, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #1e293b; }
+  .t { font-size: 15px; font-weight: 600; }
+  .s { font-size: 12.5px; fill: #475569; }
+  .m { font-size: 12px; fill: #334155; font-family: 'JetBrains Mono', Menlo, Consolas, monospace; }
+  .h { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; fill: #64748b; }
+  .g { font-size: 14px; font-weight: 700; fill: #334155; }
+  .l { font-size: 12px; fill: #475569; font-style: italic; }
+  .ln { stroke: #475569; stroke-width: 1.6; fill: none; }
+  .dash { stroke-dasharray: 6 4; }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+  </marker>
+</defs>
+
+<rect width="1000" height="350" rx="12" fill="#ffffff"/>
+<text x="115.0" y="30" class="h" text-anchor="middle">DATA PRODUCERS</text>
+<text x="355.0" y="30" class="h" text-anchor="middle">STORAGE</text>
+<text x="655.0" y="30" class="h" text-anchor="middle">SMARTMET SERVER</text>
+<text x="915.0" y="30" class="h" text-anchor="middle">CLIENTS</text>
+<rect x="20" y="55" width="190" height="56" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+<text x="115.0" y="79.0" class="t" text-anchor="middle">NWP models</text>
+<text x="115.0" y="98.0" class="s" text-anchor="middle">GRIB, NetCDF</text>
+<rect x="20" y="125" width="190" height="56" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+<text x="115.0" y="149.0" class="t" text-anchor="middle">Post-processing</text>
+<text x="115.0" y="168.0" class="s" text-anchor="middle">QueryData</text>
+<rect x="20" y="195" width="190" height="56" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+<text x="115.0" y="219.0" class="t" text-anchor="middle">Radar, satellite</text>
+<text x="115.0" y="238.0" class="s" text-anchor="middle">HDF5, GeoTIFF / COG</text>
+<rect x="20" y="265" width="190" height="56" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+<text x="115.0" y="289.0" class="t" text-anchor="middle">Observation network</text>
+<text x="115.0" y="308.0" class="s" text-anchor="middle">stations, lightning…</text>
+<rect x="260" y="55" width="190" height="196" rx="10" fill="#e2e8f0" stroke="#64748b" stroke-width="1.5"/>
+<text x="355.0" y="109.0" class="t" text-anchor="middle">Shared file systems</text>
+<text x="355.0" y="128.0" class="s" text-anchor="middle">(NFS)</text>
+<text x="355.0" y="144.0" class="s" text-anchor="middle"></text>
+<text x="355.0" y="160.0" class="s" text-anchor="middle">files are read in place,</text>
+<text x="355.0" y="176.0" class="s" text-anchor="middle">memory-mapped</text>
+<text x="355.0" y="192.0" class="s" text-anchor="middle"></text>
+<text x="355.0" y="208.0" class="s" text-anchor="middle">+ Redis index of grid files</text>
+<rect x="260" y="265" width="190" height="56" rx="10" fill="#e2e8f0" stroke="#64748b" stroke-width="1.5"/>
+<text x="355.0" y="289.0" class="t" text-anchor="middle">PostgreSQL</text>
+<text x="355.0" y="308.0" class="s" text-anchor="middle">observation databases</text>
+<polyline points="210,83 258,83" class="ln" marker-end="url(#arrow)"/>
+<polyline points="210,153 258,153" class="ln" marker-end="url(#arrow)"/>
+<polyline points="210,223 258,223" class="ln" marker-end="url(#arrow)"/>
+<polyline points="210,293 258,293" class="ln" marker-end="url(#arrow)"/>
+<rect x="500" y="48" width="310" height="282" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="516" y="70" class="g" text-anchor="start"></text>
+<rect x="515" y="80" width="130" height="236" rx="10" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="580.0" y="162.0" class="t" text-anchor="middle">Backends</text>
+<text x="580.0" y="181.0" class="s" text-anchor="middle"></text>
+<text x="580.0" y="197.0" class="s" text-anchor="middle">engines hold</text>
+<text x="580.0" y="213.0" class="s" text-anchor="middle">the data,</text>
+<text x="580.0" y="229.0" class="s" text-anchor="middle">plugins compute</text>
+<text x="580.0" y="245.0" class="s" text-anchor="middle">each answer</text>
+<rect x="665" y="80" width="130" height="236" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="730.0" y="170.0" class="t" text-anchor="middle">Frontends</text>
+<text x="730.0" y="189.0" class="s" text-anchor="middle"></text>
+<text x="730.0" y="205.0" class="s" text-anchor="middle">route requests</text>
+<text x="730.0" y="221.0" class="s" text-anchor="middle">to backends,</text>
+<text x="730.0" y="237.0" class="s" text-anchor="middle">cache responses</text>
+<polyline points="450,153 513,153" class="ln" marker-end="url(#arrow)"/>
+<polyline points="450,293 513,293" class="ln" marker-end="url(#arrow)"/>
+<polyline points="645,198 663,198" class="ln" marker-end="url(#arrow)"/>
+<rect x="850" y="55" width="130" height="56" rx="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="915.0" y="87.0" class="t" text-anchor="middle">Apps</text>
+<polyline points="795,198 848,83" class="ln" marker-end="url(#arrow)"/>
+<rect x="850" y="125" width="130" height="56" rx="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="915.0" y="157.0" class="t" text-anchor="middle">Web maps</text>
+<polyline points="795,198 848,153" class="ln" marker-end="url(#arrow)"/>
+<rect x="850" y="195" width="130" height="56" rx="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="915.0" y="227.0" class="t" text-anchor="middle">OGC clients</text>
+<polyline points="795,198 848,223" class="ln" marker-end="url(#arrow)"/>
+<rect x="850" y="265" width="130" height="56" rx="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="915.0" y="297.0" class="t" text-anchor="middle">Other servers</text>
+<polyline points="795,198 848,293" class="ln" marker-end="url(#arrow)"/>
+</svg>

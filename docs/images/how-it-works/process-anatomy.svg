@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="610" viewBox="0 0 960 610" role="img" aria-label="Inside the smartmetd process">
+<title>Inside the smartmetd process</title>
+
+<style>
+  text { font-family: Inter, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #1e293b; }
+  .t { font-size: 15px; font-weight: 600; }
+  .s { font-size: 12.5px; fill: #475569; }
+  .m { font-size: 12px; fill: #334155; font-family: 'JetBrains Mono', Menlo, Consolas, monospace; }
+  .h { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; fill: #64748b; }
+  .g { font-size: 14px; font-weight: 700; fill: #334155; }
+  .l { font-size: 12px; fill: #475569; font-style: italic; }
+  .ln { stroke: #475569; stroke-width: 1.6; fill: none; }
+  .dash { stroke-dasharray: 6 4; }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+  </marker>
+</defs>
+
+<rect width="960" height="610" rx="12" fill="#ffffff"/>
+<rect x="20" y="16" width="920" height="576" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="36" y="38" class="g" text-anchor="start">smartmetd — one process</text>
+<rect x="40" y="52" width="880" height="52" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+<text x="480.0" y="74.0" class="t" text-anchor="middle">HTTP server</text>
+<text x="480.0" y="93.0" class="s" text-anchor="middle">sockets, TLS, keep-alive, compression, thread pools (fast, slow, admin)</text>
+<rect x="40" y="122" width="880" height="52" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+<text x="480.0" y="144.0" class="t" text-anchor="middle">Reactor (spine library)</text>
+<text x="480.0" y="163.0" class="s" text-anchor="middle">loads engines and plugins at startup, routes URLs to plugins, answers /admin and /info</text>
+<polyline points="480,104 480,120" class="ln" marker-end="url(#arrow)"/>
+<rect x="40" y="218" width="420" height="360" rx="10" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="58" y="246" class="t" text-anchor="start">Engines  (engines/*.so)</text>
+<text x="58" y="265" class="s" text-anchor="start">shared data and state, used by the plugins</text>
+<text x="58" y="294" class="m" text-anchor="start" font-weight="700">querydata</text>
+<text x="200" y="294" class="s" text-anchor="start">QueryData files</text>
+<text x="58" y="316" class="m" text-anchor="start" font-weight="700">grid</text>
+<text x="200" y="316" class="s" text-anchor="start">GRIB, NetCDF, QueryData via an index</text>
+<text x="58" y="338" class="m" text-anchor="start" font-weight="700">observation</text>
+<text x="200" y="338" class="s" text-anchor="start">station observations from databases</text>
+<text x="58" y="360" class="m" text-anchor="start" font-weight="700">geonames</text>
+<text x="200" y="360" class="s" text-anchor="start">places, elevation, time zones</text>
+<text x="58" y="382" class="m" text-anchor="start" font-weight="700">gis</text>
+<text x="200" y="382" class="s" text-anchor="start">projections, PostGIS shapes, DEM</text>
+<text x="58" y="404" class="m" text-anchor="start" font-weight="700">contour</text>
+<text x="200" y="404" class="s" text-anchor="start">isolines and isobands</text>
+<text x="58" y="426" class="m" text-anchor="start" font-weight="700">sputnik</text>
+<text x="200" y="426" class="s" text-anchor="start">cluster discovery</text>
+<text x="58" y="448" class="m" text-anchor="start" font-weight="700">avi</text>
+<text x="200" y="448" class="s" text-anchor="start">aviation messages</text>
+<text x="58" y="470" class="m" text-anchor="start" font-weight="700">satellite</text>
+<text x="200" y="470" class="s" text-anchor="start">satellite imagery (COG)</text>
+<text x="58" y="492" class="m" text-anchor="start" font-weight="700">osm</text>
+<text x="200" y="492" class="s" text-anchor="start">map background data</text>
+<text x="58" y="514" class="m" text-anchor="start" font-weight="700">authentication</text>
+<text x="200" y="514" class="s" text-anchor="start">API keys, access rights</text>
+<rect x="500" y="218" width="420" height="360" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="518" y="246" class="t" text-anchor="start">Plugins  (plugins/*.so)</text>
+<text x="518" y="265" class="s" text-anchor="start">HTTP request handlers, one or more URLs each</text>
+<text x="518" y="294" class="m" text-anchor="start" font-weight="700">timeseries</text>
+<text x="660" y="294" class="s" text-anchor="start">tables for points, areas, paths</text>
+<text x="518" y="316" class="m" text-anchor="start" font-weight="700">edr</text>
+<text x="660" y="316" class="s" text-anchor="start">OGC API – EDR</text>
+<text x="518" y="338" class="m" text-anchor="start" font-weight="700">wms</text>
+<text x="660" y="338" class="s" text-anchor="start">maps and tiles: WMS, WMTS, Tiles, Dali</text>
+<text x="518" y="360" class="m" text-anchor="start" font-weight="700">wfs</text>
+<text x="660" y="360" class="s" text-anchor="start">OGC WFS stored queries</text>
+<text x="518" y="382" class="m" text-anchor="start" font-weight="700">download</text>
+<text x="660" y="382" class="s" text-anchor="start">gridded data as GRIB, NetCDF, GeoTIFF</text>
+<text x="518" y="404" class="m" text-anchor="start" font-weight="700">autocomplete</text>
+<text x="660" y="404" class="s" text-anchor="start">place-name suggestions</text>
+<text x="518" y="426" class="m" text-anchor="start" font-weight="700">avi</text>
+<text x="660" y="426" class="s" text-anchor="start">aviation messages</text>
+<text x="518" y="448" class="m" text-anchor="start" font-weight="700">textgen</text>
+<text x="660" y="448" class="s" text-anchor="start">forecasts as text</text>
+<text x="518" y="470" class="m" text-anchor="start" font-weight="700">cross_section</text>
+<text x="660" y="470" class="s" text-anchor="start">vertical cross-sections</text>
+<text x="518" y="492" class="m" text-anchor="start" font-weight="700">trajectory</text>
+<text x="660" y="492" class="s" text-anchor="start">air-parcel trajectories</text>
+<text x="518" y="514" class="m" text-anchor="start" font-weight="700">q3</text>
+<text x="660" y="514" class="s" text-anchor="start">Lua-scripted products</text>
+<text x="518" y="536" class="m" text-anchor="start" font-weight="700">frontend, backend</text>
+<text x="660" y="536" class="s" text-anchor="start">clustering</text>
+<polyline points="710,174 710,216" class="ln" marker-end="url(#arrow)"/>
+<rect x="715.0" y="188" width="100.0" height="16" rx="3" fill="#ffffff"/>
+<text x="720" y="200" class="l" text-anchor="start">routes requests</text>
+<polyline points="250,174 250,216" class="ln" marker-end="url(#arrow)"/>
+<rect x="255.0" y="188" width="106.0" height="16" rx="3" fill="#ffffff"/>
+<text x="260" y="200" class="l" text-anchor="start">loads at startup</text>
+<polyline points="500,330 462,330" class="ln" marker-end="url(#arrow)"/>
+<rect x="467.0" y="306" width="28.0" height="16" rx="3" fill="#ffffff"/>
+<text x="481" y="318" class="l" text-anchor="middle">use</text>
+</svg>

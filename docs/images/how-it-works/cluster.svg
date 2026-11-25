@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="430" viewBox="0 0 960 430" role="img" aria-label="A SmartMet Server cluster">
+<title>A SmartMet Server cluster</title>
+
+<style>
+  text { font-family: Inter, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #1e293b; }
+  .t { font-size: 15px; font-weight: 600; }
+  .s { font-size: 12.5px; fill: #475569; }
+  .m { font-size: 12px; fill: #334155; font-family: 'JetBrains Mono', Menlo, Consolas, monospace; }
+  .h { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; fill: #64748b; }
+  .g { font-size: 14px; font-weight: 700; fill: #334155; }
+  .l { font-size: 12px; fill: #475569; font-style: italic; }
+  .ln { stroke: #475569; stroke-width: 1.6; fill: none; }
+  .dash { stroke-dasharray: 6 4; }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+  </marker>
+</defs>
+
+<rect width="960" height="430" rx="12" fill="#ffffff"/>
+<rect x="20" y="150" width="110" height="80" rx="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="75.0" y="194.0" class="t" text-anchor="middle">Clients</text>
+<rect x="165" y="150" width="140" height="80" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+<text x="235.0" y="186.0" class="t" text-anchor="middle">Load balancer</text>
+<text x="235.0" y="205.0" class="s" text-anchor="middle">(F5 or similar)</text>
+<polyline points="130,190 163,190" class="ln" marker-end="url(#arrow)"/>
+<rect x="350" y="80" width="190" height="90" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="445.0" y="113.0" class="t" text-anchor="middle">Frontend 1</text>
+<text x="445.0" y="132.0" class="s" text-anchor="middle">frontend plugin,</text>
+<text x="445.0" y="148.0" class="s" text-anchor="middle">response cache</text>
+<polyline points="305,190 348,125" class="ln" marker-end="url(#arrow)"/>
+<polyline points="540,125 608,125" class="ln" marker-end="url(#arrow)"/>
+<rect x="350" y="220" width="190" height="90" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="445.0" y="253.0" class="t" text-anchor="middle">Frontend 2</text>
+<text x="445.0" y="272.0" class="s" text-anchor="middle">frontend plugin,</text>
+<text x="445.0" y="288.0" class="s" text-anchor="middle">response cache</text>
+<polyline points="305,190 348,265" class="ln" marker-end="url(#arrow)"/>
+<polyline points="540,265 608,265" class="ln" marker-end="url(#arrow)"/>
+<polyline points="610,72 610,327" class="ln"/>
+<rect x="533.0" y="50" width="154.0" height="16" rx="3" fill="#ffffff"/>
+<text x="610" y="62" class="l" text-anchor="middle">HTTP, pooled connections</text>
+<rect x="700" y="40" width="230" height="65" rx="10" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="815.0" y="68.5" class="t" text-anchor="middle">Backend 1</text>
+<text x="815.0" y="87.5" class="s" text-anchor="middle">engines + data plugins</text>
+<polyline points="610,72 698,72" class="ln" marker-end="url(#arrow)"/>
+<rect x="700" y="125" width="230" height="65" rx="10" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="815.0" y="153.5" class="t" text-anchor="middle">Backend 2</text>
+<text x="815.0" y="172.5" class="s" text-anchor="middle">engines + data plugins</text>
+<polyline points="610,157 698,157" class="ln" marker-end="url(#arrow)"/>
+<rect x="700" y="210" width="230" height="65" rx="10" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="815.0" y="238.5" class="t" text-anchor="middle">Backend 3</text>
+<text x="815.0" y="257.5" class="s" text-anchor="middle">engines + data plugins</text>
+<polyline points="610,242 698,242" class="ln" marker-end="url(#arrow)"/>
+<rect x="700" y="295" width="230" height="65" rx="10" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="815.0" y="323.5" class="t" text-anchor="middle">Backend 4</text>
+<text x="815.0" y="342.5" class="s" text-anchor="middle">engines + data plugins</text>
+<polyline points="610,327 698,327" class="ln" marker-end="url(#arrow)"/>
+<polyline points="445,312 445,385 815,385 815,362" class="ln dash" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<rect x="430.0" y="368" width="400.0" height="16" rx="3" fill="#ffffff"/>
+<text x="630" y="380" class="l" text-anchor="middle">UDP discovery every 5 s: “what do you serve, how loaded are you?”</text>
+</svg>

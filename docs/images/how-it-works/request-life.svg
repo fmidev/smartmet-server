@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="330" viewBox="0 0 960 330" role="img" aria-label="The life of a request on a backend">
+<title>The life of a request on a backend</title>
+
+<style>
+  text { font-family: Inter, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif; fill: #1e293b; }
+  .t { font-size: 15px; font-weight: 600; }
+  .s { font-size: 12.5px; fill: #475569; }
+  .m { font-size: 12px; fill: #334155; font-family: 'JetBrains Mono', Menlo, Consolas, monospace; }
+  .h { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; fill: #64748b; }
+  .g { font-size: 14px; font-weight: 700; fill: #334155; }
+  .l { font-size: 12px; fill: #475569; font-style: italic; }
+  .ln { stroke: #475569; stroke-width: 1.6; fill: none; }
+  .dash { stroke-dasharray: 6 4; }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+  </marker>
+</defs>
+
+<rect width="960" height="330" rx="12" fill="#ffffff"/>
+<rect x="20" y="40" width="140" height="100" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+<text x="90.0" y="70.0" class="t" text-anchor="middle">1  Connection</text>
+<text x="90.0" y="89.0" class="s" text-anchor="middle">read and validate</text>
+<text x="90.0" y="105.0" class="s" text-anchor="middle">the request,</text>
+<text x="90.0" y="121.0" class="s" text-anchor="middle">keep-alive</text>
+<rect x="177" y="40" width="140" height="100" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+<text x="247.0" y="78.0" class="t" text-anchor="middle">2  Routing</text>
+<text x="247.0" y="97.0" class="s" text-anchor="middle">/timeseries →</text>
+<text x="247.0" y="113.0" class="s" text-anchor="middle">timeseries plugin</text>
+<polyline points="160,90 175,90" class="ln" marker-end="url(#arrow)"/>
+<rect x="334" y="40" width="140" height="100" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+<text x="404.0" y="70.0" class="t" text-anchor="middle">3  Scheduling</text>
+<text x="404.0" y="89.0" class="s" text-anchor="middle">fast or slow pool,</text>
+<text x="404.0" y="105.0" class="s" text-anchor="middle">or refuse at once</text>
+<text x="404.0" y="121.0" class="s" text-anchor="middle">if overloaded</text>
+<polyline points="317,90 332,90" class="ln" marker-end="url(#arrow)"/>
+<rect x="491" y="40" width="140" height="100" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="561.0" y="70.0" class="t" text-anchor="middle">4  Plugin</text>
+<text x="561.0" y="89.0" class="s" text-anchor="middle">parse, locate,</text>
+<text x="561.0" y="105.0" class="s" text-anchor="middle">choose producer,</text>
+<text x="561.0" y="121.0" class="s" text-anchor="middle">interpolate, format</text>
+<polyline points="474,90 489,90" class="ln" marker-end="url(#arrow)"/>
+<rect x="648" y="40" width="140" height="100" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+<text x="718.0" y="78.0" class="t" text-anchor="middle">5  Response</text>
+<text x="718.0" y="97.0" class="s" text-anchor="middle">ETag, Expires,</text>
+<text x="718.0" y="113.0" class="s" text-anchor="middle">zstd / gzip</text>
+<polyline points="631,90 646,90" class="ln" marker-end="url(#arrow)"/>
+<rect x="805" y="40" width="140" height="100" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+<text x="875.0" y="78.0" class="t" text-anchor="middle">6  Logging</text>
+<text x="875.0" y="97.0" class="s" text-anchor="middle">access log,</text>
+<text x="875.0" y="113.0" class="s" text-anchor="middle">service statistics</text>
+<polyline points="788,90 803,90" class="ln" marker-end="url(#arrow)"/>
+<rect x="345" y="210" width="145" height="72" rx="10" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="417.5" y="234.0" class="t" text-anchor="middle">geonames</text>
+<text x="417.5" y="253.0" class="s" text-anchor="middle">where is Helsinki?</text>
+<text x="417.5" y="269.0" class="s" text-anchor="middle">elevation, time zone</text>
+<polyline points="561,140 561,175 417,175 417,208" class="ln dash" marker-end="url(#arrow)"/>
+<rect x="505" y="210" width="145" height="72" rx="10" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="577.5" y="234.0" class="t" text-anchor="middle">querydata / grid</text>
+<text x="577.5" y="253.0" class="s" text-anchor="middle">latest model run,</text>
+<text x="577.5" y="269.0" class="s" text-anchor="middle">values at the point</text>
+<polyline points="561,140 561,175 577,175 577,208" class="ln dash" marker-end="url(#arrow)"/>
+<rect x="665" y="210" width="145" height="72" rx="10" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="737.5" y="234.0" class="t" text-anchor="middle">observation</text>
+<text x="737.5" y="253.0" class="s" text-anchor="middle">measurements,</text>
+<text x="737.5" y="269.0" class="s" text-anchor="middle">if asked for</text>
+<polyline points="561,140 561,175 737,175 737,208" class="ln dash" marker-end="url(#arrow)"/>
+<text x="561" y="310" class="s" text-anchor="middle">engines: shared data, already loaded and cached</text>
+</svg>
