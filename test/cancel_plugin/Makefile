@@ -1,3 +1,5 @@
+REQUIRES = configpp
+
 include $(or $(PREFIX),$(shell smartbuildcfg --prefix))/share/smartmet/devel/makefile.inc
 
 DEFINES = -DUNIX -D_REENTRANT

@@ -84,7 +84,8 @@ $(MAINPROGS): % : obj/%.o $(OBJFILES)
 clean:
 	rm -f $(MAINPROGS) source/*~ include/*~
 	rm -rf obj
-	rm -f test/suites/*
+	$(MAKE) -C test clean
+	$(MAKE) -C loadtest clean
 
 format:
 	clang-format -i -style=file include/*.h source/*.cpp main/*.cpp
