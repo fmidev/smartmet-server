@@ -23,7 +23,16 @@ The server specializes in on-demand extraction and product generation from gridd
 
 ![SmartMet Server Structure](SmartMet_Structure.png)
 
-The server daemon loads **engines** (shared stateful modules) and **plugins** (HTTP interface handlers) at startup. All components share common **libraries**.
+The server daemon loads **engines** (shared stateful modules) and **plugins** (HTTP interface handlers) at startup. All components share common **libraries**. The [tutorial](docs/how-smartmet-server-works.md) explains how the parts work together.
+
+## Documentation
+
+- [How SmartMet Server works](docs/how-smartmet-server-works.md) — a tutorial for people who run the server, configure it or produce its data: requests, clustering, QueryData and grid data, observations, interpolation, maps, caching, operation, guidance for data producers and troubleshooting
+- [Data explorer](docs/data-explorer.md) — the `/api/explorer` page: browsing the data of the server, building TimeSeries, EDR and Coverages requests, charts, maps and sounding diagrams
+- [Developer guide](docs/developer-guide.md) — process lifecycle, threads, connection handling, reply paths, compression, limits
+- [Admin Requests](docs/Admin-Requests.md)
+- [Test Environment Setup](docs/SmartMet-Server-Test-Environment.md)
+- [HTTP client guide](docs/HTTP-Client-Guide.md) — ETag / If-None-Match, Expires, stale data, connections, compression, error handling, why cache busting does not work
 
 ## Components
 
@@ -106,14 +115,6 @@ Plugins handle HTTP requests and provide the server's external interfaces.
 | [smartmet-roadindex](https://github.com/fmidev/smartmet-roadindex) | Road weather index calculations |
 | [smartmet-roadmodel](https://github.com/fmidev/smartmet-roadmodel) | Road weather model |
 | [smartmet-utils](https://github.com/fmidev/smartmet-utils) | General utility scripts |
-
-## Documentation
-
-- [Data explorer](docs/data-explorer.md) — the `/api/explorer` page: browsing the data of the server, building TimeSeries, EDR and Coverages requests, charts, maps and sounding diagrams
-- [Developer guide](docs/developer-guide.md) — process lifecycle, threads, connection handling, reply paths, compression, limits
-- [Admin Requests](docs/Admin-Requests.md)
-- [Test Environment Setup](docs/SmartMet-Server-Test-Environment.md)
-- [HTTP client guide](docs/HTTP-Client-Guide.md) — ETag / If-None-Match, Expires, stale data, connections, compression, error handling, why cache busting does not work
 
 ## License
 
