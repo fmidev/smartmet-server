@@ -2,7 +2,7 @@
 %define SPECNAME smartmet-%{DIRNAME}
 Summary: SmartMet HTTP server
 Name: %{SPECNAME}
-Version: 26.11.19
+Version: 26.11.26
 Release: 1%{?dist}.fmi
 License: MIT
 Group: System Environment/Daemons
@@ -31,8 +31,8 @@ BuildRequires: elfutils-devel
 BuildRequires: %{smartmet_fmt_devel}
 BuildRequires: openssl-devel
 BuildRequires: systemd
-BuildRequires: smartmet-library-macgyver-devel >= 26.11.6
-BuildRequires: smartmet-library-spine-devel >= 26.11.19-1
+BuildRequires: smartmet-library-macgyver-devel >= 26.11.26
+BuildRequires: smartmet-library-spine-devel >= 26.11.26
 Requires: %{smartmet_boost}-iostreams
 Requires: %{smartmet_boost}-program-options
 Requires: %{smartmet_boost}-regex
@@ -42,8 +42,8 @@ Requires: %{smartmet_fmt}
 Requires: glibc
 Requires: jemalloc
 Requires: openssl-libs
-Requires: smartmet-library-macgyver >= 26.11.6
-Requires: smartmet-library-spine >= 26.11.19-1
+Requires: smartmet-library-macgyver >= 26.11.26
+Requires: smartmet-library-spine >= 26.11.26
 Provides: smartmetd
 Obsoletes: smartmet-brainstorm-server < 16.11.1
 Obsoletes: smartmet-brainstorm-server-debuginfo < 16.11.1
@@ -56,8 +56,6 @@ Requires(pre): shadow-utils
 #TestRequires: python3
 #TestRequires: curl >= 7.42.0
 #TestRequires: smartmet-utils-devel
-#TestRequires: smartmet-library-macgyver-devel
-#TestRequires: smartmet-library-spine-devel
 
 %description
 SmartMet server
@@ -110,6 +108,9 @@ for dir in %{_localstatedir}/log/smartmet %{_localstatedir}/smartmet /brainstorm
 done
 
 %changelog
+* Thu Nov 26 2026 Andri Pavenis <andri.pavenis@fmi.fi> - 26.11.26-1.fmi
+- Improve request cancelation support (timeout, dropped connections)
+
 * Thu Nov 19 2026 Mika Heiskanen <mika.heiskanen@fmi.fi> - 26.11.19-1.fmi
 - Fixed the request header size limit (maxheadersize) to depend only on the size of the header
   section. Requests between the limit and about 8 kB over it used to be accepted or rejected
