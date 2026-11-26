@@ -9,3 +9,7 @@ dist/
 smartmetd
 obj/
 /tmp
+test/cancellation.out
+test/cancellation.conf
+test/cancellation-logs/
+test/cancel_plugin/*.so

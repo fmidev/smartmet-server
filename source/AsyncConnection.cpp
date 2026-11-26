@@ -18,11 +18,13 @@
 #include <spine/IPFilter.h>
 #include <spine/Options.h>
 #include <spine/Reactor.h>
+#include <spine/RequestWatcher.h>
 #include <spine/Thread.h>
 #include <algorithm>
 #include <array>
 #include <atomic>
 #include <chrono>
+#include <exception>
 #include <iostream>
 #include <optional>
 #include <poll.h>
@@ -952,24 +954,22 @@ void AsyncConnection::handleCompletedRead(SmartMet::Spine::HandlerView& theHandl
     // Handle the request. Code which checks Fmi::check_cancelled() stops if the time limit
     // of the plugin is exceeded or if the client closes the connection, and the response
     // is then replaced in HandlerView.
-    const auto started = std::chrono::steady_clock::now();
-    auto cancellation = createCancellationToken(theHandlerView);
+    // The token stays current while a streamed response is produced, see getStreamChunk().
+    itsHandlingStarted = std::chrono::steady_clock::now();
+    itsCancellation = createCancellationToken(theHandlerView);
+    itsCancellationPlugin = theHandlerView.getPluginName();
     bool success = false;
     {
-      Fmi::CancellationScope scope(cancellation);
+      Fmi::CancellationScope scope(itsCancellation);
       success = theHandlerView.handle(itsReactor, *itsRequest, *itsResponse);
     }
 
-    if (cancellation->interrupted())
+    if (itsCancellation->interrupted())
     {
-      const auto reason = cancellation->reason();
-      const std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - started;
-      reportInfo(std::string(Fmi::to_string(reason)) + ", the " + theHandlerView.getPluginName() +
-                 " request was cancelled after " + Fmi::to_string("%.1f", elapsed.count()) +
-                 " seconds");
+      reportCancellation("");
 
       // Nobody is waiting for the response
-      if (reason == Fmi::CancellationToken::Reason::Disconnected)
+      if (itsCancellation->reason() == Fmi::CancellationToken::Reason::Disconnected)
         return;
     }
 
@@ -1034,10 +1034,12 @@ std::shared_ptr<Fmi::CancellationToken> AsyncConnection::createCancellationToken
   auto token = std::make_shared<Fmi::CancellationToken>();
 
   // Admin requests are not limited, they may for example wait for a reload. Nor is the
-  // frontend's proxying, the frontend has a backend timeout of its own.
+  // frontend's proxying, the frontend has a backend timeout of its own. The limit of the
+  // plugin's handler comes from plugins.<name>.request_timeout, the plugin itself or the
+  // settimeout admin request.
   if (!itsAdminQuery && !theHandlerView.isCatchNoMatch())
   {
-    const auto timeout = itsServer->getRequestTimeout(theHandlerView.getPluginName());
+    const auto timeout = theHandlerView.getRequestTimeout();
     if (timeout > 0)
       token->setDeadline(Fmi::CancellationToken::Clock::now() + std::chrono::seconds(timeout));
   }
@@ -1045,7 +1047,7 @@ std::shared_ptr<Fmi::CancellationToken> AsyncConnection::createCancellationToken
   // A client which has only closed its sending side after the request (a half-close) looks
   // the same as one which has left, so the probe is used only where clients do not do that,
   // such as behind a frontend
-  if (!itsServer->getCancelOnDisconnect(theHandlerView.getPluginName()))
+  if (!theHandlerView.getCancelOnDisconnect())
     return token;
 
   // Probe only while the connection exists, a closed descriptor may already have been
@@ -1063,6 +1065,60 @@ std::shared_ptr<Fmi::CancellationToken> AsyncConnection::createCancellationToken
       std::chrono::seconds(1));
 
   return token;
+}
+
+void AsyncConnection::reportCancellation(const std::string& theWhen)
+{
+  const std::chrono::duration<double> elapsed =
+      std::chrono::steady_clock::now() - itsHandlingStarted;
+  reportInfo(std::string(Fmi::to_string(itsCancellation->reason())) + ", the " +
+             itsCancellationPlugin + " request was cancelled" + theWhen + " after " +
+             Fmi::to_string("%.1f", elapsed.count()) + " seconds");
+}
+
+// This function is always called from within the thread pool
+bool AsyncConnection::getStreamChunk(std::string& theChunk)
+{
+  if (!itsCancellation)
+  {
+    theChunk = itsResponse->getContent();
+    return true;
+  }
+
+  // Interrupts the streamer at a boost interruption point once the request is cancelled
+  Fmi::CancellationScope scope(itsCancellation);
+  auto watch = itsReactor.getRequestWatcher().watch(itsCancellation);
+
+  std::exception_ptr error;
+  try
+  {
+    theChunk = itsResponse->getContent();
+  }
+  catch (...)
+  {
+    error = std::current_exception();
+  }
+
+  // Clears an interruption the streamer did not notice
+  const bool interrupted = watch.stop();
+
+  // The streamer may also have caught the cancellation itself, the response is incomplete
+  // in either case
+  if (!itsCancellation->interrupted() && !(error && interrupted))
+  {
+    if (error)
+      std::rethrow_exception(error);
+    return true;
+  }
+
+  reportCancellation(" while streaming the response, " + Fmi::to_string(itsTotalStreamedBytes) +
+                     " bytes sent,");
+
+  // The response cannot be completed, closing the connection shows the client that it
+  // is incomplete
+  itsKeepAlive = false;
+  closeSocket();
+  return false;
 }
 
 // Handle gateway writes. This function is always called from within the thread pool
@@ -1310,7 +1366,9 @@ void AsyncConnection::getNextChunk()
 
     if (streamStatus == SmartMet::Spine::HTTP::ContentStreamer::StreamerStatus::OK)
     {
-      std::string contentstring = itsResponse->getContent();
+      std::string contentstring;
+      if (!getStreamChunk(contentstring))
+        return;
 
       if (!contentstring.empty())
       {
@@ -1403,7 +1461,9 @@ void AsyncConnection::getNextChunkedChunk()
 
     if (streamStatus == SmartMet::Spine::HTTP::ContentStreamer::StreamerStatus::OK)
     {
-      std::string contentstring = itsResponse->getContent();
+      std::string contentstring;
+      if (!getStreamChunk(contentstring))
+        return;
 
       if (!contentstring.empty())
       {

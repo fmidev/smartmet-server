@@ -71,12 +71,13 @@ keepalive:
 
 // maxheadersize = 65536;
 
-// Seconds a plugin may spend handling a request, 0 (the default) for no limit. Code which
-// checks for cancellation stops when the time is up, and the client gets a 503. The limit
-// can be set for a plugin in its section, for example plugins.edr.request_timeout. Admin
-// requests are not limited.
-
-// request_timeout = 0;
+// The seconds a plugin may spend handling a request, including streaming the response, are
+// set in the section of the plugin, for example plugins.edr.request_timeout = 30. Code
+// which checks for cancellation stops when the time is up, and the client gets a 503. A
+// plugin may set a default of its own; without either there is no limit, and 0 disables
+// the limit of the plugin. There is no server wide setting. Admin requests are not limited.
+// The settimeout admin request changes the limit of a URI until the plugin is
+// reinitialized, and serviceinfo through the admin URI shows the limits.
 
 // Whether the same check also stops a request whose client has closed the connection.
 // Off by default: a client which closes only its sending side after the request (a

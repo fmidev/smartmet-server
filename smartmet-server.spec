@@ -56,6 +56,8 @@ Requires(pre): shadow-utils
 #TestRequires: python3
 #TestRequires: curl >= 7.42.0
 #TestRequires: smartmet-utils-devel
+#TestRequires: smartmet-library-macgyver-devel
+#TestRequires: smartmet-library-spine-devel
 
 %description
 SmartMet server

@@ -237,7 +237,7 @@ the connections each frontend keeps idle (see the frontend guide).
 | `maxconnections` | ¾ of the soft `RLIMIT_NOFILE` | Open client connections. Over → framed 503 and close; logged once per episode. |
 | `activerequests.*` | 50 / 50 / 100 / 10 | The throttle behind `Reactor::isLoadHigh()`: start with `start_limit` active requests, raise the limit by one every `increase_rate` successful requests up to `limit`, fall back to `restart_limit`. |
 | pool `maxrequeuesize` | 100 | Queue length per pool. Full → 503. |
-| `request_timeout` | 0 (unlimited) | Seconds a plugin may spend handling a request, `plugins.<name>.request_timeout` per plugin. Expiry → 503, see below. Admin requests are not limited. |
+| `plugins.<name>.request_timeout` | the plugin's own default, else 0 (unlimited) | Seconds a plugin may spend handling a request, including streaming its response (0 for no limit, for example for downloads). Overrides the default the plugin sets with `HandlerOptions::RequestTimeout()`. There is no server wide setting. Expiry → 503, see below. Admin requests are not limited. |
 | `cancel_on_disconnect` | false | Cancel a request whose client has closed the connection, `plugins.<name>.cancel_on_disconnect` per plugin. See below. |
 
 A high-load reply and a full-queue 503 are sent directly from `AsyncConnection`,
@@ -258,8 +258,13 @@ when
 
 * the time limit of the plugin (`request_timeout`) has passed, or
 * the client has closed the connection, if `cancel_on_disconnect` is set. The socket is
-  polled with `POLLRDHUP` at most once a second, from the thread doing the check, which
-  also notices a close behind unread data (a pipelined request, a TLS close_notify).
+  polled with `POLLRDHUP` at most once a second, which also notices a close behind unread
+  data (a pipelined request, a TLS close_notify).
+
+In a pool worker spine's `RequestWatcher` notices the deadline and polls the socket, and
+the check only reads the state it sets, which costs about 5 ns. Elsewhere the check reads
+the clock (about 20 ns) and polls the socket itself. Check where an iteration takes at
+least some microseconds, or every Nth iteration.
 
 A client may close its sending side once the request is sent (a half-close) and still
 wait for the response. TCP does not tell that apart from a client which has left, so
@@ -269,12 +274,32 @@ such as on backends behind a frontend.
 In addition, spine's `HandlerView` has a `RequestWatcher` interrupt the pool worker
 handling a cancelled request with `boost::thread::interrupt()`, so that the handler also
 stops at boost interruption points (boost sleeps and condition variables, thread joins,
-`Fmi::AsyncTask` waits). Blocking calls which are not interruption points, such as
-database queries, are not cut short. The check does nothing without a token (plugin tests,
-background tasks). It must not be called where the result is shared with other
-requests, such as a value computed for a cache which other requests wait for. For the
-same reason, such code must be protected from the interruption with
-`boost::this_thread::disable_interruption`.
+`Fmi::AsyncTask` waits). A blocking call which is neither, such as a database query, is
+broken off by an `Fmi::CancellationCallback` which the watcher's thread calls when it
+cancels the token. `Fmi::Database::PostgreSQLConnection` does this for its queries: it
+sends the server a cancel request (in a thread of its own, since that opens a new
+connection) and closes the connection. The check does nothing without a token (plugin
+tests, background tasks). It must not be called where the result is shared with other
+requests, such as a value computed for a cache which other requests wait for. Such code
+run in the thread of a request is protected with an empty scope,
+`Fmi::CancellationScope none(nullptr)`, which also stops the database queries from being
+broken off, and from the interruption with `boost::this_thread::disable_interruption`.
+
+The token stays current while a streamed response is produced
+(`AsyncConnection::getStreamChunk()`), and the watcher watches each `getChunk()` call. A
+stream cancelled before it is complete is logged and the connection is closed, so that the
+client sees that the response is incomplete. The deadline is counted from the start of
+the request, so a plugin streaming large responses, such as download, needs a
+`request_timeout` of its own, possibly 0.
+
+The settings are those of the plugin's handlers, not of the server: spine reads
+`plugins.<name>.request_timeout` and `plugins.<name>.cancel_on_disconnect` (with host
+specific overrides) when the plugin registers a handler, also when the plugin is
+reinitialized, and `AsyncConnection` takes them from the `HandlerView`
+(`getRequestTimeout()`, `getCancelOnDisconnect()`). The `settimeout` admin request
+(`?what=settimeout&uri=/edr&timeout=30`, authentication required) changes the limit of a
+handler until the plugin is reinitialized, and `serviceinfo` through the admin URI (not
+`/info`) lists the limits.
 
 Whatever the plugin made of the exception, `HandlerView` replaces the response of an
 interrupted request with a plain 503 before the access log and the active requests are
@@ -295,8 +320,8 @@ The main configuration file (libconfig, see `cnf/smartmet.conf.sample`) is read 
 server-level keys are `port`, `server_threads`, `encryption.*` (`enabled`,
 `certificatefile`, `privatekeyfile`, `passwordfile`, `password`), the three pools,
 `activerequests.*`, `keepalive.*`, `maxconnections`, `maxheadersize`, `maxrequestsize`,
-`request_timeout` (also `plugins.<name>.request_timeout`), `cancel_on_disconnect` (also
-`plugins.<name>.cancel_on_disconnect`), `timeout`, `compress`, `compresslimit`, `compresscodings`, `trustedproxies` (peers whose
+`cancel_on_disconnect` (and per plugin `plugins.<name>.cancel_on_disconnect` and
+`plugins.<name>.request_timeout`, read by spine), `timeout`, `compress`, `compresslimit`, `compresscodings`, `trustedproxies` (peers whose
 `X-Forwarded-For` is believed), `stalewhilerevalidate`, `staleiferror`,
 `dns.*` (client host name resolution), `accesslogdir`, `defaultlogging`,
 `robots_txt` (file served as /robots.txt, see cnf/robots.txt.sample),
