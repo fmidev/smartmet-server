@@ -237,7 +237,7 @@ the connections each frontend keeps idle (see the frontend guide).
 | `maxconnections` | ¾ of the soft `RLIMIT_NOFILE` | Open client connections. Over → framed 503 and close; logged once per episode. |
 | `activerequests.*` | 50 / 50 / 100 / 10 | The throttle behind `Reactor::isLoadHigh()`: start with `start_limit` active requests, raise the limit by one every `increase_rate` successful requests up to `limit`, fall back to `restart_limit`. |
 | pool `maxrequeuesize` | 100 | Queue length per pool. Full → 503. |
-| `request_timeout` | 0 (unlimited) | Seconds a plugin may spend handling a request, including streaming its response, `plugins.<name>.request_timeout` per plugin (0 for no limit, for example for downloads). Expiry → 503, see below. Admin requests are not limited. |
+| `plugins.<name>.request_timeout` | the plugin's own default, else 0 (unlimited) | Seconds a plugin may spend handling a request, including streaming its response (0 for no limit, for example for downloads). Overrides the default the plugin sets with `HandlerOptions::RequestTimeout()`. There is no server wide setting. Expiry → 503, see below. Admin requests are not limited. |
 | `cancel_on_disconnect` | false | Cancel a request whose client has closed the connection, `plugins.<name>.cancel_on_disconnect` per plugin. See below. |
 
 A high-load reply and a full-queue 503 are sent directly from `AsyncConnection`,
@@ -292,6 +292,15 @@ client sees that the response is incomplete. The deadline is counted from the st
 the request, so a plugin streaming large responses, such as download, needs a
 `request_timeout` of its own, possibly 0.
 
+The settings are those of the plugin's handlers, not of the server: spine reads
+`plugins.<name>.request_timeout` and `plugins.<name>.cancel_on_disconnect` (with host
+specific overrides) when the plugin registers a handler, also when the plugin is
+reinitialized, and `AsyncConnection` takes them from the `HandlerView`
+(`getRequestTimeout()`, `getCancelOnDisconnect()`). The `settimeout` admin request
+(`?what=settimeout&uri=/edr&timeout=30`, authentication required) changes the limit of a
+handler until the plugin is reinitialized, and `serviceinfo` through the admin URI (not
+`/info`) lists the limits.
+
 Whatever the plugin made of the exception, `HandlerView` replaces the response of an
 interrupted request with a plain 503 before the access log and the active requests are
 updated, and the server logs the reason and the duration. A request whose client has
@@ -311,8 +320,8 @@ The main configuration file (libconfig, see `cnf/smartmet.conf.sample`) is read 
 server-level keys are `port`, `server_threads`, `encryption.*` (`enabled`,
 `certificatefile`, `privatekeyfile`, `passwordfile`, `password`), the three pools,
 `activerequests.*`, `keepalive.*`, `maxconnections`, `maxheadersize`, `maxrequestsize`,
-`request_timeout` (also `plugins.<name>.request_timeout`), `cancel_on_disconnect` (also
-`plugins.<name>.cancel_on_disconnect`), `timeout`, `compress`, `compresslimit`, `compresscodings`, `trustedproxies` (peers whose
+`cancel_on_disconnect` (and per plugin `plugins.<name>.cancel_on_disconnect` and
+`plugins.<name>.request_timeout`, read by spine), `timeout`, `compress`, `compresslimit`, `compresscodings`, `trustedproxies` (peers whose
 `X-Forwarded-For` is believed), `stalewhilerevalidate`, `staleiferror`,
 `dns.*` (client host name resolution), `accesslogdir`, `defaultlogging`,
 `robots_txt` (file served as /robots.txt, see cnf/robots.txt.sample),

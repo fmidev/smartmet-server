@@ -6,7 +6,7 @@
 //   /cancel/stream  streams a chunk every 100 ms, checking Fmi::check_cancelled()
 //
 // Each runs for 60 seconds, or for the number of seconds given by the 'seconds' option,
-// unless cancelled.
+// unless cancelled. The plugin sets a default time limit of 2 seconds for its handler.
 
 #include <macgyver/Cancellation.h>
 #include <macgyver/Exception.h>
@@ -68,7 +68,8 @@ class Plugin : public SmartMetPlugin
   {
     if (!itsReactor->addContentHandler(
             this,
-            SmartMet::Spine::Reactor::HandlerOptions("/cancel").IsPrefix(true),
+            // A default time limit of the plugin, plugins.cancel.request_timeout overrides it
+            SmartMet::Spine::Reactor::HandlerOptions("/cancel").IsPrefix(true).RequestTimeout(2),
             [this](SmartMet::Spine::Reactor& theReactor,
                    const SmartMet::Spine::HTTP::Request& theRequest,
                    SmartMet::Spine::HTTP::Response& theResponse)

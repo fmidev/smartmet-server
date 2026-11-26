@@ -1034,10 +1034,12 @@ std::shared_ptr<Fmi::CancellationToken> AsyncConnection::createCancellationToken
   auto token = std::make_shared<Fmi::CancellationToken>();
 
   // Admin requests are not limited, they may for example wait for a reload. Nor is the
-  // frontend's proxying, the frontend has a backend timeout of its own.
+  // frontend's proxying, the frontend has a backend timeout of its own. The limit of the
+  // plugin's handler comes from plugins.<name>.request_timeout, the plugin itself or the
+  // settimeout admin request.
   if (!itsAdminQuery && !theHandlerView.isCatchNoMatch())
   {
-    const auto timeout = itsServer->getRequestTimeout(theHandlerView.getPluginName());
+    const auto timeout = theHandlerView.getRequestTimeout();
     if (timeout > 0)
       token->setDeadline(Fmi::CancellationToken::Clock::now() + std::chrono::seconds(timeout));
   }
@@ -1045,7 +1047,7 @@ std::shared_ptr<Fmi::CancellationToken> AsyncConnection::createCancellationToken
   // A client which has only closed its sending side after the request (a half-close) looks
   // the same as one which has left, so the probe is used only where clients do not do that,
   // such as behind a frontend
-  if (!itsServer->getCancelOnDisconnect(theHandlerView.getPluginName()))
+  if (!theHandlerView.getCancelOnDisconnect())
     return token;
 
   // Probe only while the connection exists, a closed descriptor may already have been

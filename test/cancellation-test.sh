@@ -8,8 +8,10 @@
 #   stream  a streamed response
 #
 # With a time limit of 1 second the first two get a 503, and the stream is cut off and the
-# connection closed. A plugin specific limit of 0 lets a long stream finish although the
-# server wide limit is 1 second.
+# connection closed. The plugin sets a default limit of 2 seconds for its handler,
+# plugins.cancel.request_timeout overrides it, and a limit of 0 lets a long stream finish.
+# The server wide request_timeout is not used. The settimeout admin request changes the
+# limit, and serviceinfo shows it through the admin URI only.
 #
 # Usage: cancellation-test.sh [path-to-smartmetd]
 
@@ -32,14 +34,15 @@ fi
 port=8078
 childpid=
 
-# Start the server with the given server wide and plugin specific time limits
+# Start the server with the given server wide and plugin specific settings
 start_server() {
     cat > cancellation.conf <<EOF
 defaultlogging = true;
 accesslogdir = "$PWD/cancellation-logs";
 server_threads = 4;
 port = $port;
-request_timeout = $1;
+admin: { uri = "/admin"; user = "foo"; password = "bar"; };
+$1
 engines: { }
 plugins:
 {
@@ -47,7 +50,7 @@ plugins:
     {
         configfile = "/dev/null";
         libfile = "$PWD/cancel_plugin/cancel_plugin.so";
-        request_timeout = $2;
+        $2
     };
 };
 EOF
@@ -92,8 +95,8 @@ within() {
 
 rm -f cancellation.out
 
-# Plugin specific time limit of 1 second
-start_server 0 1
+# Plugin specific time limit of 1 second, overriding the default of the plugin
+start_server "" "request_timeout = 1;"
 
 read status elapsed <<< "$(request busy)"
 [ "$status" = 503 ] && within "$elapsed" 3 && result=ok || result=fail
@@ -119,17 +122,54 @@ check $result "the server still answers ($status)"
 
 stop_server
 
-# Server wide limit of 1 second, none for the plugin
-start_server 1 0
+# The default of the plugin (2 seconds) applies, the server wide setting is not used
+start_server "request_timeout = 1;" ""
+
+read status elapsed <<< "$(request busy '?seconds=5')"
+[ "$status" = 503 ] && within 1.8 "$elapsed" && within "$elapsed" 4 && result=ok || result=fail
+check $result "the default time limit of the plugin applies ($status in $elapsed s)"
+
+grep -q "server wide request_timeout setting is not used" cancellation.out && result=ok || result=fail
+check $result "the unused server wide request_timeout is reported"
+
+stop_server
+
+# No time limit for the plugin
+start_server "" "request_timeout = 0;"
 
 read status elapsed <<< "$(request stream '?seconds=3')"
 chunks=$(grep -c chunk cancellation-stream.body)
 [ "$status" = 200 ] && [ "$chunks" -ge 25 ] && result=ok || result=fail
 check $result "a plugin without a time limit streams for 3 seconds ($status, $chunks chunks in $elapsed s)"
 
-read status elapsed <<< "$(request busy '?seconds=2')"
+read status elapsed <<< "$(request busy '?seconds=3')"
 [ "$status" = 200 ] && result=ok || result=fail
-check $result "a plugin without a time limit computes for 2 seconds ($status in $elapsed s)"
+check $result "a plugin without a time limit computes for 3 seconds ($status in $elapsed s)"
+
+# The settimeout admin request sets a limit
+status=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$port/admin?what=settimeout&uri=/cancel&timeout=1")
+[[ "$status" == 4?? ]] && result=ok || result=fail
+check $result "settimeout requires authentication ($status)"
+
+status=$(curl -s -o /dev/null -w '%{http_code}' -u foo:bar "http://localhost:$port/admin?what=settimeout&uri=/cancel&timeout=1")
+[ "$status" = 200 ] && result=ok || result=fail
+check $result "settimeout sets the time limit of /cancel ($status)"
+
+read status elapsed <<< "$(request busy '?seconds=5')"
+[ "$status" = 503 ] && within "$elapsed" 3 && result=ok || result=fail
+check $result "the time limit set with settimeout applies ($status in $elapsed s)"
+
+status=$(curl -s -o /dev/null -w '%{http_code}' -u foo:bar "http://localhost:$port/admin?what=settimeout&uri=/nosuchuri&timeout=1")
+[[ "$status" == [45]?? ]] && result=ok || result=fail
+check $result "settimeout of an unknown URI fails ($status)"
+
+# serviceinfo shows the time limits through the admin URI only
+curl -s "http://localhost:$port/admin?what=serviceinfo&format=json" > cancellation-admin.body
+curl -s "http://localhost:$port/info?what=serviceinfo&format=json" > cancellation-info.body
+grep -q -E '"/cancel"[^}]*Request timeout *":"?1"?[,}]' cancellation-admin.body && result=ok || result=fail
+check $result "serviceinfo through /admin shows the time limit"
+grep -q '"/cancel"' cancellation-info.body && ! grep -q "Request timeout" cancellation-info.body && result=ok || result=fail
+check $result "serviceinfo through /info does not show the time limits"
 
 stop_server
 
